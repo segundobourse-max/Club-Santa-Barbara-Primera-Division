@@ -19,6 +19,7 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl relative z-10">
+            <!-- Botón Primera A -->
             <button onclick="seleccionarCategoria('A')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                 <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">A</div>
                 <div>
@@ -27,6 +28,7 @@
                 </div>
             </button>
 
+            <!-- Botón Primera B -->
             <button onclick="seleccionarCategoria('B')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                 <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">B</div>
                 <div>
@@ -54,38 +56,42 @@
         <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 w-full flex-1">
             
             <!-- BLOQUE SUPERIOR: ESTADÍSTICAS HISTÓRICAS REALES Y TÍTULOS -->
-            <div id="panelHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div id="panelHistorico" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- Cuadro de Totales y Porcentajes -->
-                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl md:col-span-2">
-                    <h3 class="text-sm font-black uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
-                        📊 Estadísticas Históricas (Totales y Porcentajes)
-                    </h3>
-                    <div class="grid grid-cols-3 sm:grid-cols-7 gap-2.5 text-center" id="statsGlobalesEquipo">
-                        <div class="bg-gray-950/50 p-3 rounded-2xl border border-gray-800/50 animate-pulse col-span-full py-6 text-gray-500 text-xs">
-                            Procesando totales históricos de la plantilla...
+                <!-- Cuadro de Totales e Inteligencia de Porcentajes -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl lg:col-span-2 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-black uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
+                            📊 Estadísticas Históricas
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center" id="statsGlobalesEquipo">
+                            <div class="bg-gray-950/50 p-3 rounded-2xl border border-gray-800/50 animate-pulse col-span-full py-6 text-gray-500 text-xs">
+                                Sincronizando historial oficial...
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Títulos -->
-                <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-                    <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4 flex items-center gap-2">
-                        ⭐ Títulos Oficiales
-                    </h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                            <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                            <div>
-                                <h4 class="text-xs font-black text-white tracking-wide uppercase">Apertura AIFA B</h4>
-                                <p class="text-[10px] text-amber-400 font-bold mt-0.5">2019</p>
+                <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4 flex items-center gap-2">
+                            ⭐ Títulos Oficiales
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
+                                <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
+                                <div>
+                                    <h4 class="text-xs font-black text-white tracking-wide uppercase">Apertura AIFA B</h4>
+                                    <p class="text-[10px] text-amber-400 font-bold mt-0.5">2019</p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                            <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                            <div>
-                                <h4 class="text-xs font-black text-white tracking-wide uppercase">Copa Maradona Luefi</h4>
-                                <p class="text-[10px] text-amber-400 font-bold mt-0.5">2020</p>
+                            <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
+                                <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
+                                <div>
+                                    <h4 class="text-xs font-black text-white tracking-wide uppercase">Copa Maradona Luefi</h4>
+                                    <p class="text-[10px] text-amber-400 font-bold mt-0.5">2020</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -131,7 +137,8 @@
         const SPREADSHEET_ID = "153DVd4H-hTuYitiYk3M2YMkFGwODq0Ul8gKZWRQUSP0";
         const GIDS = {
             A: "964524187", 
-            B: "181745424"  
+            B: "181745424",
+            HISTORIAL_A: "1548366446" // Tu pestaña nueva de totales independientes
         };
 
         let categorySelected = '';
@@ -167,74 +174,113 @@
 
         async function descargarDatosBase() {
             const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
+            
+            // 1. DESCARGAR HISTORIAL DE LA NUEVA PESTAÑA APARTE
             try {
-                const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
-                const respuesta = await fetch(url);
-                const textoRaw = await respuesta.text();
-                const jsonText = textoRaw.substring(textoRaw.indexOf("{"), textoRaw.lastIndexOf("}") + 1);
-                const datosGoogle = JSON.parse(jsonText);
+                const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}`;
+                const rHist = await fetch(urlHistorial);
+                const tHistRaw = await rHist.text();
+                const jHistText = tHistRaw.substring(tHistRaw.indexOf("{"), tHistRaw.lastIndexOf("}") + 1);
+                const datosHist = JSON.parse(jHistText);
                 
-                const filas = datosGoogle.table.rows;
+                const filaData = datosHist.table.rows[1]?.c; // Fila 2 de datos limpios
+
+                if (filaData) {
+                    const pj = parseInt(filaData[1]?.v || 0);
+                    const pg = parseInt(filaData[2]?.v || 0);
+                    const pe = parseInt(filaData[3]?.v || 0);
+                    const pp = parseInt(filaData[4]?.v || 0);
+                    const gf = parseInt(filaData[5]?.v || 0);
+                    const gc = parseInt(filaData[6]?.v || 0);
+                    const vi = parseInt(filaData[7]?.v || 0);
+
+                    // FÓRMULAS MATEMÁTICAS AUTOMÁTICAS
+                    const puntosPosibles = pj * 3;
+                    const puntosGanados = (pg * 3) + pe;
+                    const efectividad = pj > 0 ? ((puntosGanados / puntosPosibles) * 100).toFixed(1) + "%" : "0%";
+                    
+                    const pctPG = pj > 0 ? ((pg / pj) * 100).toFixed(0) + "%" : "0%";
+                    const pctPE = pj > 0 ? ((pe / pj) * 100).toFixed(0) + "%" : "0%";
+                    const pctPP = pj > 0 ? ((pp / pj) * 100).toFixed(0) + "%" : "0%";
+                    const pctVI = pj > 0 ? ((vi / pj) * 100).toFixed(0) + "%" : "0%";
+
+                    const promGF = pj > 0 ? (gf / pj).toFixed(1) : "0";
+                    const promGC = pj > 0 ? (gc / pj).toFixed(1) : "0";
+
+                    contenedorGlobal.innerHTML = `
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p>
+                            <p class="text-base font-black text-white mt-0.5">${pj}</p>
+                            <p class="text-[8px] text-gray-600 font-medium">Totales</p>
+                        </div>
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p>
+                            <p class="text-base font-black text-emerald-400 mt-0.5">${pg}</p>
+                            <p class="text-[8px] text-emerald-600/80 font-bold">${pctPG}</p>
+                        </div>
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p>
+                            <p class="text-base font-black text-yellow-400 mt-0.5">${pe}</p>
+                            <p class="text-[8px] text-yellow-600/80 font-bold">${pctPE}</p>
+                        </div>
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-red-500 font-bold uppercase">PP</p>
+                            <p class="text-base font-black text-red-400 mt-0.5">${pp}</p>
+                            <p class="text-[8px] text-red-600/80 font-bold">${pctPP}</p>
+                        </div>
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-blue-500 font-bold uppercase">GF</p>
+                            <p class="text-base font-black text-blue-400 mt-0.5">${gf}</p>
+                            <p class="text-[8px] text-blue-500/60 font-medium">${promGF} p/p</p>
+                        </div>
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-orange-500 font-bold uppercase">GC</p>
+                            <p class="text-base font-black text-orange-400 mt-0.5">${gc}</p>
+                            <p class="text-[8px] text-orange-500/60 font-medium">${promGC} p/p</p>
+                        </div>
+                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                            <p class="text-[9px] text-cyan-400 font-bold uppercase">Vallas Inv.</p>
+                            <p class="text-base font-black text-cyan-400 mt-0.5">${vi}</p>
+                            <p class="text-[8px] text-cyan-600 font-bold">${pctVI} del total</p>
+                        </div>
+                        <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2 border border-green-500/20 rounded-xl col-span-full mt-2 flex justify-between items-center px-4">
+                            <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">Efectividad General de Puntos:</span>
+                            <span class="text-base font-black text-green-400">${efectividad}</span>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error("Error cargando pestaña de historial nueva:", e);
+                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al conectar con Historial_A.</div>`;
+            }
+
+            // 2. DESCARGAR PLANTEL DE JUGADORES COMPLETO
+            try {
+                const urlJugadores = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
+                const rJug = await fetch(urlJugadores);
+                const tJugRaw = await rJug.text();
+                const jJugText = tJugRaw.substring(tJugRaw.indexOf("{"), tJugRaw.lastIndexOf("}") + 1);
+                const datosJug = JSON.parse(jJugText);
+                
+                const filas = datosJug.table.rows;
                 listaJugadoresProcesada = [];
 
-                // 1. BUSCAR CUADRO HISTÓRICO: "TOTAL" Y "PORCENTAJES"
-                let filaTotal = null;
-                let filaPorcentaje = null;
-
-                for (let i = 0; i < filas.length; i++) {
+                for (let i = 2; i < filas.length; i++) {
                     const celdas = filas[i].c;
                     if (!celdas || !celdas[1] || !celdas[1].v) continue;
                     
-                    const celdaTexto = celdas[1].v.toString().toLowerCase();
+                    const nombre = celdas[1].v.toString();
+                    if (nombre.toLowerCase().includes("total") || nombre.toLowerCase().includes("promedio")) continue;
+
+                    const puesto = celdas[2] && celdas[2].v ? celdas[2].v : "Jugador";
+                    const pj = celdas[3] && celdas[3].v !== null ? parseInt(celdas[3].v) : 0;
+                    const goles = celdas[4] && celdas[4].v !== null ? parseInt(celdas[4].v) : 0;
+                    const asistencias = celdas[5] && celdas[5].v !== null ? parseInt(celdas[5].v) : 0;
                     
-                    if (celdaTexto === "total") {
-                        filaTotal = celdas;
-                    } else if (celdaTexto === "porcentaje" || celdaTexto.includes("porcentaj")) {
-                        filaPorcentaje = celdas;
-                    } else if (i >= 2 && !celdaTexto.includes("promedio")) {
-                        // Es un jugador válido -> Lo guardamos para los Tops y Tarjetas
-                        const puesto = celdas[2] && celdas[2].v ? celdas[2].v : "Jugador";
-                        const pj = celdas[3] && celdas[3].v !== null ? parseInt(celdas[3].v) : 0;
-                        const goles = celdas[4] && celdas[4].v !== null ? parseInt(celdas[4].v) : 0;
-                        const asistencias = celdas[5] && celdas[5].v !== null ? parseInt(celdas[5].v) : 0;
-                        
-                        listaJugadoresProcesada.push({ nombre: celdas[1].v, puesto, pj, goles, asistencias });
-                    }
+                    listaJugadoresProcesada.push({ nombre, puesto, pj, goles, asistencias });
                 }
-
-                // Dibujar estadísticas globales del cuadro de la plantilla
-                if (filaTotal) {
-                    const ePJ = filaTotal[3] && filaTotal[3].v !== null ? filaTotal[3].v : "0";
-                    const ePG = filaTotal[4] && filaTotal[4].v !== null ? filaTotal[4].v : "0";
-                    const ePE = filaTotal[5] && filaTotal[5].v !== null ? filaTotal[5].v : "0";
-                    const ePP = filaTotal[6] && filaTotal[6].v !== null ? filaTotal[6].v : "0";
-                    const eGF = filaTotal[7] && filaTotal[7].v !== null ? filaTotal[7].v : "0";
-                    const eGC = filaTotal[8] && filaTotal[8].v !== null ? filaTotal[8].v : "0";
-                    
-                    // Calcular efectividad si no viene explícita o usar la del porcentaje
-                    let efectividad = "0%";
-                    if (filaPorcentaje && filaPorcentaje[3]) {
-                        // Si en la fila de porcentaje hay un valor decimal (ej: 0.655), lo pasa a %
-                        let val = filaPorcentaje[3].v;
-                        efectividad = val < 1 ? (val * 100).toFixed(1) + "%" : val + "%";
-                    }
-
-                    contenedorGlobal.innerHTML = `
-                        <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800"><p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p><p class="text-base font-black text-white mt-0.5">${ePJ}</p></div>
-                        <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800"><p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p><p class="text-base font-black text-emerald-400 mt-0.5">${ePG}</p></div>
-                        <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800"><p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p><p class="text-base font-black text-yellow-400 mt-0.5">${ePE}</p></div>
-                        <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800"><p class="text-[9px] text-red-500 font-bold uppercase">PP</p><p class="text-base font-black text-red-400 mt-0.5">${ePP}</p></div>
-                        <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800"><p class="text-[9px] text-blue-500 font-bold uppercase">GF</p><p class="text-base font-black text-blue-400 mt-0.5">${eGF}</p></div>
-                        <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800"><p class="text-[9px] text-orange-500 font-bold uppercase">GC</p><p class="text-base font-black text-orange-400 mt-0.5">${eGC}</p></div>
-                        <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2.5 rounded-2xl border border-green-500/20"><p class="text-[9px] text-green-400 font-bold uppercase">Efect.</p><p class="text-base font-black text-green-400 mt-0.5">${efectividad}</p></div>
-                    `;
-                } else {
-                    contenedorGlobal.innerHTML = `<div class="text-xs text-gray-500 col-span-full py-2">Cuadro de Totales no detectado en las filas.</div>`;
-                }
-
             } catch (e) {
-                console.error(e);
-                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al conectar con la base de datos de totales.</div>`;
+                console.error("Error cargando los jugadores:", e);
             }
         }
 
@@ -242,22 +288,21 @@
             const area = document.getElementById('areaDinamica');
             
             if (tipo === 'jugadores') {
-                // --- CALCULAR AUTOMÁTICAMENTE LOS TOP 5 DESTACADOS ---
+                // Cálculo automático de los 3 rankings
                 const topPartidos = [...listaJugadoresProcesada].sort((a, b) => b.pj - a.pj).slice(0, 5);
                 const topGoles = [...listaJugadoresProcesada].sort((a, b) => b.goles - a.goles).slice(0, 5);
                 const topAsistencias = [...listaJugadoresProcesada].sort((a, b) => b.asistencias - a.asistencias).slice(0, 5);
 
                 let htmlDestacados = `
-                    <!-- SUBSECCIÓN: DESTACADOS (TOP 5) -->
-                    <div class="mb-8">
+                    <div class="mb-8 animate-fade-in">
                         <div class="border-b border-gray-800 pb-2 mb-4">
                             <h3 class="text-sm font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">✨ Destacados del Equipo (Top 5)</h3>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             
-                            <!-- Columna Partidos -->
+                            <!-- Top Presencias -->
                             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-md">
-                                <h4 class="text-xs font-black text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🏃‍♂️ Más Presencias</h4>
+                                <h4 class="text-xs font-black text-gray-400 uppercase tracking-wide mb-3">🏃‍♂️ Más Presencias</h4>
                                 <div class="space-y-2">
                                     ${topPartidos.map((j, idx) => `
                                         <div class="flex justify-between items-center bg-gray-950/60 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
@@ -267,9 +312,9 @@
                                 </div>
                             </div>
 
-                            <!-- Columna Goles -->
+                            <!-- Top Goles -->
                             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-md">
-                                <h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">⚽ Máximos Goleadores</h4>
+                                <h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3">⚽ Máximos Goleadores</h4>
                                 <div class="space-y-2">
                                     ${topGoles.map((j, idx) => `
                                         <div class="flex justify-between items-center bg-gray-950/60 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
@@ -279,9 +324,9 @@
                                 </div>
                             </div>
 
-                            <!-- Columna Asistencias -->
+                            <!-- Top Asistencias -->
                             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-md">
-                                <h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Máximos Asistidores</h4>
+                                <h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3">🎯 Máximos Asistidores</h4>
                                 <div class="space-y-2">
                                     ${topAsistencias.map((j, idx) => `
                                         <div class="flex justify-between items-center bg-gray-950/60 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
@@ -294,7 +339,6 @@
                         </div>
                     </div>
 
-                    <!-- PLANTEL COMPLETO -->
                     <div class="border-b border-gray-800 pb-2 mb-4">
                         <h3 class="text-sm font-black uppercase text-blue-400 tracking-wider">📋 Plantel Completo</h3>
                     </div>
