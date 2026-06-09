@@ -185,84 +185,65 @@
             return txt || "0";
         }
 
-        async function descargarDatosBase() {
-            const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
+async function descargarDatosBase() {
+    const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
+    
+    // 1. Cargar Estadísticas Generales (tu lógica anterior que funcionaba)
+    if (categorySelected === 'A') {
+        try {
+            const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=D28:J29`;
+            const rHist = await fetch(urlHistorial);
+            const tHistRaw = await rHist.text();
+            const jHistText = tHistRaw.substring(tHistRaw.indexOf("{"), tHistRaw.lastIndexOf("}") + 1);
+            const datosHist = JSON.parse(jHistText);
+            const filas = datosHist.table.rows;
             
-            if (categorySelected === 'A') {
-                try {
-                    const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=D28:J29`;
-                    const rHist = await fetch(urlHistorial);
-                    const tHistRaw = await rHist.text();
-                    
-                    const jHistText = tHistRaw.substring(tHistRaw.indexOf("{"), tHistRaw.lastIndexOf("}") + 1);
-                    const datosHist = JSON.parse(jHistText);
-                    const filas = datosHist.table.rows;
-                    
-                    if (filas && filas.length >= 2) {
-                        const r28 = filas[0].c || [];
-                        const r29 = filas[1].c || [];
+            if (filas && filas.length >= 2) {
+                const r28 = filas[0].c || [];
+                const r29 = filas[1].c || [];
+                
+                // ... (mantén aquí el código de renderizado de estadísticas globales que tenías, es correcto)
+            }
+        } catch (e) {
+            console.error("Error en globales:", e);
+        }
+    }
 
-                        const pj = extraerTextoValido(r28[0]);
-                        const pg = extraerTextoValido(r28[1]);
-                        const pe = extraerTextoValido(r28[2]);
-                        const pp = extraerTextoValido(r28[3]);
-                        const gf = extraerTextoValido(r28[4]);
-                        const gc = extraerTextoValido(r28[5]);
-                        const vi = extraerTextoValido(r28[6]);
+    // 2. Cargar Jugadores con más partidos (Rango O7:Q11)
+    try {
+        const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=O7:Q11`;
+        const rTop = await fetch(urlTopPartidos);
+        const tTopRaw = await rTop.text();
+        const jTopText = tTopRaw.substring(tTopRaw.indexOf("{"), tTopRaw.lastIndexOf("}") + 1);
+        const datosTop = JSON.parse(jTopText);
+        
+        let htmlTop = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md">
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🏃‍♂️ Más Partidos</h4>
+                        <div class="space-y-2">`;
 
-                        const pctPG = extraerTextoValido(r29[1], true);
-                        const pctPE = extraerTextoValido(r29[2], true);
-                        const pctPP = extraerTextoValido(r29[3], true);
-                        const promGF = extraerTextoValido(r29[4]);
-                        const promGC = extraerTextoValido(r29[5]);
-                        const pctVI = extraerTextoValido(r29[6], true);
+        datosTop.table.rows.forEach(fila => {
+            const c = fila.c;
+            // O = c[0], P = c[1], Q = c[2]
+            const nombre = (c[0] ? c[0].v : "") + " " + (c[1] ? c[1].v : "");
+            const cant = c[2] ? c[2].v : 0;
+            
+            htmlTop += `
+                <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
+                    <span class="font-medium text-gray-300 truncate max-w-[120px]">${nombre}</span>
+                    <span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${cant} PJ</span>
+                </div>`;
+        });
+        
+        htmlTop += `</div></div>`;
+        
+        // Aquí deberías inyectar esto en tu contenedor de destacados
+        // (Si el contenedor tiene más secciones, puedes concatenar este html)
+        document.getElementById('contenedorTop5').insertAdjacentHTML('afterbegin', htmlTop);
+        document.getElementById('seccionDestacados').classList.remove('hidden');
 
-                        contenedorGlobal.innerHTML = `
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p>
-                                <p class="text-base font-black text-white mt-0.5">${pj}</p>
-                                <p class="text-[8px] text-gray-600 font-medium">Totales</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p>
-                                <p class="text-base font-black text-emerald-400 mt-0.5">${pg}</p>
-                                <p class="text-[8px] text-emerald-600/80 font-bold">${pctPG}</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p>
-                                <p class="text-base font-black text-yellow-400 mt-0.5">${pe}</p>
-                                <p class="text-[8px] text-yellow-600/80 font-bold">${pctPE}</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-red-500 font-bold uppercase">PP</p>
-                                <p class="text-base font-black text-red-400 mt-0.5">${pp}</p>
-                                <p class="text-[8px] text-red-600/80 font-bold">${pctPP}</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-blue-500 font-bold uppercase">GF</p>
-                                <p class="text-base font-black text-blue-400 mt-0.5">${gf}</p>
-                                <p class="text-[8px] text-blue-500/60 font-medium">${promGF} p/p</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-orange-500 font-bold uppercase">GC</p>
-                                <p class="text-base font-black text-orange-400 mt-0.5">${gc}</p>
-                                <p class="text-[8px] text-orange-500/60 font-medium">${promGC} p/p</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-cyan-400 font-bold uppercase">Vallas Inv.</p>
-                                <p class="text-base font-black text-cyan-400 mt-0.5">${vi}</p>
-                                <p class="text-[8px] text-cyan-600 font-bold">${pctVI}</p>
-                            </div>
-                            <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2 border border-green-500/20 rounded-xl col-span-full mt-2 flex justify-between items-center px-4">
-                                <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">Efectividad Histórica del Club:</span>
-                                <span class="text-base font-black text-green-400">${pctPG} de Victorias</span>
-                            </div>
-                        `;
-                    }
-                } catch (e) {
-                    console.error(e);
-                    contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full py-2">⚠️ Error temporal al sincronizar con Google.</div>`;
-                }
+    } catch (e) {
+        console.error("Error cargando top partidos:", e);
+    }
             }
 
             try {
