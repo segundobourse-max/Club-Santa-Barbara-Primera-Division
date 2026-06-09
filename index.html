@@ -8,6 +8,7 @@
 </head>
 <body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
+    <!-- PANTALLA 1: BIENVENIDA (SELECCIÓN DE CATEGORÍA) -->
     <div id="pantallaBienvenida" class="fixed inset-0 z-50 flex flex-col justify-center items-center p-4 bg-gradient-to-br from-gray-950 via-slate-900 to-green-950">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-green-500/10 via-transparent to-transparent pointer-events-none"></div>
         
@@ -18,6 +19,7 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl relative z-10">
+            <!-- Botón Primera A -->
             <button onclick="seleccionarCategoria('A')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                 <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">
                     A
@@ -28,6 +30,7 @@
                 </div>
             </button>
 
+            <!-- Botón Primera B -->
             <button onclick="seleccionarCategoria('B')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                 <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">
                     B
@@ -41,7 +44,9 @@
     </div>
 
 
+    <!-- PANTALLA 2: PANEL DE CONTROL DE LA CATEGORÍA -->
     <div id="pantallaContenido" class="hidden flex-1 flex flex-col">
+        <!-- Encabezado / Navbar -->
         <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
                 <button onclick="volverAlMenu()" class="text-xs font-bold text-gray-400 hover:text-white bg-gray-950 px-3 py-2 rounded-xl border border-gray-800 transition-all flex items-center gap-1">
@@ -53,56 +58,92 @@
             </div>
         </header>
 
+        <!-- Contenido General -->
         <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 w-full flex-1">
             
+            <!-- BLOQUE SUPERIOR: ESTADÍSTICAS HISTÓRICAS Y TÍTULOS -->
             <div id="panelHistorico" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
+                <!-- Tarjeta Estadísticas Históricas -->
                 <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl md:col-span-2">
                     <h3 class="text-sm font-black uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
-                        📊 Balance Histórico de la Campaña
+                        📊 Estadísticas Históricas
                     </h3>
                     <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 text-center" id="statsGlobalesEquipo">
                         <div class="bg-gray-950/50 p-3 rounded-2xl border border-gray-800/50 animate-pulse col-span-full py-6 text-gray-500 text-xs">
-                            Procesando historial del equipo...
+                            Procesando historial...
                         </div>
                     </div>
                 </div>
 
+                <!-- Tarjeta Títulos Oficiales -->
                 <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden">
                     <div class="absolute -right-6 -bottom-6 text-yellow-500/5 text-8xl pointer-events-none font-black">🏆</div>
                     <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4 flex items-center gap-2">
-                        ⭐ Vitrina de Campeones
+                        ⭐ Títulos Oficiales
                     </h3>
                     
                     <div class="space-y-4">
+                        <!-- Copa 1 -->
                         <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                            <div class="text-3xl bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center shadow-md shadow-amber-500/5 text-amber-400">🏆</div>
+                            <div class="text-3xl bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
                             <div>
                                 <h4 class="text-xs font-black text-white tracking-wide uppercase">Apertura AIFA B</h4>
-                                <p class="text-[10px] text-amber-400 font-bold mt-0.5">Campeón Oficial</p>
+                                <p class="text-[10px] text-amber-400 font-bold mt-0.5">2019</p>
                             </div>
                         </div>
 
+                        <!-- Copa 2 -->
                         <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                            <div class="text-3xl bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center shadow-md shadow-amber-500/5 text-amber-400">🏆</div>
+                            <div class="text-3xl bg-amber-500/10 w-12 h-12 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
                             <div>
                                 <h4 class="text-xs font-black text-white tracking-wide uppercase">Copa Maradona Luefi</h4>
-                                <p class="text-[10px] text-amber-400 font-bold mt-0.5">Campeón de Copa</p>
+                                <p class="text-[10px] text-amber-400 font-bold mt-0.5">2020</p>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
 
+            <!-- BOTONERA CON LOS 4 ICONOS SECCIONALES -->
             <div class="space-y-4">
                 <div class="border-b border-gray-800 pb-2">
-                    <h2 class="text-xl font-black text-white tracking-tight">Plantel de Jugadores</h2>
-                    <p class="text-xs text-gray-400 mt-1">Rendimiento y estadísticas individuales.</p>
+                    <h2 class="text-lg font-black text-white tracking-tight uppercase">Secciones disponibles</h2>
                 </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Botón 1: Torneo Actual -->
+                    <button onclick="cambiarSubseccion('torneo')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-green-500/10 p-3 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-gray-950 transition-all">🏆</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-green-400">TORNEO ACTUAL</span>
+                    </button>
 
-                <div id="contenedorTarjetas" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    </div>
+                    <!-- Botón 2: Estadísticas de Jugadores -->
+                    <button onclick="cambiarSubseccion('jugadores')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-blue-500/10 p-3 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-gray-950 transition-all">📊</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-blue-400">ESTADÍSTICAS JUGADORES</span>
+                    </button>
+
+                    <!-- Botón 3: Torneos Antiguos -->
+                    <button onclick="cambiarSubseccion('antiguos')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-yellow-500/10 p-3 rounded-xl text-yellow-400 group-hover:bg-yellow-500 group-hover:text-gray-950 transition-all">⏳</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-yellow-400">TORNEOS ANTIGUOS</span>
+                    </button>
+
+                    <!-- Botón 4: Historial versus Clubes -->
+                    <button onclick="cambiarSubseccion('historial')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-red-500/10 p-3 rounded-xl text-red-400 group-hover:bg-red-500 group-hover:text-gray-950 transition-all">⚔️</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-red-400">HISTORIAL VS CLUBES</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- AREA DINÁMICA: MUESTRA EL CONTENIDO DE LA SECCIÓN SELECCIONADA -->
+            <div id="areaDinamica" class="pt-2">
+                <!-- Por defecto arranca un cartelito indicando que elija una sección -->
+                <div class="text-center py-8 border-2 border-dashed border-gray-800 rounded-3xl text-gray-500 text-xs">
+                    Selecciona una sección de arriba para desplegar su contenido.
+                </div>
             </div>
             
         </main>
@@ -116,6 +157,7 @@
         };
 
         let categorySelected = '';
+        let baseFilasExcel = []; // Guardamos los datos acá para no re-descargar al cambiar de botón
 
         function seleccionarCategoria(letra) {
             categorySelected = letra;
@@ -124,20 +166,25 @@
             const badge = document.getElementById('badgeCategoria');
             const panelHistorico = document.getElementById('panelHistorico');
 
+            badge.innerText = `🟢 Primera ${letra}`;
+            badge.className = "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
+            
             if (letra === 'A') {
-                badge.innerText = "🟢 Primera A";
-                badge.className = "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
-                panelHistorico.classList.remove('hidden'); // Mostramos copas en Primera A
+                panelHistorico.classList.remove('hidden');
             } else {
-                badge.innerText = "🟢 Primera B";
-                badge.className = "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
-                panelHistorico.classList.add('hidden'); // Ocultamos panel histórico si entra a la B hasta tener sus copas
+                panelHistorico.classList.add('hidden'); // Ocultamos vitrina en la B provisionalmente
             }
 
             bienvenida.classList.add('hidden');
             contenido.classList.remove('hidden');
 
-            cargarDatosElegidos();
+            // Resetear el visor dinámico al entrar
+            document.getElementById('areaDinamica').innerHTML = `
+                <div class="text-center py-8 border-2 border-dashed border-gray-800 rounded-3xl text-gray-500 text-xs">
+                    Selecciona una sección de arriba para desplegar su contenido.
+                </div>`;
+
+            descargarDatosBase();
         }
 
         function volverAlMenu() {
@@ -145,26 +192,21 @@
             document.getElementById('pantallaContenido').classList.add('hidden');
         }
 
-        async function cargarDatosElegidos() {
-            const contenedor = document.getElementById('contenedorTarjetas');
+        // Descarga inicial del Excel al elegir la categoría
+        async function descargarDatosBase() {
             const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
-            
-            contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-green-500 border-t-transparent mb-4"></div><p class="text-gray-400 text-sm">Actualizando datos oficiales de Santa Bárbara...</p></div>`;
-
             try {
                 const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
                 const respuesta = await fetch(url);
                 const textoRaw = await respuesta.text();
-                
                 const jsonText = textoRaw.substring(textoRaw.indexOf("{"), textoRaw.lastIndexOf("}") + 1);
                 const datosGoogle = JSON.parse(jsonText);
                 
-                const filas = datosGoogle.table.rows;
+                baseFilasExcel = datosGoogle.table.rows;
                 
-                // --- PROCESAR ESTADÍSTICAS GLOBALES DEL EQUIPO ---
-                // Fila index 1 del sheet contiene los consolidados globales del club
-                if (filas[1] && filas[1].c) {
-                    const cGlobal = filas[1].c;
+                // Cargar estadísticas históricas globales inmediatamente
+                if (baseFilasExcel[1] && baseFilasExcel[1].c) {
+                    const cGlobal = baseFilasExcel[1].c;
                     const ePJ = cGlobal[3] && cGlobal[3].v !== null ? cGlobal[3].v : "0";
                     const ePG = cGlobal[4] && cGlobal[4].v !== null ? cGlobal[4].v : "0";
                     const ePE = cGlobal[5] && cGlobal[5].v !== null ? cGlobal[5].v : "0";
@@ -173,39 +215,34 @@
                     const eGC = cGlobal[8] && cGlobal[8].v !== null ? cGlobal[8].v : "0";
 
                     contenedorGlobal.innerHTML = `
-                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Jugados</p>
-                            <p class="text-lg font-black text-white mt-0.5">${ePJ}</p>
-                        </div>
-                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-                            <p class="text-[10px] text-emerald-500 font-bold uppercase">Ganados</p>
-                            <p class="text-lg font-black text-emerald-400 mt-0.5">${ePG}</p>
-                        </div>
-                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-                            <p class="text-[10px] text-yellow-500 font-bold uppercase">Empates</p>
-                            <p class="text-lg font-black text-yellow-400 mt-0.5">${ePE}</p>
-                        </div>
-                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-                            <p class="text-[10px] text-red-500 font-bold uppercase">Perdidos</p>
-                            <p class="text-lg font-black text-red-400 mt-0.5">${ePP}</p>
-                        </div>
-                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-                            <p class="text-[10px] text-blue-500 font-bold uppercase">Fav (GF)</p>
-                            <p class="text-lg font-black text-blue-400 mt-0.5">${eGF}</p>
-                        </div>
-                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-                            <p class="text-[10px] text-orange-500 font-bold uppercase">Contra (GC)</p>
-                            <p class="text-lg font-black text-orange-400 mt-0.5">${eGC}</p>
-                        </div>
+                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800"><p class="text-[10px] text-gray-500 font-bold uppercase">Jugados</p><p class="text-lg font-black text-white mt-0.5">${ePJ}</p></div>
+                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800"><p class="text-[10px] text-emerald-500 font-bold uppercase">Ganados</p><p class="text-lg font-black text-emerald-400 mt-0.5">${ePG}</p></div>
+                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800"><p class="text-[10px] text-yellow-500 font-bold uppercase">Empates</p><p class="text-lg font-black text-yellow-400 mt-0.5">${ePE}</p></div>
+                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800"><p class="text-[10px] text-red-500 font-bold uppercase">Perdidos</p><p class="text-lg font-black text-red-400 mt-0.5">${ePP}</p></div>
+                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800"><p class="text-[10px] text-blue-500 font-bold uppercase">Fav (GF)</p><p class="text-lg font-black text-blue-400 mt-0.5">${eGF}</p></div>
+                        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800"><p class="text-[10px] text-orange-500 font-bold uppercase">Contra (GC)</p><p class="text-lg font-black text-orange-400 mt-0.5">${eGC}</p></div>
                     `;
                 }
+            } catch (e) {
+                console.error(e);
+                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al cargar estadísticas históricas.</div>`;
+            }
+        }
 
-                // --- PROCESAR TARJETAS DE JUGADORES ---
-                let htmlCards = "";
-                // Empezamos desde la fila 2 para excluir los resúmenes de equipo arriba leídos
-                for (let i = 2; i < filas.length; i++) {
-                    const celdas = filas[i].c;
-                    
+        // Controlador de navegación interna de la categoría
+        function cambiarSubseccion(tipo) {
+            const area = document.getElementById('areaDinamica');
+            
+            if (tipo === 'jugadores') {
+                // Dibujar el plantel de jugadores dinámicamente usando los datos almacenados
+                let htmlCards = `
+                    <div class="border-b border-gray-800 pb-2 mb-4">
+                        <h3 class="text-base font-black text-white uppercase tracking-wider text-blue-400">📊 Rendimiento del Plantel</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">`;
+
+                for (let i = 2; i < baseFilasExcel.length; i++) {
+                    const celdas = baseFilasExcel[i].c;
                     if (!celdas || !celdas[1] || !celdas[1].v) continue;
 
                     const nombre = celdas[1].v;
@@ -217,37 +254,42 @@
                     const asistencias = celdas[5] && celdas[5].v !== null ? celdas[5].v : "0";
 
                     htmlCards += `
-                        <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 shadow-xl flex flex-col justify-between group hover:border-green-500/20 transition-all duration-300">
+                        <div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 shadow-xl flex flex-col justify-between group hover:border-blue-500/20 transition-all duration-300">
                             <div>
-                                <span class="text-[10px] font-black uppercase tracking-widest text-green-400 bg-green-500/10 px-2.5 py-1 rounded-md">
-                                    ${puesto}
-                                </span>
-                                <h3 class="text-lg font-bold text-white mt-3 group-hover:text-green-400 transition-colors">${nombre}</h3>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">${puesto}</span>
+                                <h3 class="text-lg font-bold text-white mt-3 group-hover:text-blue-400 transition-colors">${nombre}</h3>
                             </div>
-                            
                             <div class="grid grid-cols-3 gap-2 mt-6 text-center border-t border-gray-800/60 pt-4">
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Partidos</p>
-                                    <p class="text-base font-black text-gray-200 mt-0.5">${pj}</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Goles</p>
-                                    <p class="text-base font-black text-green-400 mt-0.5">${goles}</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Asist.</p>
-                                    <p class="text-base font-black text-blue-400 mt-0.5">${asistencias}</p>
-                                </div>
+                                <div><p class="text-[10px] text-gray-500 font-bold uppercase">Partidos</p><p class="text-base font-black text-gray-200 mt-0.5">${pj}</p></div>
+                                <div><p class="text-[10px] text-gray-500 font-bold uppercase">Goles</p><p class="text-base font-black text-green-400 mt-0.5">${goles}</p></div>
+                                <div><p class="text-[10px] text-gray-500 font-bold uppercase">Asist.</p><p class="text-base font-black text-blue-400 mt-0.5">${asistencias}</p></div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }
+                htmlCards += `</div>`;
+                area.innerHTML = htmlCards;
 
-                contenedor.innerHTML = htmlCards;
-
-            } catch (error) {
-                console.error(error);
-                contenedor.innerHTML = `<div class="text-center py-12 col-span-full bg-red-950/20 border border-red-900/50 rounded-2xl p-6"><p class="text-red-400 font-bold text-base">Error de sincronización</p><p class="text-gray-400 text-xs mt-1">Comprobá el acceso del Google Sheet.</p></div>`;
+            } else if (tipo === 'torneo') {
+                area.innerHTML = `
+                    <div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl text-center space-y-2">
+                        <div class="text-3xl">🏆</div>
+                        <h3 class="text-sm font-black text-white uppercase">Torneo Actual</h3>
+                        <p class="text-xs text-gray-400 max-w-sm mx-auto">Próximamente conectaremos las pestañas de tabla de posiciones, fixture y resultados en tiempo real.</p>
+                    </div>`;
+            } else if (tipo === 'antiguos') {
+                area.innerHTML = `
+                    <div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl text-center space-y-2">
+                        <div class="text-3xl">⏳</div>
+                        <h3 class="text-sm font-black text-white uppercase">Torneos Antiguos</h3>
+                        <p class="text-xs text-gray-400 max-w-sm mx-auto">Historial de ligas y copas de temporadas anteriores del Club Santa Bárbara.</p>
+                    </div>`;
+            } else if (tipo === 'historial') {
+                area.innerHTML = `
+                    <div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl text-center space-y-2">
+                        <div class="text-3xl">⚔️</div>
+                        <h3 class="text-sm font-black text-white uppercase">Historial versus Clubes</h3>
+                        <p class="text-xs text-gray-400 max-w-sm mx-auto">Estadísticas frente a frente, partidos ganados y goles contra los rivales clásicos.</p>
+                    </div>`;
             }
         }
     </script>
