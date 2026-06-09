@@ -4,18 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estadísticas del Club</title>
-    <!-- Tailwind CSS para el diseño visual -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
 
-    <!-- Encabezado / Navbar -->
     <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-md">
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 class="text-2xl font-bold tracking-wider text-green-400 text-center sm:text-left">
                 📊 PANEL DE ESTADÍSTICAS
             </h1>
-            <!-- Selector de Plantel -->
             <div class="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
                 <button id="btnA" onclick="cambiarPlantel('A')" class="px-4 py-2 rounded-md font-semibold text-sm transition-all bg-green-500 text-gray-950 shadow">
                     Primera A
@@ -27,13 +24,11 @@
         </div>
     </header>
 
-    <!-- Contenido Principal -->
     <main class="max-w-6xl mx-auto p-4 sm:p-6">
         <h2 id="tituloPlantel" class="text-xl font-bold mb-6 text-gray-300 border-l-4 border-green-500 pl-2">
             Plantel - Primera A
         </h2>
 
-        <!-- Contenedor donde se cargarán los jugadores -->
         <div id="contenedorJugadores" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div class="text-center py-12 col-span-full">
                 <p class="text-gray-400 animate-pulse text-lg">Cargando estadísticas del plantel...</p>
@@ -41,9 +36,7 @@
         </div>
     </main>
 
-    <!-- Lógica de JavaScript -->
     <script>
-        // Formato estructurado utilizando los IDs de los documentos y los gids provistos
         const urls = {
             A: "https://docs.google.com/spreadsheets/d/1ESwd6P_QF9svCC-qOvGQdZm9-JCI_LD6/export?format=csv&gid=1317268512",
             B: "https://docs.google.com/spreadsheets/d/1FiExBWfpmbopeIhIAtv9toq1ewuWXR3FrHbbuvS18Rk/export?format=csv&gid=2002576963"
@@ -53,7 +46,6 @@
 
         function cambiarPlantel(letra) {
             plantelActual = letra;
-            
             const btnA = document.getElementById('btnA');
             const btnB = document.getElementById('btnB');
             const titulo = document.getElementById('tituloPlantel');
@@ -67,18 +59,15 @@
                 btnA.className = "px-4 py-2 rounded-md font-semibold text-sm transition-all text-gray-400 hover:text-gray-200";
                 titulo.innerText = "Plantel - Primera B";
             }
-
             cargarDatos();
         }
 
-        // Función para procesar filas de CSV manejando correctamente las comillas
         function procesarCSV(texto) {
             const lineas = texto.split(/\r?\n/);
             return lineas.map(linea => {
                 const resultado = [];
                 let dentroDeComillas = false;
                 let valorActual = '';
-                
                 for (let i = 0; i < linea.length; i++) {
                     const char = linea[i];
                     if (char === '"') {
@@ -100,32 +89,44 @@
             contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-gray-400 animate-pulse text-lg">Cargando datos...</p></div>`;
 
             try {
-                // Hacemos el fetch al enlace de exportación directa
                 const respuesta = await fetch(urls[plantelActual]);
                 if (!respuesta.ok) throw new Error("No se pudo obtener el archivo");
                 
                 const textoCSV = await respuesta.text();
-                
-                // Procesamos el CSV de forma segura
                 const filas = procesarCSV(textoCSV).filter(f => f.length > 0 && f[0] !== "");
                 
                 if (filas.length === 0) {
-                    contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-yellow-400">No se encontraron datos en esta pestaña.</p></div>`;
+                    contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-yellow-400">No se encontraron datos.</p></div>`;
                     return;
                 }
 
-                const encabezados = filas[0].map(e => e.toUpperCase());
+                // Limpiamos los encabezados de comillas extras y espacios
+                const encabezados = filas[0].map(e => e.replace(/"/g, "").toUpperCase().trim());
                 
-                // Buscamos dinámicamente los índices de las columnas indispensables
-                const idxJugador = encabezados.indexOf("JUGADORES");
-                const idxPuesto = encabezados.indexOf("PUESTO");
+                // Buscamos la columna de jugadores con variantes comunes
+                let idxJugador = encabezados.indexOf("JUGADORES");
+                if (idxJugador === -1) idxJugador = encabezados.indexOf("JUGADOR");
+                if (idxJugador === -1) idxJugador = encabezados.indexOf("NOMBRE");
+
+                // Buscamos las otras columnas
+                let idxPuesto = encabezados.indexOf("PUESTO");
+                if (idxPuesto === -1) idxPuesto = encabezados.indexOf("POSICION");
+                if (idxPuesto === -1) idxPuesto = encabezados.indexOf("POSICIÓN");
+
                 const idxPJ = encabezados.indexOf("PJ");
                 const idxG = encabezados.indexOf("G");
                 const idxA = encabezados.indexOf("A");
 
-                // Verificación de estructura básica
+                // Si sigue fallando, mostramos qué columnas detectó el sistema
                 if (idxJugador === -1) {
-                    contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-red-400">Error: No se encontró la columna 'JUGADORES' en la planilla.</p></div>`;
+                    contenedor.innerHTML = `
+                        <div class="bg-red-950/40 border border-red-500/50 rounded-xl p-6 col-span-full text-center">
+                            <p class="text-red-400 font-bold text-lg mb-2">Columnas no encontradas</p>
+                            <p class="text-gray-300 text-sm mb-4">El código buscaba 'JUGADORES', pero tu pestaña tiene estos encabezados:</p>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                ${encabezados.map(enc => `<span class="bg-gray-800 border border-gray-700 px-3 py-1 rounded text-xs text-green-400 font-mono">${enc}</span>`).join('')}
+                            </div>
+                        </div>`;
                     return;
                 }
 
@@ -138,7 +139,7 @@
                     if (!nombre || nombre === "") continue;
                     if (nombre.toLowerCase().includes("total") || nombre.toLowerCase().includes("promedio")) continue;
 
-                    const puesto = idxPuesto !== -1 && datos[idxPuesto] ? datos[idxPuesto] : "Sin Puesto";
+                    const puesto = idxPuesto !== -1 && datos[idxPuesto] ? datos[idxPuesto].replace(/"/g, "") : "Fútbol";
                     const pj = idxPJ !== -1 && datos[idxPJ] ? datos[idxPJ] : "0";
                     const goles = idxG !== -1 && datos[idxG] ? datos[idxG] : "0";
                     const asistencias = idxA !== -1 && datos[idxA] ? datos[idxA] : "0";
@@ -149,7 +150,7 @@
                                 <span class="text-xs font-bold uppercase tracking-wider text-green-400 bg-green-500/10 px-2 py-1 rounded">
                                     ${puesto}
                                 </span>
-                                <h3 class="text-xl font-bold text-white mt-2">${nombre}</h3>
+                                <h3 class="text-xl font-bold text-white mt-2">${nombre.replace(/"/g, "")}</h3>
                             </div>
                             
                             <div class="grid grid-cols-3 gap-2 mt-6 text-center border-t border-gray-700 pt-3">
