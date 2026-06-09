@@ -153,53 +153,58 @@
             document.getElementById('pantallaContenido').classList.add('hidden');
         }
 
-        // PROCESADOR SEGURO DE CELDAS
-        function limpiarValorCelda(celda, esPorcentaje = false) {
+        // NUEVO PARSER DE SEGURIDAD ABSOLUTA (Extrae números ignorando errores del JSON de Google)
+        function extraerTextoValido(celda, esPorcentaje = false) {
             if (!celda) return esPorcentaje ? "0%" : "0";
-            if (celda.f !== undefined && celda.f !== null) return celda.f.toString().trim();
-            if (celda.v !== undefined && celda.v !== null) {
-                let num = celda.v;
-                if (esPorcentaje && !isNaN(num) && num > 0 && num < 1) {
-                    return Math.round(num * 100) + "%";
-                }
-                return num.toString().trim();
+            let txt = "";
+            if (celda.f !== undefined && celda.f !== null) txt = celda.f.toString();
+            else if (celda.v !== undefined && celda.v !== null) txt = celda.v.toString();
+            else return esPorcentaje ? "0%" : "0";
+
+            txt = txt.trim();
+            if (esPorcentaje && !txt.includes('%')) {
+                let n = parseFloat(txt.replace(',', '.'));
+                if (!isNaN(n) && n > 0 && n < 1) return Math.round(n * 100) + "%";
             }
-            return esPorcentaje ? "0%" : "0";
+            return txt || "0";
         }
 
         async function descargarDatosBase() {
             const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
             
             try {
-                // CORREGIDO: Ahora pedimos explícitamente el rango correcto D28:J29
+                // Consultamos directamente el rango asignado D28:J29 en tu pestaña Historial A
                 const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=D28:J29`;
                 const rHist = await fetch(urlHistorial);
                 const tHistRaw = await rHist.text();
-                const jHistText = tHistRaw.substring(tHistRaw.indexOf("{"), tHistRaw.lastIndexOf("}") + 1);
+                
+                // Limpieza manual del texto por si la API falla estructurando el JSON por culpa de las celdas vacías a los lados
+                const inicioJson = tHistRaw.indexOf("{");
+                const finJson = tHistRaw.lastIndexOf("}") + 1;
+                const jHistText = tHistRaw.substring(inicioJson, finJson);
                 const datosHist = JSON.parse(jHistText);
                 
                 const filas = datosHist.table.rows;
                 
                 if (filas && filas.length >= 2) {
-                    const r28 = filas[0].c; // Fila 28 (Totales)
-                    const r29 = filas[1].c; // Fila 29 (Porcentajes / Promedios)
+                    const r28 = filas[0].c || [];
+                    const r29 = filas[1].c || [];
 
-                    // MAPEO CORREGIDO BASADO EN EL NUEVO RECORTE D hasta J:
-                    // Índice 0=D, 1=E, 2=F, 3=G, 4=H, 5=I, 6=J
-                    const pj = limpiarValorCelda(r28[0]);
-                    const pg = limpiarValorCelda(r28[1]);
-                    const pe = limpiarValorCelda(r28[2]);
-                    const pp = limpiarValorCelda(r28[3]);
-                    const gf = limpiarValorCelda(r28[4]);
-                    const gc = limpiarValorCelda(r28[5]);
-                    const vi = limpiarValorCelda(r28[6]);
+                    // Mapeo directo y protegido para las columnas D, E, F, G, H, I, J
+                    const pj = extraerTextoValido(r28[0]);
+                    const pg = extraerTextoValido(r28[1]);
+                    const pe = extraerTextoValido(r28[2]);
+                    const pp = extraerTextoValido(r28[3]);
+                    const gf = extraerTextoValido(r28[4]);
+                    const gc = extraerTextoValido(r28[5]);
+                    const vi = extraerTextoValido(r28[6]);
 
-                    const pctPG = limpiarValorCelda(r29[1], true);
-                    const pctPE = limpiarValorCelda(r29[2], true);
-                    const pctPP = limpiarValorCelda(r29[3], true);
-                    const promGF = limpiarValorCelda(r29[4]);
-                    const promGC = limpiarValorCelda(r29[5]);
-                    const pctVI = limpiarValorCelda(r29[6], true);
+                    const pctPG = extraerTextoValido(r29[1], true);
+                    const pctPE = extraerTextoValido(r29[2], true);
+                    const pctPP = extraerTextoValido(r29[3], true);
+                    const promGF = extraerTextoValido(r29[4]);
+                    const promGC = extraerTextoValido(r29[5]);
+                    const pctVI = extraerTextoValido(r29[6], true);
 
                     contenedorGlobal.innerHTML = `
                         <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
@@ -243,14 +248,14 @@
                         </div>
                     `;
                 } else {
-                    contenedorGlobal.innerHTML = `<div class="text-xs text-amber-400 col-span-full py-2">Error de lectura: No se pudieron capturar las celdas en el rango D28:J29.</div>`;
+                    throw new Error("Estructura de filas insuficiente.");
                 }
             } catch (e) {
-                console.error(e);
-                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al procesar las sumas en vivo.</div>`;
+                console.error("Error capturando historial:", e);
+                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full py-2">⚠️ Error al procesar las sumas en vivo. Revisa si el rango D28:J29 está público.</div>`;
             }
 
-            // CARGAR JUGADORES (Sección independiente)
+            // CARGAR JUGADORES (Módulo independiente)
             try {
                 const urlJugadores = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
                 const rJug = await fetch(urlJugadores);
@@ -275,7 +280,7 @@
                     
                     listaJugadoresProcesada.push({ nombre, puesto, pj, goles, asistencias });
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error capturando jugadores:", e); }
         }
 
         function cambiarSubseccion(tipo) {
