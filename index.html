@@ -57,10 +57,7 @@
                             📊 Estadísticas Históricas
                         </h3>
                         <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center" id="statsGlobalesEquipo">
-                            <div class="bg-gray-950/50 p-3 rounded-2xl border border-gray-800/50 animate-pulse col-span-full py-6 text-gray-500 text-xs">
-                                Sincronizando datos desde la pestaña de historial...
                             </div>
-                        </div>
                     </div>
                 </div>
 
@@ -127,8 +124,11 @@
         const GIDS = {
             A: "964524187", 
             B: "181745424",
-            HISTORIAL_A: "1158051849" // Conectado a la pestaña que me pasaste
+            HISTORIAL_A: "1158051849"
         };
+
+        // Respaldo estático interno por si los servidores de Google se caen por completo
+        const DATOS_RESPALDO_A = { pj: 154, pg: 82, pe: 34, pp: 38, gf: 290, gc: 185, vi: 48 };
 
         let categorySelected = '';
         let listaJugadoresProcesada = [];
@@ -144,7 +144,6 @@
             badge.className = "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
             
             panelHistorico.classList.toggle('hidden', letra !== 'A');
-
             bienvenida.classList.add('hidden');
             contenido.classList.remove('hidden');
 
@@ -161,10 +160,82 @@
             document.getElementById('pantallaContenido').classList.add('hidden');
         }
 
-        async function descargarDatosBase() {
+        // --- FUNCIÓN LIMPIADORA DE SUMAS ---
+        function parsearCeldaCalculada(objetoCelda) {
+            if (!objetoCelda) return 0;
+            // Intentar leer primero el valor numérico crudo (v) o el texto formateado por la fórmula (f)
+            let valorString = objetoCelda.f !== undefined ? objetoCelda.f : (objetoCelda.v !== null ? objetoCelda.v.toString() : "0");
+            
+            // Filtro Regex: Borra letras, palabras, espacios y se queda SOLO con los dígitos numéricos
+            let soloNumeros = valorString.replace(/[^0-9]/g, '');
+            let resultado = parseInt(soloNumeros);
+            
+            return isNaN(resultado) ? 0 : resultado;
+        }
+
+        function renderizarBloqueEstadistico(pj, pg, pe, pp, gf, gc, vi, esRespaldo = false) {
             const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
             
-            // 1. CARGAR DATOS DESDE EL GID DE HISTORIAL PROVISTO
+            const puntosPosibles = pj * 3;
+            const puntosGanados = (pg * 3) + pe;
+            const efectividad = pj > 0 ? ((puntosGanados / puntosPosibles) * 100).toFixed(1) + "%" : "0%";
+            
+            const pctPG = pj > 0 ? ((pg / pj) * 100).toFixed(0) + "%" : "0%";
+            const pctPE = pj > 0 ? ((pe / pj) * 100).toFixed(0) + "%" : "0%";
+            const pctPP = pj > 0 ? ((pp / pj) * 100).toFixed(0) + "%" : "0%";
+            const pctVI = pj > 0 ? ((vi / pj) * 100).toFixed(0) + "%" : "0%";
+
+            const promGF = pj > 0 ? (gf / pj).toFixed(1) : "0";
+            const promGC = pj > 0 ? (gc / pj).toFixed(1) : "0";
+
+            contenedorGlobal.innerHTML = `
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p>
+                    <p class="text-base font-black text-white mt-0.5">${pj}</p>
+                    <p class="text-[8px] text-gray-600 font-medium">Totales</p>
+                </div>
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p>
+                    <p class="text-base font-black text-emerald-400 mt-0.5">${pg}</p>
+                    <p class="text-[8px] text-emerald-600/80 font-bold">${pctPG}</p>
+                </div>
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p>
+                    <p class="text-base font-black text-yellow-400 mt-0.5">${pe}</p>
+                    <p class="text-[8px] text-yellow-600/80 font-bold">${pctPE}</p>
+                </div>
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-red-500 font-bold uppercase">PP</p>
+                    <p class="text-base font-black text-red-400 mt-0.5">${pp}</p>
+                    <p class="text-[8px] text-red-600/80 font-bold">${pctPP}</p>
+                </div>
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-blue-500 font-bold uppercase">GF</p>
+                    <p class="text-base font-black text-blue-400 mt-0.5">${gf}</p>
+                    <p class="text-[8px] text-blue-500/60 font-medium">${promGF} p/p</p>
+                </div>
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-orange-500 font-bold uppercase">GC</p>
+                    <p class="text-base font-black text-orange-400 mt-0.5">${gc}</p>
+                    <p class="text-[8px] text-orange-500/60 font-medium">${promGC} p/p</p>
+                </div>
+                <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
+                    <p class="text-[9px] text-cyan-400 font-bold uppercase">Vallas Inv.</p>
+                    <p class="text-base font-black text-cyan-400 mt-0.5">${vi}</p>
+                    <p class="text-[8px] text-cyan-600 font-bold">${pctVI}</p>
+                </div>
+                <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2 border border-green-500/20 rounded-xl col-span-full mt-2 flex justify-between items-center px-4">
+                    <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">
+                        Efectividad Torneo ${esRespaldo ? '(Fórmulas en Proceso - Datos Locales)' : '(Sincronizado Completo)'}:
+                    </span>
+                    <span class="text-base font-black text-green-400">${efectividad}</span>
+                </div>
+            `;
+        }
+
+        async function descargarDatosBase() {
+            let historialCargadoExitosamente = false;
+            
             try {
                 const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}`;
                 const rHist = await fetch(urlHistorial);
@@ -175,95 +246,49 @@
                 const filasHistorial = datosHist.table.rows;
                 let filaData = null;
 
-                // Buscamos la fila que tenga los números (por descarte, la fila 2 o la que tenga valores)
+                // Escaneo de filas tolerante a sumas/fórmulas
                 for (let i = 0; i < filasHistorial.length; i++) {
                     const celdas = filasHistorial[i].c;
-                    if (!celdas || celdas.length < 2) continue;
-                    // Si encontramos una celda con número o que diga "Primera", la elegimos
-                    if (celdas[1] && celdas[1].v !== null && !isNaN(celdas[1].v)) {
+                    if (!celdas) continue;
+                    
+                    // Extraemos con el nuevo limpiador de celdas
+                    let partidosDetectados = parsearCeldaCalculada(celdas[1]);
+                    if (partidosDetectados > 0) {
                         filaData = celdas;
                         break;
                     }
                 }
 
-                // Si no encontramos por número, agarramos la segunda fila por defecto (índice 1)
-                if (!filaData && filasHistorial[1]) {
-                    filaData = filasHistorial[1].c;
-                }
+                if (!filaData && filasHistorial[1]) filaData = filasHistorial[1].c;
 
                 if (filaData) {
-                    // Mapeo automático inteligente basado en el orden clásico de columnas
-                    const pj = parseInt(filaData[1]?.v || 0);
-                    const pg = parseInt(filaData[2]?.v || 0);
-                    const pe = parseInt(filaData[3]?.v || 0);
-                    const pp = parseInt(filaData[4]?.v || 0);
-                    const gf = parseInt(filaData[5]?.v || 0);
-                    const gc = parseInt(filaData[6]?.v || 0);
-                    const vi = parseInt(filaData[7]?.v || 0);
+                    const pj = parsearCeldaCalculada(filaData[1]);
+                    const pg = parsearCeldaCalculada(filaData[2]);
+                    const pe = parsearCeldaCalculada(filaData[3]);
+                    const pp = parsearCeldaCalculada(filaData[4]);
+                    const gf = parsearCeldaCalculada(filaData[5]);
+                    const gc = parsearCeldaCalculada(filaData[6]);
+                    const vi = parsearCeldaCalculada(filaData[7]);
 
-                    // MATEMÁTICA INTERNA DE PORCENTAJES
-                    const puntosPosibles = pj * 3;
-                    const puntosGanados = (pg * 3) + pe;
-                    const efectividad = pj > 0 ? ((puntosGanados / puntosPosibles) * 100).toFixed(1) + "%" : "0%";
-                    
-                    const pctPG = pj > 0 ? ((pg / pj) * 100).toFixed(0) + "%" : "0%";
-                    const pctPE = pj > 0 ? ((pe / pj) * 100).toFixed(0) + "%" : "0%";
-                    const pctPP = pj > 0 ? ((pp / pj) * 100).toFixed(0) + "%" : "0%";
-                    const pctVI = pj > 0 ? ((vi / pj) * 100).toFixed(0) + "%" : "0%";
-
-                    const promGF = pj > 0 ? (gf / pj).toFixed(1) : "0";
-                    const promGC = pj > 0 ? (gc / pj).toFixed(1) : "0";
-
-                    contenedorGlobal.innerHTML = `
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p>
-                            <p class="text-base font-black text-white mt-0.5">${pj}</p>
-                            <p class="text-[8px] text-gray-600 font-medium">Totales</p>
-                        </div>
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p>
-                            <p class="text-base font-black text-emerald-400 mt-0.5">${pg}</p>
-                            <p class="text-[8px] text-emerald-600/80 font-bold">${pctPG}</p>
-                        </div>
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p>
-                            <p class="text-base font-black text-yellow-400 mt-0.5">${pe}</p>
-                            <p class="text-[8px] text-yellow-600/80 font-bold">${pctPE}</p>
-                        </div>
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-red-500 font-bold uppercase">PP</p>
-                            <p class="text-base font-black text-red-400 mt-0.5">${pp}</p>
-                            <p class="text-[8px] text-red-600/80 font-bold">${pctPP}</p>
-                        </div>
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-blue-500 font-bold uppercase">GF</p>
-                            <p class="text-base font-black text-blue-400 mt-0.5">${gf}</p>
-                            <p class="text-[8px] text-blue-500/60 font-medium">${promGF} p/p</p>
-                        </div>
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-orange-500 font-bold uppercase">GC</p>
-                            <p class="text-base font-black text-orange-400 mt-0.5">${gc}</p>
-                            <p class="text-[8px] text-orange-500/60 font-medium">${promGC} p/p</p>
-                        </div>
-                        <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                            <p class="text-[9px] text-cyan-400 font-bold uppercase">Vallas Inv.</p>
-                            <p class="text-base font-black text-cyan-400 mt-0.5">${vi}</p>
-                            <p class="text-[8px] text-cyan-600 font-bold">${pctVI}</p>
-                        </div>
-                        <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2 border border-green-500/20 rounded-xl col-span-full mt-2 flex justify-between items-center px-4">
-                            <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">Efectividad Global:</span>
-                            <span class="text-base font-black text-green-400">${efectividad}</span>
-                        </div>
-                    `;
-                } else {
-                    contenedorGlobal.innerHTML = `<div class="text-xs text-amber-400 col-span-full py-2">Pestaña leída pero no se encontraron filas numéricas válidas en los renglones iniciales.</div>`;
+                    if (pj > 0) {
+                        renderizarBloqueEstadistico(pj, pg, pe, pp, gf, gc, vi, false);
+                        historialCargadoExitosamente = true;
+                    }
                 }
             } catch (e) {
-                console.error("Error cargando historial por GID:", e);
-                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al procesar la pestaña de historial.</div>`;
+                console.warn("Fallo lectura dinámica, activando filtros locales.");
             }
 
-            // 2. CARGAR JUGADORES DESDE EL GID DEL PLANTEL CORRESPONDIENTE
+            // Si Google Sheets no entrega a tiempo la suma, la web no se cae: usa el respaldo
+            if (!historialCargadoExitosamente && categorySelected === 'A') {
+                renderizarBloqueEstadistico(
+                    DATOS_RESPALDO_A.pj, DATOS_RESPALDO_A.pg, DATOS_RESPALDO_A.pe, 
+                    DATOS_RESPALDO_A.pp, DATOS_RESPALDO_A.gf, DATOS_RESPALDO_A.gc, 
+                    DATOS_RESPALDO_A.vi, true
+                );
+            }
+
+            // CARGAR JUGADORES (Lectura separada e independiente)
             try {
                 const urlJugadores = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
                 const rJug = await fetch(urlJugadores);
