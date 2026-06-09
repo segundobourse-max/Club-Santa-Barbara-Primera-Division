@@ -57,7 +57,7 @@
                             📊 Estadísticas Históricas
                         </h3>
                         <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center" id="statsGlobalesEquipo">
-                            <div class="col-span-full text-xs text-gray-500 py-4 animate-pulse">Buscando filas TOTAL y Porcentajes...</div>
+                            <div class="col-span-full text-xs text-gray-500 py-4 animate-pulse">Cargando estadísticas en vivo...</div>
                         </div>
                     </div>
                 </div>
@@ -153,25 +153,26 @@
             document.getElementById('pantallaContenido').classList.add('hidden');
         }
 
-        // FUNCIÓN AUXILIAR: Extrae los datos calculados de forma segura
-        function extraerTextoCelda(celda) {
-            if (!celda) return "0";
+        // PROCESADOR SEGURO DE CELDAS
+        function limpiarValorCelda(celda, esPorcentaje = false) {
+            if (!celda) return esPorcentaje ? "0%" : "0";
             if (celda.f !== undefined && celda.f !== null) return celda.f.toString().trim();
             if (celda.v !== undefined && celda.v !== null) {
-                let valor = celda.v.toString().trim();
-                if (!isNaN(celda.v) && celda.v > 0 && celda.v < 1 && valor.length > 3) {
-                    return Math.round(celda.v * 100) + "%";
+                let num = celda.v;
+                if (esPorcentaje && !isNaN(num) && num > 0 && num < 1) {
+                    return Math.round(num * 100) + "%";
                 }
-                return valor;
+                return num.toString().trim();
             }
-            return "0";
+            return esPorcentaje ? "0%" : "0";
         }
 
         async function descargarDatosBase() {
             const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
             
             try {
-                const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}`;
+                // CORREGIDO: Ahora pedimos explícitamente el rango correcto D28:J29
+                const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=D28:J29`;
                 const rHist = await fetch(urlHistorial);
                 const tHistRaw = await rHist.text();
                 const jHistText = tHistRaw.substring(tHistRaw.indexOf("{"), tHistRaw.lastIndexOf("}") + 1);
@@ -179,38 +180,26 @@
                 
                 const filas = datosHist.table.rows;
                 
-                let filaTotal = null;
-                let filaPorcentajes = null;
+                if (filas && filas.length >= 2) {
+                    const r28 = filas[0].c; // Fila 28 (Totales)
+                    const r29 = filas[1].c; // Fila 29 (Porcentajes / Promedios)
 
-                // Buscamos dinámicamente las filas "TOTAL" y "Porcentajes" en la columna A
-                for (let i = 0; i < filas.length; i++) {
-                    if (!filas[i].c || !filas[i].c[0]) continue;
-                    let textoColumnaA = extraerTextoCelda(filas[i].c[0]).toLowerCase().trim();
-                    
-                    if (textoColumnaA.includes("total")) {
-                        filaTotal = filas[i].c;
-                    } else if (textoColumnaA.includes("porcentaje")) {
-                        filaPorcentajes = filas[i].c;
-                    }
-                }
+                    // MAPEO CORREGIDO BASADO EN EL NUEVO RECORTE D hasta J:
+                    // Índice 0=D, 1=E, 2=F, 3=G, 4=H, 5=I, 6=J
+                    const pj = limpiarValorCelda(r28[0]);
+                    const pg = limpiarValorCelda(r28[1]);
+                    const pe = limpiarValorCelda(r28[2]);
+                    const pp = limpiarValorCelda(r28[3]);
+                    const gf = limpiarValorCelda(r28[4]);
+                    const gc = limpiarValorCelda(r28[5]);
+                    const vi = limpiarValorCelda(r28[6]);
 
-                if (filaTotal) {
-                    // Mapeo exacto basado en las columnas de tu Excel (PJ es columna C = índice 2)
-                    const pj = filaTotal[2] ? extraerTextoCelda(filaTotal[2]) : "0";
-                    const pg = filaTotal[3] ? extraerTextoCelda(filaTotal[3]) : "0";
-                    const pe = filaTotal[4] ? extraerTextoCelda(filaTotal[4]) : "0";
-                    const pp = filaTotal[5] ? extraerTextoCelda(filaTotal[5]) : "0";
-                    const gf = filaTotal[6] ? extraerTextoCelda(filaTotal[6]) : "0";
-                    const gc = filaTotal[7] ? extraerTextoCelda(filaTotal[7]) : "0";
-                    const vi = filaTotal[8] ? extraerTextoCelda(filaTotal[8]) : "0";
-
-                    // Porcentajes de la fila inferior
-                    const pctPG = filaPorcentajes && filaPorcentajes[3] ? extraerTextoCelda(filaPorcentajes[3]) : "0%";
-                    const pctPE = filaPorcentajes && filaPorcentajes[4] ? extraerTextoCelda(filaPorcentajes[4]) : "0%";
-                    const pctPP = filaPorcentajes && filaPorcentajes[5] ? extraerTextoCelda(filaPorcentajes[5]) : "0%";
-                    const promGF = filaPorcentajes && filaPorcentajes[6] ? extraerTextoCelda(filaPorcentajes[6]) : "0";
-                    const promGC = filaPorcentajes && filaPorcentajes[7] ? extraerTextoCelda(filaPorcentajes[7]) : "0";
-                    const pctVI = filaPorcentajes && filaPorcentajes[8] ? extraerTextoCelda(filaPorcentajes[8]) : "0%";
+                    const pctPG = limpiarValorCelda(r29[1], true);
+                    const pctPE = limpiarValorCelda(r29[2], true);
+                    const pctPP = limpiarValorCelda(r29[3], true);
+                    const promGF = limpiarValorCelda(r29[4]);
+                    const promGC = limpiarValorCelda(r29[5]);
+                    const pctVI = limpiarValorCelda(r29[6], true);
 
                     contenedorGlobal.innerHTML = `
                         <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
@@ -254,14 +243,14 @@
                         </div>
                     `;
                 } else {
-                    contenedorGlobal.innerHTML = `<div class="text-xs text-amber-400 col-span-full py-2">No se encontró la fila con la palabra 'TOTAL' al final de la tabla.</div>`;
+                    contenedorGlobal.innerHTML = `<div class="text-xs text-amber-400 col-span-full py-2">Error de lectura: No se pudieron capturar las celdas en el rango D28:J29.</div>`;
                 }
             } catch (e) {
-                console.error("Error detallado:", e);
-                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al procesar las sumas. Revisa la consola del navegador.</div>`;
+                console.error(e);
+                contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full">Error al procesar las sumas en vivo.</div>`;
             }
 
-            // CARGAR JUGADORES (Sección independiente de las pestañas A y B)
+            // CARGAR JUGADORES (Sección independiente)
             try {
                 const urlJugadores = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
                 const rJug = await fetch(urlJugadores);
