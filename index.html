@@ -100,33 +100,31 @@
                     return;
                 }
 
-                // Limpiamos los encabezados de comillas extras y espacios
+                // Limpieza profunda de encabezados
                 const encabezados = filas[0].map(e => e.replace(/"/g, "").toUpperCase().trim());
                 
-                // Buscamos la columna de jugadores con variantes comunes
+                // Buscador inteligente de columnas (variantes posibles)
                 let idxJugador = encabezados.indexOf("JUGADORES");
                 if (idxJugador === -1) idxJugador = encabezados.indexOf("JUGADOR");
                 if (idxJugador === -1) idxJugador = encabezados.indexOf("NOMBRE");
 
-                // Buscamos las otras columnas
                 let idxPuesto = encabezados.indexOf("PUESTO");
                 if (idxPuesto === -1) idxPuesto = encabezados.indexOf("POSICION");
                 if (idxPuesto === -1) idxPuesto = encabezados.indexOf("POSICIÓN");
 
-                const idxPJ = encabezados.indexOf("PJ");
-                const idxG = encabezados.indexOf("G");
-                const idxA = encabezados.indexOf("A");
+                let idxPJ = encabezados.indexOf("PJ");
+                if (idxPJ === -1) idxPJ = encabezados.indexOf("PARTIDOS");
 
-                // Si sigue fallando, mostramos qué columnas detectó el sistema
+                let idxG = encabezados.indexOf("G");
+                if (idxG === -1) idxG = encabezados.indexOf("GOLES");
+                if (idxG === -1) idxG = encabezados.indexOf("GOL");
+
+                let idxA = encabezados.indexOf("A");
+                if (idxA === -1) idxA = encabezados.indexOf("ASISTENCIAS");
+                if (idxA === -1) idxA = encabezados.indexOf("ASIST.");
+
                 if (idxJugador === -1) {
-                    contenedor.innerHTML = `
-                        <div class="bg-red-950/40 border border-red-500/50 rounded-xl p-6 col-span-full text-center">
-                            <p class="text-red-400 font-bold text-lg mb-2">Columnas no encontradas</p>
-                            <p class="text-gray-300 text-sm mb-4">El código buscaba 'JUGADORES', pero tu pestaña tiene estos encabezados:</p>
-                            <div class="flex flex-wrap justify-center gap-2">
-                                ${encabezados.map(enc => `<span class="bg-gray-800 border border-gray-700 px-3 py-1 rounded text-xs text-green-400 font-mono">${enc}</span>`).join('')}
-                            </div>
-                        </div>`;
+                    contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-red-400">Error: No se encontró la columna de Nombres.</p></div>`;
                     return;
                 }
 
@@ -137,12 +135,22 @@
                     const nombre = datos[idxJugador];
 
                     if (!nombre || nombre === "") continue;
-                    if (nombre.toLowerCase().includes("total") || nombre.toLowerCase().includes("promedio")) continue;
+                    
+                    // Saltamos filas de resumen del excel
+                    const nombreMinuscula = nombre.toLowerCase();
+                    if (nombreMinuscula.includes("total") || nombreMinuscula.includes("promedio") || nombreMinuscula.includes("plantel")) continue;
 
+                    // Extracción de datos con limpieza de comillas residuales
                     const puesto = idxPuesto !== -1 && datos[idxPuesto] ? datos[idxPuesto].replace(/"/g, "") : "Fútbol";
-                    const pj = idxPJ !== -1 && datos[idxPJ] ? datos[idxPJ] : "0";
-                    const goles = idxG !== -1 && datos[idxG] ? datos[idxG] : "0";
-                    const asistencias = idxA !== -1 && datos[idxA] ? datos[idxA] : "0";
+                    
+                    let pj = idxPJ !== -1 && datos[idxPJ] ? datos[idxPJ].replace(/"/g, "") : "0";
+                    let goles = idxG !== -1 && datos[idxG] ? datos[idxG].replace(/"/g, "") : "0";
+                    let asistencias = idxA !== -1 && datos[idxA] ? datos[idxA].replace(/"/g, "") : "0";
+
+                    // Si por alguna razón el dato quedó vacío en esa celda, le ponemos 0
+                    if (pj === "") pj = "0";
+                    if (goles === "") goles = "0";
+                    if (asistencias === "") asistencias = "0";
 
                     htmlTarjetas += `
                         <div class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-lg hover:border-green-500/50 transition-all flex flex-col justify-between">
@@ -175,7 +183,7 @@
 
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-red-400">Error al conectar con Google Sheets. Asegurate de que el archivo siga publicado.</p></div>`;
+                contenedor.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-red-400">Error al conectar con Google Sheets.</p></div>`;
             }
         }
 
