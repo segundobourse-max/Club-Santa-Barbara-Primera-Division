@@ -401,19 +401,51 @@ async function calcularEInyectarTop5() {
             }
 
             // ==========================================
-            // 🎯 COLUMNA 3: ASISTIDORES (EN VIVO)
+            // 🎯 COLUMNA 3: ASISTIDORES (HISTÓRICO PARA A)
             // ==========================================
-            const topAsistencias = [...listaJugadoresProcesada].sort((a, b) => b.asistencias - a.asistencias).slice(0, 5);
-            let htmlAsistencias = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Asistidores</h4><div class="space-y-2">` + 
-                topAsistencias.map((j, idx) => `
-                    <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
-                        <div class="flex items-center gap-2 truncate max-w-[130px]">
-                            ${obtenerBadgePosicion(idx)}
-                            <span class="font-medium text-gray-300 truncate">${j.nombre}</span>
-                        </div>
-                        <span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.asistencias} A</span>
-                    </div>`).join('') + `</div></div>`;
+            if (categorySelected === 'A') {
+                try {
+                    // Consulta asíncrona al bloque H33:J37 de la pestaña HISTORIAL_A
+                    const urlTopAsistencias = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=H33:J37`;
+                    const rAsistencias = await fetch(urlTopAsistencias);
+                    const tAsistenciasRaw = await rAsistencias.text();
+                    const jAsistenciasText = tAsistenciasRaw.substring(tAsistenciasRaw.indexOf("{"), tAsistenciasRaw.lastIndexOf("}") + 1);
+                    const datosAsistencias = JSON.parse(jAsistenciasText);
 
+                    htmlAsistencias += `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Asistidores</h4><div class="space-y-2">`;
+
+                    datosAsistencias.table.rows.forEach((fila, idx) => {
+                        const c = fila.c || [];
+                        // Columnas H (c[0]) e I (c[1]) para armar el Nombre Completo
+                        const parte1 = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "";
+                        const parte2 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
+                        const nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
+                        // Columna J (c[2]) contiene la cantidad de Asistencias
+                        const asistencias = c[2] && c[2].v !== null ? c[2].v : 0;
+
+                        htmlAsistencias += `
+                            <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
+                                <div class="flex items-center gap-2 truncate max-w-[130px]">
+                                    ${obtenerBadgePosicion(idx)}
+                                    <span class="font-medium text-gray-300 truncate">${nombreCompleto}</span>
+                                </div>
+                                <span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${asistencias} A</span>
+                            </div>`;
+                    });
+
+                    htmlAsistencias += `</div></div>`;
+                } catch (e) {
+                    console.error("Error trayendo Top Asistidores histórico:", e);
+                    const topAsistenciasFallback = [...listaJugadoresProcesada].sort((a, b) => b.asistencias - a.asistencias).slice(0, 5);
+                    htmlAsistencias = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Asistidores</h4><div class="space-y-2">` + 
+                        topAsistenciasFallback.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><div class="flex items-center gap-2 truncate max-w-[130px]">${obtenerBadgePosicion(idx)}<span class="font-medium text-gray-300 truncate">${j.nombre}</span></div><span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.asistencias} A</span></div>`).join('') + `</div></div>`;
+                }
+            } else {
+                // Mantiene el cálculo en vivo original para la Categoría B
+                const topAsistenciasB = [...listaJugadoresProcesada].sort((a, b) => b.asistencias - a.asistencias).slice(0, 5);
+                htmlAsistencias = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Asistidores</h4><div class="space-y-2">` + 
+                    topAsistenciasB.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><div class="flex items-center gap-2 truncate max-w-[130px]">${obtenerBadgePosicion(idx)}<span class="font-medium text-gray-300 truncate">${j.nombre}</span></div><span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.asistencias} A</span></div>`).join('') + `</div></div>`;
+            }
             // Renderizar las 3 columnas juntas
             contenedor.innerHTML = htmlPartidos + htmlGoles + htmlAsistencias;
             document.getElementById('seccionDestacados').classList.remove('hidden');
