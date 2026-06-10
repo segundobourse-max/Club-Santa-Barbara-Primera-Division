@@ -297,11 +297,23 @@
             }
         }
 
-        async function calcularEInyectarTop5() {
+async function calcularEInyectarTop5() {
             const contenedor = document.getElementById('contenedorTop5');
-            let htmlPartidos = '';
+            
+            // Función auxiliar para generar el circulito/medalla según la posición (#1, #2, #3, etc.)
+            function obtenerBadgePosicion(idx) {
+                if (idx === 0) return `<span class="w-5 h-5 rounded-full bg-amber-500 text-gray-950 font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(245,158,11,0.4)]">1</span>`;
+                if (idx === 1) return `<span class="w-5 h-5 rounded-full bg-slate-400 text-gray-950 font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(148,163,184,0.4)]">2</span>`;
+                if (idx === 2) return `<span class="w-5 h-5 rounded-full bg-amber-700 text-white font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(180,83,9,0.4)]">3</span>`;
+                return `<span class="text-gray-500 font-bold ml-1.5 mr-1">#${idx + 1}</span>`;
+            }
 
-            // --- NUEVA ACTUALIZACIÓN: LECTURA DIRECTA DE O7:Q11 PARA PRESENCIAS HISTÓRICAS ---
+            let htmlPartidos = '';
+            let htmlGoles = '';
+
+            // ==========================================
+            // 🏃‍♂️ COLUMNA 1: MÁS PARTIDOS (HISTÓRICO)
+            // ==========================================
             if (categorySelected === 'A') {
                 try {
                     const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=O7:Q11`;
@@ -314,17 +326,17 @@
                     
                     datosTop.table.rows.forEach((fila, idx) => {
                         const c = fila.c || [];
-                        // Columna O es c[0], Columna P es c[1]. Las unimos para el nombre completo.
                         const parte1 = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "";
                         const parte2 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
                         const nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
-                        
-                        // Columna Q es c[2] (Contiene los PJ)
                         const partidos = c[2] && c[2].v !== null ? c[2].v : 0;
                         
                         htmlPartidos += `
                             <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
-                                <span class="font-medium text-gray-300 truncate max-w-[120px]">#${idx+1} ${nombreCompleto}</span>
+                                <div class="flex items-center gap-2 truncate max-w-[130px]">
+                                    ${obtenerBadgePosicion(idx)}
+                                    <span class="font-medium text-gray-300 truncate">${nombreCompleto}</span>
+                                </div>
                                 <span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${partidos} PJ</span>
                             </div>`;
                     });
@@ -332,29 +344,77 @@
                     htmlPartidos += `</div></div>`;
                 } catch (e) {
                     console.error("Error trayendo Top Partidos histórico:", e);
-                    // Fallback por si falla la hoja: calcula usando los datos del plantel en vivo
                     const fallbackPartidos = [...listaJugadoresProcesada].sort((a, b) => b.pj - a.pj).slice(0, 5);
                     htmlPartidos = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🏃‍♂️ Más Partidos</h4><div class="space-y-2">` + 
-                        fallbackPartidos.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><span class="font-medium text-gray-300 truncate max-w-[120px]">#${idx+1} ${j.nombre}</span><span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${j.pj} PJ</span></div>`).join('') + `</div></div>`;
+                        fallbackPartidos.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><div class="flex items-center gap-2 truncate max-w-[130px]">${obtenerBadgePosicion(idx)}<span class="font-medium text-gray-300 truncate">${j.nombre}</span></div><span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${j.pj} PJ</span></div>`).join('') + `</div></div>`;
                 }
             } else {
-                // Para la categoría B (o si no hay historial), se genera con el plantel actual directamente
                 const topPartidosB = [...listaJugadoresProcesada].sort((a, b) => b.pj - a.pj).slice(0, 5);
                 htmlPartidos = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🏃‍♂️ Más Partidos</h4><div class="space-y-2">` + 
-                    topPartidosB.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><span class="font-medium text-gray-300 truncate max-w-[120px]">#${idx+1} ${j.nombre}</span><span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${j.pj} PJ</span></div>`).join('') + `</div></div>`;
+                    topPartidosB.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><div class="flex items-center gap-2 truncate max-w-[130px]">${obtenerBadgePosicion(idx)}<span class="font-medium text-gray-300 truncate">${j.nombre}</span></div><span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${j.pj} PJ</span></div>`).join('') + `</div></div>`;
             }
 
-            // Goleadores y Asistidores (Se siguen calculando automáticos del plantel actual como querías)
-            const topGoles = [...listaJugadoresProcesada].sort((a, b) => b.goles - a.goles).slice(0, 5);
+            // ==========================================
+            // ⚽ COLUMNA 2: GOLEADORES (HISTÓRICO PARA A)
+            // ==========================================
+            if (categorySelected === 'A') {
+                try {
+                    // Consulta asíncrona real al bloque B33:D37 de la pestaña HISTORIAL_A
+                    const urlTopGoles = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=B33:D37`;
+                    const rGoles = await fetch(urlTopGoles);
+                    const tGolesRaw = await rGoles.text();
+                    const jGolesText = tGolesRaw.substring(tGolesRaw.indexOf("{"), tGolesRaw.lastIndexOf("}") + 1);
+                    const datosGoles = JSON.parse(jGolesText);
+
+                    htmlGoles += `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">⚽ Goleadores</h4><div class="space-y-2">`;
+
+                    datosGoles.table.rows.forEach((fila, idx) => {
+                        const c = fila.c || [];
+                        // Columnas B (c[0]) y C (c[1]) para armar el Nombre Completo
+                        const parte1 = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "";
+                        const parte2 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
+                        const nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
+                        // Columna D (c[2]) contiene la cantidad de Goles
+                        const goles = c[2] && c[2].v !== null ? c[2].v : 0;
+
+                        htmlGoles += `
+                            <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
+                                <div class="flex items-center gap-2 truncate max-w-[130px]">
+                                    ${obtenerBadgePosicion(idx)}
+                                    <span class="font-medium text-gray-300 truncate">${nombreCompleto}</span>
+                                </div>
+                                <span class="font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[11px]">${goles} G</span>
+                            </div>`;
+                    });
+
+                    htmlGoles += `</div></div>`;
+                } catch (e) {
+                    console.error("Error trayendo Top Goleadores histórico:", e);
+                    const topGolesFallback = [...listaJugadoresProcesada].sort((a, b) => b.goles - a.goles).slice(0, 5);
+                    htmlGoles = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">⚽ Goleadores</h4><div class="space-y-2">` + 
+                        topGolesFallback.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><div class="flex items-center gap-2 truncate max-w-[130px]">${obtenerBadgePosicion(idx)}<span class="font-medium text-gray-300 truncate">${j.nombre}</span></div><span class="font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.goles} G</span></div>`).join('') + `</div></div>`;
+                }
+            } else {
+                const topGolesB = [...listaJugadoresProcesada].sort((a, b) => b.goles - a.goles).slice(0, 5);
+                htmlGoles = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">⚽ Goleadores</h4><div class="space-y-2">` + 
+                    topGolesB.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><div class="flex items-center gap-2 truncate max-w-[130px]">${obtenerBadgePosicion(idx)}<span class="font-medium text-gray-300 truncate">${j.nombre}</span></div><span class="font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.goles} G</span></div>`).join('') + `</div></div>`;
+            }
+
+            // ==========================================
+            // 🎯 COLUMNA 3: ASISTIDORES (EN VIVO)
+            // ==========================================
             const topAsistencias = [...listaJugadoresProcesada].sort((a, b) => b.asistencias - a.asistencias).slice(0, 5);
-
-            let htmlGoles = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">⚽ Goleadores</h4><div class="space-y-2">` + 
-                topGoles.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><span class="font-medium text-gray-300 truncate max-w-[120px]">#${idx+1} ${j.nombre}</span><span class="font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.goles} G</span></div>`).join('') + `</div></div>`;
-            
             let htmlAsistencias = `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Asistidores</h4><div class="space-y-2">` + 
-                topAsistencias.map((j, idx) => `<div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40"><span class="font-medium text-gray-300 truncate max-w-[120px]">#${idx+1} ${j.nombre}</span><span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.asistencias} A</span></div>`).join('') + `</div></div>`;
+                topAsistencias.map((j, idx) => `
+                    <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
+                        <div class="flex items-center gap-2 truncate max-w-[130px]">
+                            ${obtenerBadgePosicion(idx)}
+                            <span class="font-medium text-gray-300 truncate">${j.nombre}</span>
+                        </div>
+                        <span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${j.asistencias} A</span>
+                    </div>`).join('') + `</div></div>`;
 
-            // Unimos las tres columnas en el orden correcto en el contenedor del medio
+            // Renderizar las 3 columnas juntas
             contenedor.innerHTML = htmlPartidos + htmlGoles + htmlAsistencias;
             document.getElementById('seccionDestacados').classList.remove('hidden');
         }
