@@ -228,7 +228,7 @@ function extraerTextoValido(celda, esPorcentaje = false) {
 function renderTablaAIFA() {
   const idxCsb = TABLA_COMPLETA.findIndex(e => e.esCsb);
   const desde = Math.max(0, idxCsb - 2);
-  const hasta = Math.min(TABLA_COMPLETA.length - 1, idxCsb + 7); // 2 arriba + CSB + 7 abajo = 10 equipos máx
+  const hasta = Math.min(TABLA_COMPLETA.length - 1, idxCsb + 5); // CSB es 1° → 0 arriba + CSB + 5 abajo = 6 equipos
   const slice = TABLA_COMPLETA.slice(desde, hasta + 1);
 
   const posIcon = (pos) => {
