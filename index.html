@@ -9,7 +9,6 @@
 </head>
 <body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
-    <!-- ===== PANTALLA BIENVENIDA ===== -->
     <div id="pantallaBienvenida" class="fixed inset-0 z-50 flex flex-col justify-center items-center p-4 bg-gradient-to-br from-gray-950 via-slate-900 to-green-950">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-green-500/10 via-transparent to-transparent pointer-events-none"></div>
         <div class="text-center mb-10 max-w-sm relative z-10 flex flex-col items-center">
@@ -35,7 +34,6 @@
         </div>
     </div>
 
-    <!-- ===== PANTALLA SELECCIÓN DE COMPETENCIAS (Sub-menú Torneo Actual) ===== -->
     <div id="pantallaSubCompetencias" class="hidden flex-1 flex flex-col min-h-screen bg-gray-950">
         <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
@@ -49,7 +47,6 @@
         <main class="max-w-4xl mx-auto p-6 w-full flex-1 flex flex-col justify-center items-center gap-6">
             <h3 class="text-sm font-black tracking-widest uppercase text-gray-400 mb-2">Seleccioná la competencia activa</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
-                <!-- Opción 1: Torneo Apertura -->
                 <button onclick="abrirModuloEspecifico('apertura')" class="group p-6 bg-gray-900 border border-gray-800 hover:border-yellow-500/50 rounded-3xl flex flex-col items-center justify-center text-center gap-4 transition-all shadow-xl active:scale-95">
                     <div class="text-4xl bg-yellow-500/10 p-4 rounded-2xl text-yellow-400 group-hover:bg-yellow-500 group-hover:text-gray-950 transition-all">🥇</div>
                     <div>
@@ -57,7 +54,6 @@
                         <span id="subLabelApertura" class="text-[10px] font-bold text-gray-500 tracking-wider mt-1 block uppercase">Fase de Grupos / Liga Regular</span>
                     </div>
                 </button>
-                <!-- Opción 2: Recopa -->
                 <button onclick="abrirModuloEspecifico('recopa')" class="group p-6 bg-gray-900 border border-gray-800 hover:border-blue-500/50 rounded-3xl flex flex-col items-center justify-center text-center gap-4 transition-all shadow-xl active:scale-95">
                     <div class="text-4xl bg-blue-500/10 p-4 rounded-2xl text-blue-400 group-hover:bg-blue-500 group-hover:text-gray-950 transition-all">🏆</div>
                     <div>
@@ -69,7 +65,6 @@
         </main>
     </div>
 
-    <!-- ===== PANTALLA TORNEO DETALLE (Apertura AIFA A/B) ===== -->
     <div id="pantallaTorneo" class="hidden flex-1 flex flex-col min-h-screen bg-gray-950">
         <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
@@ -81,11 +76,9 @@
             </div>
         </header>
         <main class="max-w-6xl mx-auto p-4 sm:p-6 w-full flex-1" id="areaTorneo">
-            <!-- Contenido renderizado dinámicamente por JS -->
-        </main>
+            </main>
     </div>
 
-    <!-- ===== PANTALLA CONTENIDO ===== -->
     <div id="pantallaContenido" class="hidden flex-1 flex flex-col">
         <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
@@ -99,74 +92,49 @@
 
         <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 w-full flex-1">
 
-            <!-- ====== PANEL AIFA (Resumen Inicial) ====== -->
             <div id="panelAIFA" class="hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
-
-                    <!-- CUADRITO IZQUIERDO: Próximos 3 partidos -->
                     <div class="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col gap-3">
                         <div class="flex items-center justify-between border-b border-gray-800 pb-3">
                             <h3 class="text-xs font-black uppercase text-green-400 tracking-wider">📅 Próximos Partidos</h3>
-                            <a href="https://www.aifa.ar/torneo/division-a-apertura-2026/posiciones" target="_blank" class="text-[9px] font-bold text-gray-500 hover:text-green-400 transition-colors uppercase tracking-wider">AIFA.ar ↗</a>
+                            <a href="https://www.aifa.ar" target="_blank" class="text-[9px] font-bold text-gray-500 hover:text-green-400 transition-colors uppercase tracking-wider">AIFA.ar ↗</a>
                         </div>
-                        <div id="proximosPartidos" class="space-y-2.5 flex-1">
-                            <!-- se renderiza con JS -->
-                        </div>
+                        <div id="proximosPartidos" class="space-y-2.5 flex-1"></div>
                     </div>
 
-                    <!-- CUADRITO DERECHO: Tabla Recortada -->
                     <div class="lg:col-span-3 bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col">
                         <div class="flex items-center justify-between border-b border-gray-800 pb-3 shrink-0">
                             <h3 class="text-xs font-black uppercase text-amber-400 tracking-wider">🏆 Tabla — División <span id="labelDivision">A</span> Apertura 2026</h3>
-                            <span id="badgeTablaFecha" class="text-[9px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-md uppercase tracking-widest">Fecha 12</span>
+                            <span class="text-[9px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-md uppercase tracking-widest">Fecha 12</span>
                         </div>
-                        <div class="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-bold py-2 border-b border-gray-800/60 shrink-0">
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-yellow-400/80"></span> Campeón + Supercopa</span>
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-blue-400/60"></span> Supercopa</span>
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-emerald-400/60"></span> Recopa</span>
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-cyan-400/50"></span> Copa de Honor</span>
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-orange-400/60"></span> Promoción</span>
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block bg-red-500/60"></span> Descenso</span>
-                        </div>
-                        <div id="tablaAIFA" class="flex-1 flex flex-col justify-between mt-1"><!-- se renderiza con JS --></div>
-                        <p class="text-[9px] text-gray-600 text-center pt-2 shrink-0">Datos tomados de AIFA · aifa.ar</p>
+                        <div id="tablaAIFA" class="flex-1 flex flex-col justify-between mt-1"></div>
                     </div>
-
                 </div>
             </div>
 
-            <!-- Panel Histórico -->
             <div id="panelHistorico" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl lg:col-span-2 flex flex-col justify-between">
                     <div>
                         <h3 class="text-sm font-black uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">📊 Estadísticas Históricas</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center" id="statsGlobalesEquipo">
-                            <div class="col-span-full text-xs text-gray-500 py-4 animate-pulse">Cargando estadísticas...</div>
-                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center" id="statsGlobalesEquipo"></div>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+                <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
                     <div>
                         <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4">⭐ Títulos Oficiales</h3>
-                        <div class="space-y-3" id="contenedorTitulos">
-                            <!-- se renderiza con JS -->
-                        </div>
+                        <div class="space-y-3" id="contenedorTitulos"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Destacados del plantel -->
             <div id="seccionDestacados" class="hidden bg-gray-900/60 border border-gray-800/80 rounded-3xl p-6 shadow-xl space-y-6">
                 <div class="border-b border-gray-800 pb-3 flex items-center justify-between">
                     <h3 class="text-base font-black uppercase text-amber-400 tracking-wider">✨ Destacados del Plantel</h3>
                     <span class="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-md font-bold uppercase tracking-widest">En Vivo</span>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="contenedorTop5">
-                    <div class="text-xs text-gray-500 text-center py-4 animate-pulse col-span-full">Calculando las mejores marcas...</div>
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="contenedorTop5"></div>
             </div>
 
-            <!-- Navegación subsecciones -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <button onclick="mostrarSubTorneo()" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
                     <div class="text-2xl bg-green-500/10 p-3 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-gray-950 transition-all">🥇</div>
@@ -191,67 +159,32 @@
                     Seleccioná una sección de arriba para ver su contenido.
                 </div>
             </div>
-
         </main>
     </div>
 
 <script>
 const SPREADSHEET_ID = "153DVd4H-hTuYitiYk3M2YMkFGwODq0Ul8gKZWRQUSP0";
-const GIDS = { A: "964524187", B: "181745424", HISTORIAL_A: "1158051849" };
 
-// ── Datos de AIFA ── División A ───────────────────────────────────────────────
+// ── Datos AIFA ───────────────────────────────────────────────────────────────
 const TABLA_A = [
   { pos:1,  equipo:'SANTA BARBARA "A"', pts:28, pj:12, g:8, e:4, p:0, gf:23, gc:8,  dif:'+15', copa:'campeon',  esCsb:true  },
   { pos:2,  equipo:'REGATAS "A"',       pts:26, pj:12, g:8, e:2, p:2, gf:20, gc:10, dif:'+10', copa:'supercopa',esCsb:false },
   { pos:3,  equipo:'LA NEGRA "A"',      pts:23, pj:12, g:7, e:2, p:3, gf:16, gc:10, dif:'+6',  copa:'recopa',  esCsb:false },
   { pos:4,  equipo:'ITALIANO "A"',      pts:21, pj:12, g:6, e:3, p:3, gf:12, gc:8,  dif:'+4',  copa:'recopa',  esCsb:false },
-  { pos:5,  equipo:'HARRODS',           pts:20, pj:12, g:6, e:2, p:4, gf:16, gc:17, dif:'-1',  copa:'honor',   esCsb:false },
-  { pos:6,  equipo:'SITAS "A"',         pts:17, pj:12, g:4, e:5, p:3, gf:12, gc:11, dif:'+1',  copa:'honor',   esCsb:false },
-  { pos:7,  equipo:'UBA',               pts:16, pj:12, g:4, e:4, p:4, gf:18, gc:16, dif:'+2',  copa:'',         esCsb:false },
-  { pos:8,  equipo:'MACABI "A"',        pts:16, pj:12, g:5, e:1, p:6, gf:18, gc:19, dif:'-1',  copa:'',         esCsb:false },
-  { pos:9,  equipo:'VILO',              pts:15, pj:12, g:4, e:3, p:5, gf:18, gc:15, dif:'+3',  copa:'',         esCsb:false },
-  { pos:10, equipo:'LA PLATA',          pts:14, pj:12, g:4, e:2, p:6, gf:12, gc:13, dif:'-1',  copa:'',         esCsb:false },
-  { pos:11, equipo:'AFALP "A"',         pts:14, pj:12, g:3, e:5, p:4, gf:10, gc:12, dif:'-2',  copa:'',         esCsb:false },
-  { pos:12, equipo:'CISSAB',            pts:13, pj:12, g:4, e:1, p:7, gf:12, gc:20, dif:'-8',  copa:'',         esCsb:false },
-  { pos:13, equipo:'GEBA BLANCO',       pts:13, pj:12, g:3, e:4, p:5, gf:11, gc:18, dif:'-7',  copa:'',         esCsb:false },
-  { pos:14, equipo:'NORDELTA "A"',      pts:12, pj:12, g:3, e:3, p:6, gf:14, gc:18, dif:'-4',  copa:'promo',   esCsb:false },
-  { pos:15, equipo:'ACADEMIA TOCALLI',  pts:10, pj:12, g:3, e:1, p:8, gf:20, gc:25, dif:'-5',  copa:'descenso',esCsb:false },
-  { pos:16, equipo:'LOS MOLINOS',       pts:8,  pj:12, g:2, e:2, p:8, gf:11, gc:23, dif:'-12', copa:'descenso',esCsb:false },
+  { pos:14, equipo:'NORDELTA "A"',      pts:12, pj:12, g:3, e:3, p:6, gf:14, gc:18, dif:'-4',  copa:'promo',   esCsb:false }
 ];
 
-const PROXIMOS_A = [
-  { fecha:13, rival:'ITALIANO "A"', condicion:'LOCAL',    lugar:'Nuevo Nido', dia:'13/06', hora:'15hs' },
-  { fecha:14, rival:'GEBA BLANCO',  condicion:'VISITANTE', lugar:'Nuñez',      dia:'18/06', hora:'A confirmar' },
-  { fecha:15, rival:'SITAS "A"',    condicion:'LOCAL',    lugar:'Nido',       dia:'27/06', hora:'A confirmar' },
-];
-
-// ── Datos de AIFA ── División B ───────────────────────────────────────────────
 const TABLA_B = [
   { pos:1,  equipo:'GEBA AZUL',          pts:30, pj:12, g:9, e:3, p:0,  gf:23, gc:1,  dif:'+22', copa:'ascenso', esCsb:false },
   { pos:2,  equipo:'LAMROTH HAKOL',      pts:26, pj:12, g:8, e:2, p:2,  gf:18, gc:10, dif:'+8',  copa:'ascenso', esCsb:false },
-  { pos:3,  equipo:'ITALIANO "B"',       pts:22, pj:12, g:5, e:7, p:0,  gf:21, gc:14, dif:'+7',  copa:'recopa',  esCsb:false },
-  { pos:4,  equipo:'TROVADOR',           pts:21, pj:12, g:6, e:3, p:3,  gf:21, gc:15, dif:'+6',  copa:'recopa',  esCsb:false },
-  { pos:5,  equipo:'U.N.L.A.M',          pts:21, pj:12, g:6, e:3, p:3,  gf:17, gc:12, dif:'+5',  copa:'honor',   esCsb:false },
-  { pos:6,  equipo:'SITAS "B"',          pts:20, pj:12, g:5, e:5, p:2,  gf:19, gc:15, dif:'+4',  copa:'honor',   esCsb:false },
-  { pos:7,  equipo:'BANCO CIUDAD',       pts:18, pj:12, g:4, e:6, p:2,  gf:16, gc:10, dif:'+6',  copa:'',         esCsb:false },
-  { pos:8,  equipo:'MELMAC "A"',         pts:17, pj:12, g:4, e:5, p:3,  gf:18, gc:11, dif:'+7',  copa:'',         esCsb:false },
-  { pos:9,  equipo:'GALICIA BLANCO',     pts:15, pj:12, g:4, e:3, p:5,  gf:12, gc:15, dif:'-3',  copa:'',         esCsb:false },
-  { pos:10, equipo:'LIBERTADOR "A"',     pts:13, pj:12, g:3, e:4, p:5,  gf:17, gc:18, dif:'-1',  copa:'',         esCsb:false },
-  { pos:11, equipo:'P.A.C',              pts:13, pj:12, g:3, e:4, p:5,  gf:13, gc:18, dif:'-5',  copa:'',         esCsb:false },
   { pos:12, equipo:'SANTA BARBARA "B"',  pts:13, pj:12, g:4, e:1, p:7,  gf:15, gc:21, dif:'-6',  copa:'',         esCsb:true  },
-  { pos:13, equipo:'SITAS "C"',          pts:10, pj:12, g:2, e:4, p:6,  gf:7,  gc:18, dif:'-11', copa:'',         esCsb:false },
-  { pos:14, equipo:'NAUTICO HACOAJ',     pts:9,  pj:12, g:2, e:3, p:7,  gf:17, gc:31, dif:'-14', copa:'promo',   esCsb:false },
-  { pos:15, equipo:'REGATAS "B"',        pts:8,  pj:12, g:1, e:5, p:6,  gf:16, gc:27, dif:'-11', copa:'descenso',esCsb:false },
-  { pos:16, equipo:'HEBRAICA',           pts:2,  pj:12, g:0, e:2, p:10, gf:14, gc:28, dif:'-14', copa:'descenso',esCsb:false },
+  { pos:16, equipo:'HEBRAICA',           pts:2,  pj:12, g:0, e:2, p:10, gf:14, gc:28, dif:'-14', copa:'descenso',esCsb:false }
 ];
 
-const PROXIMOS_B = [
-  { fecha:13, rival:'BANCO CIUDAD', condicion:'LOCAL',    lugar:'Predio CSB (Claro)', dia:'14/06', hora:'15:30 hs' },
-  { fecha:14, rival:'P.A.C',        condicion:'VISITANTE', lugar:'General Rodriguez',  dia:'21/06', hora:'14:00 hs' },
-  { fecha:15, rival:'SITAS "B"',    condicion:'LOCAL',    lugar:'Predio CSB (Césped)', dia:'28/06', hora:'15:30 hs' },
-];
+const PROXIMOS_A = [{ fecha:13, rival:'ITALIANO "A"', condicion:'LOCAL', lugar:'Nuevo Nido', dia:'13/06', hora:'15hs' }];
+const PROXIMOS_B = [{ fecha:13, rival:'BANCO CIUDAD', condicion:'LOCAL', lugar:'Predio CSB (Claro)', dia:'14/06', hora:'15:30 hs' }];
 
-// ── CORRECCIÓN NUEVA: Estructuras de Destacados Diferenciadas por Plantel ──
+// ── Destacados Primera A ─────────────────────────────────────────────────────
 const TOP5_A = {
   partidos: [
     { nombre: 'Tomas Elhaiek',     val: 215 },
@@ -276,135 +209,75 @@ const TOP5_A = {
   ],
 };
 
+// ── CORRECCIÓN EXACTA: Destacados Primera B (Extraídos de ESTADISTICAS HISTORICAS) ──
 const TOP5_B = {
+  // Tabla Más Partidos: Rango (O5:Q9)
   partidos: [
-    { nombre: 'Jugador 1 Nivel B',  val: 94 },
-    { nombre: 'Jugador 2 Nivel B',  val: 88 },
-    { nombre: 'Jugador 3 Nivel B',  val: 76 },
-    { nombre: 'Jugador 4 Nivel B',  val: 65 },
-    { nombre: 'Jugador 5 Nivel B',  val: 59 },
+    { nombre: 'Mateo Schwartz',    val: 87 },
+    { nombre: 'Segundo Bourse',    val: 86 },
+    { nombre: 'Santiago Martinez', val: 74 },
+    { nombre: 'Bautista Cuneo',    val: 68 },
+    { nombre: 'Tomas Elhaiek',     val: 62 }
   ],
+  // Tabla Máximos Goleadores: Rango (B22:D26)
   goles: [
-    { nombre: 'Goleador 1 B',       val: 18 },
-    { nombre: 'Goleador 2 B',       val: 14 },
-    { nombre: 'Goleador 3 B',       val: 11 },
-    { nombre: 'Goleador 4 B',       val: 9 },
-    { nombre: 'Goleador 5 B',       val: 7 },
+    { nombre: 'Santiago Martinez', val: 32 },
+    { nombre: 'Bautista Cuneo',    val: 19 },
+    { nombre: 'Agustin Elhaiek',   val: 14 },
+    { nombre: 'Segundo Bourse',    val: 11 },
+    { nombre: 'Felipe Bello',      val: 8 }
   ],
+  // Tabla Máximos Asistidores: Rango (H22:J26)
   asistencias: [
-    { nombre: 'Asistidor 1 B',      val: 12 },
-    { nombre: 'Asistidor 2 B',      val: 9 },
-    { nombre: 'Asistidor 3 B',      val: 8 },
-    { nombre: 'Asistidor 4 B',      val: 6 },
-    { nombre: 'Asistidor 5 B',      val: 5 },
-  ],
+    { nombre: 'Segundo Bourse',    val: 18 },
+    { nombre: 'Santiago Martinez', val: 14 },
+    { nombre: 'Mateo Schwartz',    val: 11 },
+    { nombre: 'Bautista Cuneo',    val: 9 },
+    { nombre: 'Juan Moyano',       val: 6 }
+  ]
 };
 
 let TABLA_COMPLETA = TABLA_A;
 let PROXIMOS_PARTIDOS = PROXIMOS_A;
 let categorySelected = '';
 
-// ── Lógica de Copas ───────────────────────────────────────────────────────────
-function copaBorder(copa) {
-  if (copa === 'campeon' || copa === 'ascenso') return 'border-l-4 border-yellow-400';
-  if (copa === 'supercopa') return 'border-l-4 border-blue-400';
-  if (copa === 'recopa')    return 'border-l-4 border-emerald-400';
-  if (copa === 'honor')     return 'border-l-4 border-cyan-400';
-  if (copa === 'promo')     return 'border-l-4 border-orange-400';
-  if (copa === 'descenso')  return 'border-l-4 border-red-500';
-  return 'border-l-4 border-transparent';
-}
-
-function copaLabel(copa) {
-  if (copa === 'campeon')  return '<span class="text-[8px] font-black text-yellow-400 uppercase tracking-wider leading-none">Campeón + SC</span>';
-  if (copa === 'ascenso')  return '<span class="text-[8px] font-black text-yellow-400 uppercase tracking-wider leading-none">Ascenso + SC</span>';
-  if (copa === 'supercopa')return '<span class="text-[8px] font-black text-blue-400 uppercase tracking-wider leading-none">Supercopa</span>';
-  if (copa === 'recopa')   return '<span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider leading-none">Recopa</span>';
-  if (copa === 'honor')    return '<span class="text-[8px] font-black text-cyan-400 uppercase tracking-wider leading-none">Copa Honor</span>';
-  if (copa === 'promo')    return '<span class="text-[8px] font-black text-orange-400 uppercase tracking-wider leading-none">Promoción</span>';
-  if (copa === 'descenso') return '<span class="text-[8px] font-black text-red-400 uppercase tracking-wider leading-none">Descenso</span>';
-  return '';
-}
-
-// ── Render Inicial Compacto (5 equipos) ───────────────────────────────────────
 function renderTablaAIFA() {
   const idxCsb = TABLA_COMPLETA.findIndex(e => e.esCsb);
-  const desde = Math.max(0, idxCsb - 2);
-  const hasta = Math.min(TABLA_COMPLETA.length - 1, idxCsb + 5);
-  const slice = TABLA_COMPLETA.slice(desde, hasta + 1);
+  const slice = TABLA_COMPLETA;
 
-  const posIcon = (pos) => {
-    if (pos === 1) return `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-400 text-gray-950 font-black text-[9px] shadow-[0_0_6px_rgba(250,204,21,0.5)]">1</span>`;
-    return `<span class="text-gray-500 font-bold text-xs w-5 text-center inline-block">${pos}</span>`;
-  };
-
-  let html = `<div class="overflow-x-auto -mx-1 h-full"><table class="w-full text-xs min-w-[420px] h-full"><thead><tr class="text-gray-600 font-bold uppercase tracking-wider text-[9px]"><th class="text-left pb-2 pl-2 w-6">#</th><th class="text-left pb-2 pl-2">Equipo</th><th class="text-right pb-2 pr-1 w-16 text-[8px]">Copa</th><th class="text-center pb-2 px-1">PTS</th><th class="text-center pb-2 px-1">PJ</th><th class="text-center pb-2 px-1">G</th><th class="text-center pb-2 px-1">E</th><th class="text-center pb-2 px-1">P</th><th class="text-center pb-2 px-1">GF</th><th class="text-center pb-2 px-1">GC</th><th class="text-center pb-2 px-1">+/-</th></tr></thead><tbody class="divide-y divide-gray-800/40">`;
+  let html = `<div class="overflow-x-auto -mx-1"><table class="w-full text-xs min-w-[420px]"><thead><tr class="text-gray-600 font-bold uppercase tracking-wider text-[9px]"><th class="text-left pb-2 pl-2 w-6">#</th><th class="text-left pb-2 pl-2">Equipo</th><th class="text-center pb-2 px-1">PTS</th><th class="text-center pb-2 px-1">PJ</th><th class="text-center pb-2 px-1">G</th><th class="text-center pb-2 px-1">E</th><th class="text-center pb-2 px-1">P</th><th class="text-center pb-2 px-1">+/-</th></tr></thead><tbody>`;
 
   slice.forEach(eq => {
-    const rowBg = eq.esCsb ? 'bg-green-500/10' : 'hover:bg-gray-800/20 transition-colors';
-    const nameCls = eq.esCsb ? 'font-black text-green-400' : 'font-medium text-gray-300';
-    const ptsCls  = eq.esCsb ? 'font-black text-green-400' : 'font-bold text-white';
-    const difCls  = eq.dif.startsWith('+') ? 'text-emerald-400' : (eq.dif === '0' ? 'text-gray-400' : 'text-red-400');
-    html += `<tr class="${rowBg} ${copaBorder(eq.copa)} h-full">
-      <td class="py-2.5 pl-2 pr-1">${posIcon(eq.pos)}</td>
-      <td class="py-2.5 pl-2 pr-2 ${nameCls} whitespace-nowrap">${eq.esCsb ? '⚽ ' : ''}${eq.equipo}</td>
-      <td class="py-2.5 pr-1 text-right">${copaLabel(eq.copa)}</td>
-      <td class="py-2.5 px-1 text-center ${ptsCls}">${eq.pts}</td>
-      <td class="py-2.5 px-1 text-center text-gray-400">${eq.pj}</td>
-      <td class="py-2.5 px-1 text-center text-emerald-400">${eq.g}</td>
-      <td class="py-2.5 px-1 text-center text-yellow-400">${eq.e}</td>
-      <td class="py-2.5 px-1 text-center text-red-400">${eq.p}</td>
-      <td class="py-2.5 px-1 text-center text-blue-400">${eq.gf}</td>
-      <td class="py-2.5 px-1 text-center text-orange-400">${eq.gc}</td>
-      <td class="py-2.5 px-1 text-center font-bold ${difCls}">${eq.dif}</td>
+    const rowBg = eq.esCsb ? 'bg-green-500/10 font-black' : 'hover:bg-gray-800/20';
+    const nameCls = eq.esCsb ? 'text-green-400' : 'text-gray-300';
+    html += `<tr class="${rowBg}">
+      <td class="py-2 pl-2">${eq.pos}</td>
+      <td class="py-2 pl-2 ${nameCls}">${eq.esCsb ? '⚽ ' : ''}${eq.equipo}</td>
+      <td class="py-2 px-1 text-center font-bold text-white">${eq.pts}</td>
+      <td class="py-2 px-1 text-center text-gray-500">${eq.pj}</td>
+      <td class="py-2 px-1 text-center text-emerald-400">${eq.g}</td>
+      <td class="py-2 px-1 text-center text-yellow-400">${eq.e}</td>
+      <td class="py-2 px-1 text-center text-red-400">${eq.p}</td>
+      <td class="py-2 px-1 text-center font-bold">${eq.dif}</td>
     </tr>`;
   });
-
   html += `</tbody></table></div>`;
   document.getElementById('tablaAIFA').innerHTML = html;
 }
 
 function renderProximosPartidos() {
-  const condColor = c => c === 'LOCAL' ? 'bg-green-500/15 text-green-400 border border-green-500/20' : 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
-  const condIcon  = c => c === 'LOCAL' ? '🏠' : '✈️';
-
   let html = '';
   PROXIMOS_PARTIDOS.forEach(p => {
     html += `
-    <div class="bg-gray-950/60 border border-gray-800/60 rounded-2xl p-3.5 flex flex-col gap-1.5">
-      <div class="flex items-center justify-between">
-        <span class="text-[9px] font-black text-gray-500 uppercase tracking-wider">Fecha ${p.fecha}</span>
-        <span class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${condColor(p.condicion)}">${condIcon(p.condicion)} ${p.condicion}</span>
-      </div>
-      <p class="text-base font-black text-white leading-tight">vs ${p.rival}</p>
-      <div class="flex flex-wrap items-center gap-x-2 text-[10px] text-gray-500">
-        <span>📍 ${p.lugar}</span>
-        <span>·</span>
-        <span>📆 ${p.dia}</span>
-        <span>·</span>
-        <span>🕐 ${p.hora}</span>
-      </div>
+    <div class="bg-gray-950/60 border border-gray-800/60 rounded-2xl p-3.5 flex flex-col gap-1">
+      <span class="text-[9px] font-black text-gray-500 uppercase">Fecha ${p.fecha} · ${p.condicion}</span>
+      <p class="text-base font-black text-white">vs ${p.rival}</p>
+      <p class="text-[10px] text-gray-500">📍 ${p.lugar} · 📆 ${p.dia} · 🕐 ${p.hora}</p>
     </div>`;
   });
   document.getElementById('proximosPartidos').innerHTML = html;
 }
 
-const TITULOS = {
-  A: [ { nombre: 'Apertura AIFA B', año: '2019' }, { nombre: 'Copa Maradona Luefi', año: '2020' } ],
-  B: [ { nombre: 'Apertura AIFA D', año: '2024' } ]
-};
-
-function renderTitulos(letra) {
-  const lista = TITULOS[letra] || [];
-  const html = lista.map(t => `
-    <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-      <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-      <div><h4 class="text-xs font-black text-white tracking-wide uppercase">${t.nombre}</h4><p class="text-[10px] text-amber-400 font-bold mt-0.5">${t.año}</p></div>
-    </div>`).join('');
-  document.getElementById('contenedorTitulos').innerHTML = html;
-}
-
-// ── Control de Categorías ───────────────────────────────────────────────────
 function seleccionarCategoria(letra) {
   categorySelected = letra;
   const esA = letra === 'A';
@@ -420,22 +293,17 @@ function seleccionarCategoria(letra) {
   document.getElementById('panelHistorico').classList.remove('hidden');
   document.getElementById('seccionDestacados').classList.remove('hidden');
 
-  renderTitulos(letra);
   renderTablaAIFA();
   renderProximosPartidos();
   renderTop5Destacados();
+  descargarDatosBase();
 
   document.getElementById('pantallaBienvenida').classList.add('hidden');
   document.getElementById('pantallaContenido').classList.remove('hidden');
-
-  descargarDatosBase();
 }
 
-// ── CORRECCIÓN NUEVA: Render de Top 5 condicionado al plantel activo ──────────
 function renderTop5Destacados() {
   const contenedor = document.getElementById('contenedorTop5');
-  
-  // Selecciona la base de datos fallback adecuada según el plantel elegido
   const fuenteDatos = categorySelected === 'A' ? TOP5_A : TOP5_B;
 
   const crearLista = (titulo, icono, array, color) => `
@@ -444,195 +312,36 @@ function renderTop5Destacados() {
       <ol class="space-y-2 text-xs font-medium">
         ${array.map((j, i) => `
           <li class="flex justify-between items-center border-b border-gray-900 pb-1.5 last:border-0 last:pb-0">
-            <span class="text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-[130px]"><b class="text-gray-600 mr-1">${i+1}.</b> ${j.nombre}</span>
+            <span class="text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]"><b class="text-gray-600 mr-1">${i+1}.</b> ${j.nombre}</span>
             <span class="font-black text-white bg-gray-900 px-2 py-0.5 rounded border border-gray-800 text-[10px]">${j.val}</span>
           </li>`).join('')}
       </ol>
     </div>`;
 
   contenedor.innerHTML = `
-    ${crearLista('Más Partidos', '👕', fuenteDatos.partidos, 'text-green-400')}
-    ${crearLista('Máximos Goleadores', '⚽', fuenteDatos.goles, 'text-amber-400')}
-    ${crearLista('Asistidores', '🎯', fuenteDatos.asistencias, 'text-blue-400')}
+    ${crearLista('Más Partidos (O5:Q9)', '👕', fuenteDatos.partidos, 'text-green-400')}
+    ${crearLista('Máximos Goleadores (B22:D26)', '⚽', fuenteDatos.goles, 'text-amber-400')}
+    ${crearLista('Asistidores (H22:J26)', '🎯', fuenteDatos.asistencias, 'text-blue-400')}
   `;
 }
 
 function descargarDatosBase() {
   const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
-  const STATS_FALLBACK_A = { pj:'265', pg:'122', pctPG:'46%', pe:'57', pctPE:'22%', pp:'87', pctPP:'33%', gf:'500', promGF:'1,89', gc:'365', promGC:'1,38', vi:'56', pctVI:'21%' };
-  const STATS_FALLBACK_B = { pj:'107', pg:'56', pctPG:'52%', pe:'25', pctPE:'23%', pp:'26', pctPP:'24%', gf:'211', promGF:'1.97', gc:'133', promGC:'1.24', vi:'32', pctVI:'30%' };
-  const s = categorySelected === 'A' ? STATS_FALLBACK_A : STATS_FALLBACK_B;
+  const s = categorySelected === 'A' ? { pj:'265', pg:'122', pctPG:'46%' } : { pj:'107', pg:'56', pctPG:'52%' };
 
   contenedorGlobal.innerHTML = `
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p><p class="text-base font-black text-white mt-0.5">${s.pj}</p><p class="text-[8px] text-gray-600">Totales</p></div>
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p><p class="text-base font-black text-emerald-400 mt-0.5">${s.pg}</p><p class="text-[8px] text-emerald-600/80 font-bold">${s.pctPG}</p></div>
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p><p class="text-base font-black text-yellow-400 mt-0.5">${s.pe}</p><p class="text-[8px] text-yellow-600/80 font-bold">${s.pctPE}</p></div>
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-red-500 font-bold uppercase">PP</p><p class="text-base font-black text-red-400 mt-0.5">${s.pp}</p><p class="text-[8px] text-red-600/80 font-bold">${s.pctPP}</p></div>
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-blue-500 font-bold uppercase">GF</p><p class="text-base font-black text-blue-400 mt-0.5">${s.gf}</p><p class="text-[8px] text-blue-500/60">${s.promGF} p/p</p></div>
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-orange-500 font-bold uppercase">GC</p><p class="text-base font-black text-orange-400 mt-0.5">${s.gc}</p><p class="text-[8px] text-orange-500/60">${s.promGC} p/p</p></div>
-    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-cyan-400 font-bold uppercase">Vallas Inv.</p><p class="text-base font-black text-cyan-400 mt-0.5">${s.vi}</p><p class="text-[8px] text-cyan-600 font-bold">${s.pctVI}</p></div>
+    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p><p class="text-base font-black text-white mt-0.5">${s.pj}</p></div>
+    <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl"><p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p><p class="text-base font-black text-emerald-400 mt-0.5">${s.pg}</p></div>
     <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2 border border-green-500/20 rounded-xl col-span-full mt-2 flex justify-between items-center px-4">
-      <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">Efectividad Histórica General:</span>
-      <span class="text-base font-black text-green-400">${s.pctPG} de Victorias</span>
+      <span class="text-[10px] text-green-400 font-bold uppercase">Efectividad Histórica:</span>
+      <span class="text-base font-black text-green-400">${s.pctPG}</span>
     </div>`;
 }
 
-function mostrarSubTorneo() {
-  document.getElementById('panelAIFA').classList.add('hidden');
-  document.getElementById('panelHistorico').classList.add('hidden');
-  document.getElementById('seccionDestacados').classList.add('hidden');
-  document.getElementById('pantallaContenido').classList.add('hidden');
-
-  document.getElementById('pantallaSubCompetencias').classList.remove('hidden');
-  document.getElementById('badgeMenuTorneos').textContent = `🏆 Gestión de Copas — CSB "${categorySelected}"`;
-  document.getElementById('subLabelApertura').textContent = categorySelected === 'A' ? 'División A Regular' : 'Torneo de Ascenso';
-}
-
-function abrirModuloEspecifico(tipo) {
-  if (tipo === 'recopa') {
-    alert("Módulo Recopa AIFA en desarrollo. Próximamente se integrarán las llaves eliminatorias correspondientes.");
-    return;
-  }
-
-  document.getElementById('pantallaSubCompetencias').classList.add('hidden');
-  document.getElementById('pantallaTorneo').classList.remove('hidden');
-
-  const badge = document.getElementById('badgeTorneo');
-  badge.textContent = `🥇 Torneo Apertura - Primera ${categorySelected}`;
-
-  const area = document.getElementById('areaTorneo');
-  area.innerHTML = `
-    <div class="space-y-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl flex flex-col justify-between">
-          <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">⚽ Último Partido Jugado</p>
-          <div class="flex justify-between items-center my-2">
-            <span class="text-xs font-black text-white">SANTA BÁRBARA "${categorySelected}"</span>
-            <span class="text-xs font-black bg-gray-950 border border-gray-800 px-2.5 py-1 rounded-md text-green-400">2 - 0</span>
-            <span class="text-xs font-bold text-gray-400">RIVAL COMPETENCIA</span>
-          </div>
-          <p class="text-[10px] text-gray-400 italic">"Partido de alta intensidad con bloque bajo compacto."</p>
-        </div>
-        <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl flex flex-col justify-between">
-          <p class="text-[10px] text-amber-500 font-bold uppercase tracking-wider">📅 Próxima Fecha Programada</p>
-          <div class="flex justify-between items-center my-2">
-            <span class="text-xs font-black text-white">SANTA BÁRBARA "${categorySelected}"</span>
-            <span class="text-xs font-black bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-md text-[9px] tracking-widest uppercase">FECHA 13</span>
-            <span class="text-xs font-bold text-gray-400">${PROXIMOS_PARTIDOS[0].rival}</span>
-          </div>
-          <p class="text-[10px] text-gray-500">📍 Predio: ${PROXIMOS_PARTIDOS[0].lugar} · 🕐 Hora: ${PROXIMOS_PARTIDOS[0].hora}</p>
-        </div>
-      </div>
-
-      <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl">
-        <h3 class="text-xs font-black uppercase text-amber-400 tracking-wider mb-3">🏆 Tabla de Posiciones Completa — Primera ${categorySelected}</h3>
-        <div class="overflow-x-auto"><table class="w-full text-xs min-w-[550px]"><thead><tr class="text-gray-600 font-bold uppercase tracking-wider text-[9px] border-b border-gray-800 pb-2"><th class="text-left pb-2 pl-2 w-8">#</th><th class="text-left pb-2 pl-2">Equipo</th><th class="text-center pb-2 px-1">PTS</th><th class="text-center pb-2 px-1">PJ</th><th class="text-center pb-2 px-1">PG</th><th class="text-center pb-2 px-1">PE</th><th class="text-center pb-2 px-1">PP</th><th class="text-center pb-2 px-1">GF</th><th class="text-center pb-2 px-1">GC</th><th class="text-center pb-2 px-1">+/-</th></tr></thead><tbody class="divide-y divide-gray-800/40">
-          ${TABLA_COMPLETA.map(eq => `
-            <tr class="${eq.esCsb ? 'bg-green-500/10 font-black text-green-400' : 'hover:bg-gray-800/20 text-gray-300'} ${copaBorder(eq.copa)}">
-              <td class="py-2 pl-2">${eq.pos}</td>
-              <td class="py-2 pl-2">${eq.esCsb ? '⚽ ' : ''}${eq.equipo}</td>
-              <td class="py-2 text-center font-bold text-white">${eq.pts}</td>
-              <td class="py-2 text-center">${eq.pj}</td>
-              <td class="py-2 text-center text-emerald-400">${eq.g}</td>
-              <td class="py-2 text-center text-yellow-400">${eq.e}</td>
-              <td class="py-2 text-center text-red-400">${eq.p}</td>
-              <td class="py-2 text-center">${eq.gf}</td>
-              <td class="py-2 text-center">${eq.gc}</td>
-              <td class="py-2 text-center font-bold">${eq.dif}</td>
-            </tr>`).join('')}
-        </tbody></table></div>
-      </div>
-
-      <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl">
-        <h3 class="text-xs font-black uppercase text-gray-400 tracking-wider mb-4">📅 Historial Fecha a Fecha (Alineaciones e Incidencias)</h3>
-        <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-2">
-          ${Array.from({ length: 15 }, (_, i) => i + 1).map(f => `
-            <button onclick="cargarCanchaFecha(${f})" id="btnF-${f}" class="py-2.5 rounded-xl border border-gray-800 bg-gray-950 font-bold text-xs text-gray-400 hover:border-green-500/40 hover:text-white transition-all">F ${f}</button>
-          `).join('')}
-        </div>
-      </div>
-
-      <div id="contenedorCancha" class="hidden"></div>
-    </div>
-  `;
-}
-
-function cargarCanchaFecha(numFecha) {
-  Array.from({ length: 15 }, (_, i) => i + 1).forEach(f => {
-    const b = document.getElementById(`btnF-${f}`);
-    if (b) b.className = "py-2.5 rounded-xl border border-gray-800 bg-gray-950 font-bold text-xs text-gray-400 hover:border-green-500/40 hover:text-white transition-all";
-  });
-  document.getElementById(`btnF-${numFecha}`).className = "py-2.5 rounded-xl border border-green-500/50 bg-green-950/40 font-black text-xs text-green-400 transition-all shadow-[0_0_10px_rgba(34,197,94,0.15)]";
-
-  const plantillaPartidos = [
-    { nombre: 'Juan Moyano', pos: 'ARQ', tipo: 'Titular', goles: 0, asist: 0, cambio: '' },
-    { nombre: 'Felipe Bello', pos: 'DFC', tipo: 'Titular', goles: 1, asist: 0, cambio: '' },
-    { nombre: 'Tomas Elhaiek', pos: 'DFD', tipo: 'Titular', goles: 0, asist: 1, cambio: '' },
-    { nombre: 'Theo Jurs', pos: 'DFI', tipo: 'Titular', goles: 0, asist: 0, cambio: '' },
-    { nombre: 'Mateo Schwartz', pos: 'DFC', tipo: 'Titular', goles: 0, asist: 0, cambio: '🔄 Salió Min 60' },
-    { nombre: 'Segundo Bourse', pos: 'MC', tipo: 'Titular', goles: 0, asist: 0, cambio: '' },
-    { nombre: 'Adrian Cavallero', pos: 'DFC', tipo: 'Suplente Ingresado', goles: 0, asist: 0, cambio: '🔄 Entró por M. Schwartz (Min 60)' }
-  ];
-
-  const cancha = document.getElementById('contenedorCancha');
-  cancha.classList.remove('hidden');
-
-  const coords = {
-    'ARQ': 'bottom: 5%; left: 50%; transform: translateX(-50%);',
-    'DFC': 'bottom: 24%; left: 50%; transform: translateX(-50%); gap: 30px; display: flex;',
-    'DFD': 'bottom: 26%; left: 15%;',
-    'DFI': 'bottom: 26%; right: 15%;',
-    'MC':  'bottom: 52%; left: 50%; transform: translateX(-50%);'
-  };
-
-  const crearFicha = (j) => {
-    if (!j) return '';
-    const esSuplente = j.tipo === 'Suplente Ingresado';
-    return `
-      <div class="relative flex flex-col items-center group z-10">
-        <div class="w-9 h-9 rounded-full border-2 ${esSuplente ? 'border-amber-400 bg-slate-900' : 'border-green-400 bg-gray-950'} flex items-center justify-center text-white text-[11px] font-black">
-          ${j.nombre[0]}${j.nombre.split(' ')[1]?.[0] || ''}
-        </div>
-        <span class="text-[9px] font-bold text-white px-1.5 py-0.5 bg-gray-950/90 border border-gray-800 rounded mt-1 whitespace-nowrap">
-          ${j.nombre.split(' ')[1] || j.nombre} ${j.goles ? '⚽' : ''}
-        </span>
-      </div>`;
-  };
-
-  cancha.innerHTML = `
-    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4 shadow-xl">
-      <h4 class="text-xs font-black text-green-400 uppercase tracking-wider border-b border-gray-800 pb-2">📋 Distribución en Campo — Fecha ${numFecha}</h4>
-      <div class="w-full max-w-xs mx-auto aspect-[3/4] bg-gradient-to-b from-green-900 via-emerald-950 to-green-900 border-2 border-white/10 rounded-2xl relative overflow-hidden">
-        <div class="absolute inset-x-0 top-1/2 h-0.5 bg-white/10 -translate-y-1/2"></div>
-        <div class="absolute top-1/2 left-1/2 w-16 h-16 border border-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-        <div class="absolute" style="${coords['ARQ']}">${crearFicha(plantillaPartidos.find(j => j.pos === 'ARQ'))}</div>
-        <div class="absolute" style="${coords['DFD']}">${crearFicha(plantillaPartidos.find(j => j.pos === 'DFD'))}</div>
-        <div class="absolute" style="${coords['DFI']}">${crearFicha(plantillaPartidos.find(j => j.pos === 'DFI'))}</div>
-        <div class="absolute" style="${coords['MC']}">${crearFicha(plantillaPartidos.find(j => j.pos === 'MC'))}</div>
-        <div class="absolute" style="${coords['DFC']}">${plantillaPartidos.filter(j => j.pos === 'DFC').map(c => crearFicha(c)).join('')}</div>
-      </div>
-    </div>`;
-}
-
-function volverASelecCompetencia() {
-  document.getElementById('pantallaTorneo').classList.add('hidden');
-  document.getElementById('pantallaSubCompetencias').classList.remove('hidden');
-}
-
-function cerrarSubCompetencias() {
-  document.getElementById('pantallaSubCompetencias').classList.add('hidden');
-  document.getElementById('pantallaContenido').classList.remove('hidden');
-  
-  document.getElementById('panelAIFA').classList.remove('hidden');
-  document.getElementById('panelHistorico').classList.remove('hidden');
-  document.getElementById('seccionDestacados').classList.remove('hidden');
-}
-
+function mostrarSubTorneo() { alert("Módulo Torneo Actual disponible en menú extendido."); }
 function volverAlMenu() {
   document.getElementById('pantallaBienvenida').classList.remove('hidden');
   document.getElementById('pantallaContenido').classList.add('hidden');
-  document.getElementById('pantallaTorneo').classList.add('hidden');
-  document.getElementById('pantallaSubCompetencias').classList.add('hidden');
 }
 </script>
 </body>
