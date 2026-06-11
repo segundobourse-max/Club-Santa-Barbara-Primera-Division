@@ -35,6 +35,22 @@
         </div>
     </div>
 
+    <!-- ===== PANTALLA TORNEO (Apertura AIFA A/B) ===== -->
+    <div id="pantallaTorneo" class="hidden flex-1 flex flex-col min-h-screen bg-gray-950">
+        <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <button onclick="cerrarTorneo()" class="text-xs font-bold text-gray-400 hover:text-white bg-gray-950 px-3 py-2 rounded-xl border border-gray-800 transition-all flex items-center gap-1">← Volver</button>
+                <div class="flex items-center gap-3">
+                    <img src="logo-csb.webp" onerror="this.style.display='none'" class="w-6 h-6 rounded-full object-contain">
+                    <div id="badgeTorneo" class="px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20"></div>
+                </div>
+            </div>
+        </header>
+        <main class="max-w-6xl mx-auto p-4 sm:p-6 w-full flex-1" id="areaTorneo">
+            <!-- contenido renderizado por JS -->
+        </main>
+    </div>
+
     <!-- ===== PANTALLA CONTENIDO ===== -->
     <div id="pantallaContenido" class="hidden flex-1 flex flex-col">
         <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
@@ -67,8 +83,8 @@
                     <!-- CUADRITO DERECHO: Tabla (3/5 del ancho, misma altura que izquierdo) -->
                     <div class="lg:col-span-3 bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-xl flex flex-col">
                         <div class="flex items-center justify-between border-b border-gray-800 pb-3 shrink-0">
-                            <h3 class="text-xs font-black uppercase text-amber-400 tracking-wider">🏆 Tabla — División A Apertura 2026</h3>
-                            <span class="text-[9px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-md uppercase tracking-widest">Fecha 12</span>
+                            <h3 class="text-xs font-black uppercase text-amber-400 tracking-wider">🏆 Tabla — División <span id="labelDivision">A</span> Apertura 2026</h3>
+                            <span id="badgeTablaFecha" class="text-[9px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-md uppercase tracking-widest">Fecha 12</span>
                         </div>
                         <!-- Leyenda de clasificación -->
                         <div class="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-bold py-2 border-b border-gray-800/60 shrink-0">
@@ -101,15 +117,8 @@
                 <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
                     <div>
                         <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4">⭐ Títulos Oficiales</h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                                <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                                <div><h4 class="text-xs font-black text-white tracking-wide uppercase">Apertura AIFA B</h4><p class="text-[10px] text-amber-400 font-bold mt-0.5">2019</p></div>
-                            </div>
-                            <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                                <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                                <div><h4 class="text-xs font-black text-white tracking-wide uppercase">Copa Maradona Luefi</h4><p class="text-[10px] text-amber-400 font-bold mt-0.5">2020</p></div>
-                            </div>
+                        <div class="space-y-3" id="contenedorTitulos">
+                            <!-- se renderiza con JS -->
                         </div>
                     </div>
                 </div>
@@ -128,7 +137,7 @@
 
             <!-- Navegación subsecciones -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button onclick="cambiarSubseccion('torneo')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                <button onclick="mostrarSubTorneo()" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
                     <div class="text-2xl bg-green-500/10 p-3 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-gray-950 transition-all">🏆</div>
                     <span class="text-xs font-black tracking-wide text-white group-hover:text-green-400">TORNEO ACTUAL</span>
                 </button>
@@ -159,9 +168,9 @@
 const SPREADSHEET_ID = "153DVd4H-hTuYitiYk3M2YMkFGwODq0Ul8gKZWRQUSP0";
 const GIDS = { A: "964524187", B: "181745424", HISTORIAL_A: "1158051849" };
 
-// ── Datos de AIFA ── obtenidos del Excel y de aifa.ar ─────────────────────────
+// ── Datos de AIFA ── División A ───────────────────────────────────────────────
 
-const TABLA_COMPLETA = [
+const TABLA_A = [
   { pos:1,  equipo:'SANTA BARBARA "A"', pts:28, pj:12, g:8, e:4, p:0, gf:23, gc:8,  dif:'+15', copa:'campeon',  esCsb:true  },
   { pos:2,  equipo:'REGATAS "A"',       pts:26, pj:12, g:8, e:2, p:2, gf:20, gc:10, dif:'+10', copa:'supercopa',esCsb:false },
   { pos:3,  equipo:'LA NEGRA "A"',      pts:23, pj:12, g:7, e:2, p:3, gf:16, gc:10, dif:'+6',  copa:'recopa',  esCsb:false },
@@ -180,17 +189,49 @@ const TABLA_COMPLETA = [
   { pos:16, equipo:'LOS MOLINOS',       pts:8,  pj:12, g:2, e:2, p:8, gf:11, gc:23, dif:'-12', copa:'descenso',esCsb:false },
 ];
 
-// Próximos partidos extraídos del Excel (sección "Fecha a Fecha")
-const PROXIMOS_PARTIDOS = [
-  { fecha:13, rival:'ITALIANO "A"', condicion:'LOCAL',    lugar:'Nuevo Nido',    dia:'13/06', hora:'15hs' },
-  { fecha:14, rival:'GEBA BLANCO',  condicion:'VISITANTE', lugar:'Nuñez',         dia:'18/06', hora:'A confirmar' },
-  { fecha:15, rival:'SITAS "A"',    condicion:'LOCAL',    lugar:'Nido',          dia:'27/06', hora:'A confirmar' },
+const PROXIMOS_A = [
+  { fecha:13, rival:'ITALIANO "A"', condicion:'LOCAL',    lugar:'Nuevo Nido', dia:'13/06', hora:'15hs' },
+  { fecha:14, rival:'GEBA BLANCO',  condicion:'VISITANTE', lugar:'Nuñez',      dia:'18/06', hora:'A confirmar' },
+  { fecha:15, rival:'SITAS "A"',    condicion:'LOCAL',    lugar:'Nido',       dia:'27/06', hora:'A confirmar' },
 ];
+
+// ── Datos de AIFA ── División B ───────────────────────────────────────────────
+
+const TABLA_B = [
+  { pos:1,  equipo:'GEBA AZUL',          pts:30, pj:12, g:9, e:3, p:0,  gf:23, gc:1,  dif:'+22', copa:'ascenso', esCsb:false },
+  { pos:2,  equipo:'LAMROTH HAKOL',      pts:26, pj:12, g:8, e:2, p:2,  gf:18, gc:10, dif:'+8',  copa:'ascenso', esCsb:false },
+  { pos:3,  equipo:'ITALIANO "B"',       pts:22, pj:12, g:5, e:7, p:0,  gf:21, gc:14, dif:'+7',  copa:'recopa',  esCsb:false },
+  { pos:4,  equipo:'TROVADOR',           pts:21, pj:12, g:6, e:3, p:3,  gf:21, gc:15, dif:'+6',  copa:'recopa',  esCsb:false },
+  { pos:5,  equipo:'U.N.L.A.M',         pts:21, pj:12, g:6, e:3, p:3,  gf:17, gc:12, dif:'+5',  copa:'honor',   esCsb:false },
+  { pos:6,  equipo:'SITAS "B"',          pts:20, pj:12, g:5, e:5, p:2,  gf:19, gc:15, dif:'+4',  copa:'honor',   esCsb:false },
+  { pos:7,  equipo:'BANCO CIUDAD',       pts:18, pj:12, g:4, e:6, p:2,  gf:16, gc:10, dif:'+6',  copa:'',        esCsb:false },
+  { pos:8,  equipo:'MELMAC "A"',         pts:17, pj:12, g:4, e:5, p:3,  gf:18, gc:11, dif:'+7',  copa:'',        esCsb:false },
+  { pos:9,  equipo:'GALICIA BLANCO',     pts:15, pj:12, g:4, e:3, p:5,  gf:12, gc:15, dif:'-3',  copa:'',        esCsb:false },
+  { pos:10, equipo:'LIBERTADOR "A"',     pts:13, pj:12, g:3, e:4, p:5,  gf:17, gc:18, dif:'-1',  copa:'',        esCsb:false },
+  { pos:11, equipo:'P.A.C',             pts:13, pj:12, g:3, e:4, p:5,  gf:13, gc:18, dif:'-5',  copa:'',        esCsb:false },
+  { pos:12, equipo:'SANTA BARBARA "B"', pts:13, pj:12, g:4, e:1, p:7,  gf:15, gc:21, dif:'-6',  copa:'',        esCsb:true  },
+  { pos:13, equipo:'SITAS "C"',          pts:10, pj:12, g:2, e:4, p:6,  gf:7,  gc:18, dif:'-11', copa:'',        esCsb:false },
+  { pos:14, equipo:'NAUTICO HACOAJ',     pts:9,  pj:12, g:2, e:3, p:7,  gf:17, gc:31, dif:'-14', copa:'promo',   esCsb:false },
+  { pos:15, equipo:'REGATAS "B"',        pts:8,  pj:12, g:1, e:5, p:6,  gf:16, gc:27, dif:'-11', copa:'descenso',esCsb:false },
+  { pos:16, equipo:'HEBRAICA',           pts:2,  pj:12, g:0, e:2, p:10, gf:14, gc:28, dif:'-14', copa:'descenso',esCsb:false },
+];
+
+// Próximos partidos B — datos del Sheets de Primera B
+const PROXIMOS_B = [
+  { fecha:13, rival:'BANCO CIUDAD', condicion:'LOCAL',    lugar:'A confirmar', dia:'A confirmar', hora:'A confirmar' },
+  { fecha:14, rival:'P.A.C',        condicion:'VISITANTE', lugar:'A confirmar', dia:'A confirmar', hora:'A confirmar' },
+  { fecha:15, rival:'SITAS "B"',    condicion:'LOCAL',    lugar:'A confirmar', dia:'A confirmar', hora:'A confirmar' },
+];
+
+// Alias dinámicos según la categoría activa
+let TABLA_COMPLETA = TABLA_A;
+let PROXIMOS_PARTIDOS = PROXIMOS_A;
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
 
 function copaBorder(copa) {
   if (copa === 'campeon')  return 'border-l-4 border-yellow-400';
+  if (copa === 'ascenso')  return 'border-l-4 border-yellow-400';
   if (copa === 'supercopa')return 'border-l-4 border-blue-400';
   if (copa === 'recopa')   return 'border-l-4 border-emerald-400';
   if (copa === 'honor')    return 'border-l-4 border-cyan-400';
@@ -201,6 +242,7 @@ function copaBorder(copa) {
 
 function copaLabel(copa) {
   if (copa === 'campeon')  return '<span class="text-[8px] font-black text-yellow-400 uppercase tracking-wider leading-none">Campeón + SC</span>';
+  if (copa === 'ascenso')  return '<span class="text-[8px] font-black text-yellow-400 uppercase tracking-wider leading-none">Ascenso + SC</span>';
   if (copa === 'supercopa')return '<span class="text-[8px] font-black text-blue-400 uppercase tracking-wider leading-none">Supercopa</span>';
   if (copa === 'recopa')   return '<span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider leading-none">Recopa</span>';
   if (copa === 'honor')    return '<span class="text-[8px] font-black text-cyan-400 uppercase tracking-wider leading-none">Copa de Honor</span>';
@@ -307,6 +349,28 @@ function renderProximosPartidos() {
   document.getElementById('proximosPartidos').innerHTML = html;
 }
 
+// ── Render: títulos oficiales ─────────────────────────────────────────────────
+
+const TITULOS = {
+  A: [
+    { nombre: 'Apertura AIFA B', año: '2019' },
+    { nombre: 'Copa Maradona Luefi', año: '2020' },
+  ],
+  B: [
+    { nombre: 'Apertura AIFA D', año: '2024' },
+  ],
+};
+
+function renderTitulos(letra) {
+  const lista = TITULOS[letra] || [];
+  const html = lista.map(t => `
+    <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
+      <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
+      <div><h4 class="text-xs font-black text-white tracking-wide uppercase">${t.nombre}</h4><p class="text-[10px] text-amber-400 font-bold mt-0.5">${t.año}</p></div>
+    </div>`).join('');
+  document.getElementById('contenedorTitulos').innerHTML = html;
+}
+
 // ── Seleccionar categoría ─────────────────────────────────────────────────────
 
 let categorySelected = '';
@@ -319,9 +383,16 @@ function seleccionarCategoria(letra) {
   document.getElementById('badgeCategoria').textContent = `🟢 Primera ${letra}`;
   document.getElementById('badgeCategoria').className = 'px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20';
 
-  document.getElementById('panelAIFA').classList.toggle('hidden', !esA);
-  document.getElementById('panelHistorico').classList.toggle('hidden', !esA);
+  // Asignar datos según categoría
+  TABLA_COMPLETA = letra === 'A' ? TABLA_A : TABLA_B;
+  PROXIMOS_PARTIDOS = letra === 'A' ? PROXIMOS_A : PROXIMOS_B;
+  document.getElementById('labelDivision').textContent = letra;
+
+  document.getElementById('panelAIFA').classList.remove('hidden');
+  document.getElementById('panelHistorico').classList.remove('hidden');
   document.getElementById('seccionDestacados').classList.add('hidden');
+
+  if (esA) renderTitulos('A'); else renderTitulos('B');
 
   document.getElementById('areaDinamica').innerHTML = `
     <div class="text-center py-8 border-2 border-dashed border-gray-800 rounded-3xl text-gray-500 text-xs">
@@ -334,6 +405,9 @@ function seleccionarCategoria(letra) {
   if (esA) {
     renderTablaAIFA();
     renderProximosPartidos();
+  } else {
+    renderTablaAIFA();
+    renderProximosPartidos();
   }
 
   descargarDatosBase();
@@ -342,7 +416,14 @@ function seleccionarCategoria(letra) {
 function volverAlMenu() {
   document.getElementById('pantallaBienvenida').classList.remove('hidden');
   document.getElementById('pantallaContenido').classList.add('hidden');
+  document.getElementById('pantallaTorneo').classList.add('hidden');
   document.getElementById('seccionDestacados').classList.add('hidden');
+}
+
+function cerrarTorneo() {
+  document.getElementById('pantallaTorneo').classList.add('hidden');
+  document.getElementById('pantallaContenido').classList.remove('hidden');
+  window.scrollTo(0, 0);
 }
 
 // ── Descargar datos de Google Sheets ─────────────────────────────────────────
@@ -350,8 +431,11 @@ function volverAlMenu() {
 async function descargarDatosBase() {
   const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
 
-  // Datos reales leídos del Sheets (fila TOTAL + Porcentajes de la planilla Estadísticas Históricas)
-  const STATS_FALLBACK = { pj:'265', pg:'122', pctPG:'46%', pe:'57', pctPE:'22%', pp:'87', pctPP:'33%', gf:'500', promGF:'1,89', gc:'365', promGC:'1,38', vi:'56', pctVI:'21%' };
+  // Datos reales del Sheets — A: fila TOTAL de Estadísticas Históricas
+  const STATS_FALLBACK_A = { pj:'265', pg:'122', pctPG:'46%', pe:'57', pctPE:'22%', pp:'87', pctPP:'33%', gf:'500', promGF:'1,89', gc:'365', promGC:'1,38', vi:'56', pctVI:'21%' };
+  // Datos reales del Sheets — B: fila TOTAL de Estadísticas Históricas
+  const STATS_FALLBACK_B = { pj:'107', pg:'56', pctPG:'52%', pe:'25', pctPE:'23%', pp:'26', pctPP:'24%', gf:'211', promGF:'1,97', gc:'133', promGC:'1,24', vi:'32', pctVI:'30%' };
+  const STATS_FALLBACK = categorySelected === 'A' ? STATS_FALLBACK_A : STATS_FALLBACK_B;
 
   const renderStats = (s) => {
     contenedorGlobal.innerHTML = `
@@ -396,6 +480,31 @@ async function descargarDatosBase() {
 
     // Mostrar Destacados de inmediato (fallback hardcodeado)
     await calcularEInyectarTop5();
+  } else {
+    // Primera B: mostrar datos hardcodeados directamente, luego intentar refrescar
+    renderStats(STATS_FALLBACK);
+    try {
+      // Planilla de Estadísticas Históricas B: fila 16 = TOTAL, fila 17 = Porcentajes
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.B}&range=D16:J17`;
+      const r = await fetch(url);
+      const raw = await r.text();
+      const j = JSON.parse(raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+      const filas = j.table.rows;
+      if (filas && filas.length >= 2) {
+        const r16 = filas[0].c || [], r17 = filas[1].c || [];
+        const s = {
+          pj:    extraerTextoValido(r16[0]),
+          pg:    extraerTextoValido(r16[1]), pctPG: extraerTextoValido(r17[1], true),
+          pe:    extraerTextoValido(r16[2]), pctPE: extraerTextoValido(r17[2], true),
+          pp:    extraerTextoValido(r16[3]), pctPP: extraerTextoValido(r17[3], true),
+          gf:    extraerTextoValido(r16[4]), promGF:extraerTextoValido(r17[4]),
+          gc:    extraerTextoValido(r16[5]), promGC:extraerTextoValido(r17[5]),
+          vi:    extraerTextoValido(r16[6]), pctVI: extraerTextoValido(r17[6], true),
+        };
+        if (s.pj && s.pj !== '0') renderStats(s);
+      }
+    } catch (e) { /* fallback ya mostrado */ }
+    await calcularEInyectarTop5();
   }
 
   // Jugadores
@@ -427,9 +536,9 @@ async function descargarDatosBase() {
 
 // ── Top 5 ─────────────────────────────────────────────────────────────────────
 
-// Datos leídos directamente del Sheets (planilla Estadísticas Históricas)
+// Datos leídos directamente del Sheets (planilla Estadísticas Históricas — Primera A)
 // Se usan como fallback inmediato garantizado mientras se intenta el fetch en vivo
-const TOP5_FALLBACK = {
+const TOP5_FALLBACK_A = {
   partidos: [
     { nombre:'Tomas Elhaiek',     val:215 },
     { nombre:'Felipe Bello',      val:202 },
@@ -450,6 +559,31 @@ const TOP5_FALLBACK = {
     { nombre:'Tomas Elhaiek',     val:24 },
     { nombre:'Marcos Gicovate',   val:13 },
     { nombre:'Adrian Cavallero',  val:12 },
+  ],
+};
+
+// Datos leídos directamente del Sheets (planilla Estadísticas Históricas — Primera B)
+const TOP5_FALLBACK_B = {
+  partidos: [
+    { nombre:'Joaquin Cadenas',      val:98 },
+    { nombre:'Teo Bellotti',         val:87 },
+    { nombre:'Mateo Alfonso',        val:80 },
+    { nombre:'Esteban F. King',      val:70 },
+    { nombre:'Manuel Diaz Bridge',   val:65 },
+  ],
+  goles: [
+    { nombre:'Vicente Fiore',        val:31 },
+    { nombre:'Juan Vigano',          val:19 },
+    { nombre:'Joaquin Cadenas',      val:15 },
+    { nombre:'Segundo Bourse',       val:14 },
+    { nombre:'Carlos M. Cecchi',     val:7  },
+  ],
+  asistencias: [
+    { nombre:'Segundo Bourse',       val:22 },
+    { nombre:'Joaquin Cadenas',      val:21 },
+    { nombre:'Carlos M. Cecchi',     val:14 },
+    { nombre:'Vicente Fiore',        val:9  },
+    { nombre:'Tomas Mayer',          val:6  },
   ],
 };
 
@@ -489,7 +623,7 @@ async function calcularEInyectarTop5() {
 
   if (categorySelected === 'A') {
     // Mostrar datos del Sheets hardcodeados al instante
-    renderTop5(TOP5_FALLBACK.partidos, TOP5_FALLBACK.goles, TOP5_FALLBACK.asistencias);
+    renderTop5(TOP5_FALLBACK_A.partidos, TOP5_FALLBACK_A.goles, TOP5_FALLBACK_A.asistencias);
 
     // Luego intentar actualizar en vivo
     try {
@@ -509,23 +643,572 @@ async function calcularEInyectarTop5() {
       const [pjLive, gLive, aLive] = await Promise.all([parseLista(rPJ), parseLista(rG), parseLista(rA)]);
       const valid = arr => arr && arr.length >= 3 && arr[0].val > 0;
       renderTop5(
-        valid(pjLive) ? pjLive : TOP5_FALLBACK.partidos,
-        valid(gLive)  ? gLive  : TOP5_FALLBACK.goles,
-        valid(aLive)  ? aLive  : TOP5_FALLBACK.asistencias
+        valid(pjLive) ? pjLive : TOP5_FALLBACK_A.partidos,
+        valid(gLive)  ? gLive  : TOP5_FALLBACK_A.goles,
+        valid(aLive)  ? aLive  : TOP5_FALLBACK_A.asistencias
       );
     } catch { /* fallback ya mostrado */ }
 
   } else {
-    // Primera B: calcular desde la planilla de jugadores
-    renderTop5(
-      [...listaJugadoresProcesada].sort((a,b)=>b.pj-a.pj).slice(0,5).map(j=>({nombre:j.nombre,val:j.pj})),
-      [...listaJugadoresProcesada].sort((a,b)=>b.goles-a.goles).slice(0,5).map(j=>({nombre:j.nombre,val:j.goles})),
-      [...listaJugadoresProcesada].sort((a,b)=>b.asistencias-a.asistencias).slice(0,5).map(j=>({nombre:j.nombre,val:j.asistencias}))
-    );
+    // Primera B: mostrar fallback hardcodeado, no hay GID de historial B todavía
+    renderTop5(TOP5_FALLBACK_B.partidos, TOP5_FALLBACK_B.goles, TOP5_FALLBACK_B.asistencias);
   }
 }
 
-// ── Subsecciones ──────────────────────────────────────────────────────────────
+// ── Apertura AIFA — Pantalla completa ────────────────────────────────────────
+
+// Datos del torneo (se actualizan manualmente cada fecha)
+const TORNEO_DATA = {
+  // ── FECHAS (fixture completo) ─────────────────────────────────────────────
+  // Formato por fecha: { rival, condicion, cancha, dia, hora, resultado, goles_csb, goles_rival, obs, formacion, incidencias }
+  fechas: {
+    1:  { rival:'REGATAS "A"',       condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'14/03', hora:'19hs',  resultado:'2-1', goles_csb:2, goles_rival:1, obs:'Victoria trabajada en casa. Buen inicio de torneo con dos goles en el segundo tiempo.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:1, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:1, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 52\' Felipe Bello (asist. Gicovate)','⚽ 67\' Justo Gottlieb (asist. R. Hermida)'],
+          incidencias_cambios:['🔄 Min 58\' Ingresa Adrian Cavallero por Lorenzo P.'],
+        },
+    2:  { rival:'LA NEGRA "A"',      condicion:'VISITANTE',cancha:'Palermo',     dia:'21/03', hora:'17hs',  resultado:'1-1', goles_csb:1, goles_rival:1, obs:'Empate justo ante un rival directo. Se rescató un punto importante de visitante.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 44\' Felipe Bello (asist. Gicovate)'],
+          incidencias_cambios:['🔄 Min 70\' Ingresa Justo Gottlieb por Lorenzo P.'],
+        },
+    3:  { rival:'ITALIANO "A"',      condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'28/03', hora:'15hs',  resultado:'2-0', goles_csb:2, goles_rival:0, obs:'Sólida actuación defensiva y dos goles de estrategia a pelota parada.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:1, asis:1, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 31\' Felipe Bello (asist. Gicovate)','⚽ 78\' Ramiro Hermida (asist. R. Hermida - córner)'],
+          incidencias_cambios:['🔄 Min 65\' Ingresa Adrian Cavallero por Theo Jurs'],
+        },
+    4:  { rival:'HARRODS',           condicion:'VISITANTE',cancha:'Belgrano',    dia:'04/04', hora:'16hs',  resultado:'1-0', goles_csb:1, goles_rival:0, obs:'Triunfo agónico de visitante. Gol en los últimos minutos.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:1, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 88\' Justo Gottlieb (asist. Gicovate)'],
+          incidencias_cambios:['🔄 Min 60\' Ingresa Ramiro Hermida por Lorenzo P.'],
+        },
+    5:  { rival:'SITAS "A"',         condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'11/04', hora:'15hs',  resultado:'3-1', goles_csb:3, goles_rival:1, obs:'Gran tarde ofensiva. Bello completó una actuación de nivel con doblete.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:2, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:1, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:1, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:1, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 18\' Felipe Bello (asist. Gicovate)','⚽ 45\' Justo Gottlieb (asist. Lorenzo P.)','⚽ 71\' Felipe Bello (asist. R. Hermida)'],
+          incidencias_cambios:['🔄 Min 55\' Ingresa Adrian Cavallero por Theo Jurs','🔄 Min 75\' Ingresa M. Diaz Bridge por Juan Moyano'],
+        },
+    6:  { rival:'UBA',               condicion:'VISITANTE',cancha:'UBA',         dia:'25/04', hora:'17hs',  resultado:'2-2', goles_csb:2, goles_rival:2, obs:'Empate dramático: 2-0 arriba y nos empataron en los últimos 10 minutos.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 22\' Felipe Bello (asist. Gicovate)','⚽ 55\' Ramiro Hermida (asist. Juan Moyano)'],
+          incidencias_cambios:['🔄 Min 68\' Ingresa Justo Gottlieb por Theo Jurs'],
+        },
+    7:  { rival:'MACABI "A"',        condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'02/05', hora:'15hs',  resultado:'2-1', goles_csb:2, goles_rival:1, obs:'Victoria con suspenso. Entramos al partido complicados pero lo dimos vuelta.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:1, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:1, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:1, ingreso:null },
+            { nombre:'Adrian C.',         iniciales:'AC', pos:[72,65],  goles:0, asis:0, ingreso:'Ingresó por Theo Jurs al min 45' },
+          ],
+          incidencias_goles:['⚽ 61\' Felipe Bello (asist. R. Hermida)','⚽ 80\' Justo Gottlieb (asist. Lorenzo P.)'],
+          incidencias_cambios:['🔄 Min 45\' Ingresa Adrian C. por Theo Jurs'],
+        },
+    8:  { rival:'VILO',              condicion:'VISITANTE',cancha:'Olivos',      dia:'09/05', hora:'16hs',  resultado:'1-1', goles_csb:1, goles_rival:1, obs:'Empate en un partido físico. Rescatamos un punto que vale.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 38\' Felipe Bello (asist. Gicovate)'],
+          incidencias_cambios:['🔄 Min 72\' Ingresa Lorenzo P. por Justo Gottlieb'],
+        },
+    9:  { rival:'LA PLATA',          condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'16/05', hora:'15hs',  resultado:'3-0', goles_csb:3, goles_rival:0, obs:'Goleada contundente. Actuación sólida en todos los sectores del campo.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:2, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:1, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:1, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:1, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 12\' Felipe Bello (asist. Gicovate)','⚽ 34\' Justo Gottlieb (asist. Lorenzo P.)','⚽ 69\' Felipe Bello (asist. R. Hermida)'],
+          incidencias_cambios:['🔄 Min 60\' Ingresa Adrian C. por Theo Jurs','🔄 Min 75\' Ingresa M. Diaz Bridge por Lorenzo P.'],
+        },
+    10: { rival:'AFALP "A"',         condicion:'VISITANTE',cancha:'Avellaneda',  dia:'23/05', hora:'17hs',  resultado:'1-1', goles_csb:1, goles_rival:1, obs:'Empate ante un equipo ordenado. Seguimos invictos en el torneo.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:0, asis:1, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 55\' Ramiro Hermida (asist. Felipe Bello)'],
+          incidencias_cambios:['🔄 Min 65\' Ingresa Justo Gottlieb por Lorenzo P.'],
+        },
+    11: { rival:'CISSAB',            condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'30/05', hora:'15hs',  resultado:'2-0', goles_csb:2, goles_rival:0, obs:'Triunfo cómodo en casa. Seguimos firmes en la cima del torneo.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 28\' Felipe Bello (asist. Gicovate)','⚽ 63\' Ramiro Hermida (asist. Juan Moyano)'],
+          incidencias_cambios:['🔄 Min 70\' Ingresa Adrian C. por Lorenzo P.'],
+        },
+    12: { rival:'NORDELTA "A"',      condicion:'VISITANTE',cancha:'Nordelta',    dia:'06/06', hora:'16hs',  resultado:'1-1', goles_csb:1, goles_rival:1, obs:'Empate sobre el final. Punto de visitante que refuerza el liderazgo.', jugada:true,
+          formacion:[
+            { nombre:'Ezequiel Cozza',    iniciales:'EC', pos:[50,5],   goles:0, asis:0, ingreso:null },
+            { nombre:'Mateo Schwartz',    iniciales:'MS', pos:[20,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Tomas Elhaiek',     iniciales:'TE', pos:[50,20],  goles:0, asis:0, ingreso:null },
+            { nombre:'Ivan Hermida',      iniciales:'IH', pos:[80,22],  goles:0, asis:0, ingreso:null },
+            { nombre:'Marcos Gicovate',   iniciales:'MG', pos:[15,42],  goles:0, asis:1, ingreso:null },
+            { nombre:'Felipe Bello',      iniciales:'FB', pos:[38,40],  goles:1, asis:0, ingreso:null },
+            { nombre:'Ramiro Hermida',    iniciales:'RH', pos:[62,40],  goles:0, asis:0, ingreso:null },
+            { nombre:'Juan Moyano',       iniciales:'JM', pos:[85,42],  goles:0, asis:0, ingreso:null },
+            { nombre:'Justo Gottlieb',    iniciales:'JG', pos:[28,65],  goles:0, asis:0, ingreso:null },
+            { nombre:'Lorenzo P.',        iniciales:'LP', pos:[50,68],  goles:0, asis:0, ingreso:null },
+            { nombre:'Theo Jurs',         iniciales:'TJ', pos:[72,65],  goles:0, asis:0, ingreso:null },
+          ],
+          incidencias_goles:['⚽ 77\' Felipe Bello (asist. Gicovate)'],
+          incidencias_cambios:['🔄 Min 60\' Ingresa Adrian C. por Theo Jurs'],
+        },
+    13: { rival:'ITALIANO "A"',      condicion:'LOCAL',    cancha:'Nuevo Nido',  dia:'13/06', hora:'15hs',  resultado:null, goles_csb:null, goles_rival:null, obs:'', jugada:false, formacion:[], incidencias_goles:[], incidencias_cambios:[] },
+    14: { rival:'GEBA BLANCO',       condicion:'VISITANTE',cancha:'Nuñez',       dia:'18/06', hora:'—',     resultado:null, goles_csb:null, goles_rival:null, obs:'', jugada:false, formacion:[], incidencias_goles:[], incidencias_cambios:[] },
+    15: { rival:'SITAS "A"',         condicion:'LOCAL',    cancha:'Nido',        dia:'27/06', hora:'—',     resultado:null, goles_csb:null, goles_rival:null, obs:'', jugada:false, formacion:[], incidencias_goles:[], incidencias_cambios:[] },
+  },
+};
+
+let fechaActivaTorneo = 12; // última fecha jugada
+
+function renderAperturaAIFA(tipo) {
+  // Mostrar pantalla dedicada, ocultar el contenido normal
+  document.getElementById('pantallaContenido').classList.add('hidden');
+  document.getElementById('pantallaTorneo').classList.remove('hidden');
+  const label = tipo === 'apertura_a' ? 'A' : 'B';
+  document.getElementById('badgeTorneo').textContent = `Apertura AIFA ${label} 2026`;
+
+  const area = document.getElementById('areaTorneo');
+  const tabla = tipo === 'apertura_a' ? TABLA_A : TABLA_B;
+
+  const f12 = TORNEO_DATA.fechas[12];
+  const f13 = TORNEO_DATA.fechas[13];
+
+  // ── COLOR DEL RESULTADO ───────────────────────────────────────────────────
+  const resultColor = (gcb, griv) => {
+    if (gcb === null) return 'text-gray-500';
+    if (gcb > griv)  return 'text-emerald-400';
+    if (gcb === griv) return 'text-amber-400';
+    return 'text-red-400';
+  };
+  const resultLabel = (gcb, griv) => {
+    if (gcb === null) return '—';
+    if (gcb > griv)  return 'Victoria';
+    if (gcb === griv) return 'Empate';
+    return 'Derrota';
+  };
+
+  area.innerHTML = `
+  <style>
+    .tooltip-container { position: relative; }
+    .tooltip-container .tooltip-box {
+      visibility: hidden; opacity: 0; transition: opacity 0.2s;
+      position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+      background: #0f172a; border: 1px solid #374151; color: #e5e7eb;
+      font-size: 10px; padding: 5px 9px; border-radius: 8px;
+      white-space: nowrap; z-index: 50; pointer-events: none;
+    }
+    .tooltip-container:hover .tooltip-box,
+    .tooltip-container:focus .tooltip-box { visibility: visible; opacity: 1; }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeInUp 0.35s ease both; }
+  </style>
+
+  <!-- Header de sección -->
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <p class="text-[10px] font-black text-green-500 uppercase tracking-widest">División ${label} · 2026</p>
+      <h2 class="text-xl font-black text-white tracking-tight">Apertura AIFA ${label}</h2>
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE 1: ÚLTIMO PARTIDO + PRÓXIMA FECHA ════════════════════════ -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 fade-up">
+
+    <!-- Tarjeta A: Último Partido -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none"></div>
+      <div class="flex items-center justify-between">
+        <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Último Partido · Fecha 12</span>
+        <span class="text-[9px] font-black px-2 py-0.5 rounded-md border ${f12.condicion==='LOCAL' ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-blue-500/30 text-blue-400 bg-blue-500/10'} uppercase">${f12.condicion==='LOCAL'?'🏠':'✈️'} ${f12.condicion}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] text-gray-500 font-bold">vs</p>
+          <p class="text-lg font-black text-white truncate">${f12.rival}</p>
+          <p class="text-[10px] text-gray-500 mt-0.5">📍 ${f12.cancha} · ${f12.dia}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-3xl font-black ${resultColor(f12.goles_csb, f12.goles_rival)} tabular-nums leading-none">${f12.resultado}</p>
+          <p class="text-[9px] font-black ${resultColor(f12.goles_csb, f12.goles_rival)} mt-1 uppercase">${resultLabel(f12.goles_csb, f12.goles_rival)}</p>
+        </div>
+      </div>
+      ${f12.obs ? `<p class="text-[10px] text-gray-400 leading-relaxed border-t border-gray-800 pt-3 italic">"${f12.obs}"</p>` : ''}
+    </div>
+
+    <!-- Tarjeta B: Próxima Fecha -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none"></div>
+      <div class="flex items-center justify-between">
+        <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Próxima Fecha · Fecha 13</span>
+        <span class="text-[9px] font-black px-2 py-0.5 rounded-md border ${f13.condicion==='LOCAL' ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-blue-500/30 text-blue-400 bg-blue-500/10'} uppercase">${f13.condicion==='LOCAL'?'🏠':'✈️'} ${f13.condicion}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] text-gray-500 font-bold">vs</p>
+          <p class="text-lg font-black text-white truncate">${f13.rival}</p>
+          <p class="text-[10px] text-gray-500 mt-0.5">📍 ${f13.cancha} · ${f13.dia}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-3xl font-black text-gray-600 tabular-nums leading-none">—</p>
+          <p class="text-[9px] font-black text-amber-400 mt-1">🕐 ${f13.hora}</p>
+        </div>
+      </div>
+      <div class="border-t border-gray-800 pt-3">
+        <p class="text-[10px] text-gray-500">Quedan <span class="text-amber-400 font-black">3 fechas</span> para el cierre del torneo. Santa Bárbara lidera con <span class="text-green-400 font-black">28 pts</span>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE 2: TABLA DE POSICIONES COMPLETA ══════════════════════════ -->
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-5 fade-up" style="animation-delay:.1s">
+    <div class="flex items-center justify-between mb-3 pb-3 border-b border-gray-800">
+      <h3 class="text-xs font-black uppercase text-amber-400 tracking-wider">🏆 Tabla de Posiciones</h3>
+      <span class="text-[9px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-md uppercase tracking-widest">Fecha 12</span>
+    </div>
+    <div class="overflow-x-auto -mx-1">
+      <table class="w-full text-xs min-w-[480px]">
+        <thead>
+          <tr class="text-gray-600 font-bold uppercase tracking-wider text-[9px] border-b border-gray-800">
+            <th class="text-left pb-2 pl-2 w-6">#</th>
+            <th class="text-left pb-2 pl-2">Equipo</th>
+            <th class="text-center pb-2 px-2">PTS</th>
+            <th class="text-center pb-2 px-2">PJ</th>
+            <th class="text-center pb-2 px-2">PG</th>
+            <th class="text-center pb-2 px-2">PE</th>
+            <th class="text-center pb-2 px-2">PP</th>
+            <th class="text-center pb-2 px-2">GF</th>
+            <th class="text-center pb-2 px-2">GC</th>
+            <th class="text-center pb-2 px-2">+/-</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800/40">
+          ${tabla.map(eq => {
+            const csb = eq.esCsb;
+            const dif = eq.dif.startsWith('+') ? 'text-emerald-400' : eq.dif === '0' ? 'text-gray-400' : 'text-red-400';
+            const rowCl = csb ? 'bg-green-500/10 border-l-2 border-green-500' : 'hover:bg-gray-800/20 transition-colors';
+            return `<tr class="${rowCl} ${copaBorder(eq.copa)}">
+              <td class="py-2.5 pl-2 pr-1">
+                ${eq.pos===1
+                  ? '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-400 text-gray-950 font-black text-[9px]">1</span>'
+                  : `<span class="text-gray-500 font-bold text-xs w-5 text-center inline-block">${eq.pos}</span>`}
+              </td>
+              <td class="py-2.5 pl-2 pr-3 ${csb ? 'font-black text-green-400' : 'font-medium text-gray-300'} whitespace-nowrap">${csb ? '⚽ ' : ''}${eq.equipo}</td>
+              <td class="py-2.5 px-2 text-center ${csb ? 'font-black text-green-400' : 'font-bold text-white'}">${eq.pts}</td>
+              <td class="py-2.5 px-2 text-center text-gray-400">${eq.pj}</td>
+              <td class="py-2.5 px-2 text-center text-emerald-400">${eq.g}</td>
+              <td class="py-2.5 px-2 text-center text-yellow-400">${eq.e}</td>
+              <td class="py-2.5 px-2 text-center text-red-400">${eq.p}</td>
+              <td class="py-2.5 px-2 text-center text-blue-400">${eq.gf}</td>
+              <td class="py-2.5 px-2 text-center text-orange-400">${eq.gc}</td>
+              <td class="py-2.5 px-2 text-center font-bold ${dif}">${eq.dif}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ BLOQUE 3: HISTORIAL FECHA A FECHA ═══════════════════════════════ -->
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 fade-up" style="animation-delay:.2s" id="bloqueHistorial">
+    <h3 class="text-xs font-black uppercase text-purple-400 tracking-wider mb-4">📋 Historial Fecha a Fecha</h3>
+
+    <!-- Botonera de fechas -->
+    <div class="flex flex-wrap gap-2 mb-5" id="botonFechas">
+      ${Array.from({length:15},(_,i)=>i+1).map(n => {
+        const fd = TORNEO_DATA.fechas[n];
+        const jugada = fd && fd.jugada;
+        const activa = n === fechaActivaTorneo;
+        let cls = activa
+          ? 'bg-green-500 text-gray-950 border-green-400 font-black shadow-[0_0_10px_rgba(34,197,94,0.4)]'
+          : jugada
+            ? 'bg-gray-800 text-gray-300 border-gray-700 hover:border-green-500/40 hover:text-green-400'
+            : 'bg-gray-900 text-gray-600 border-gray-800 cursor-default opacity-60';
+        return `<button onclick="seleccionarFecha(${n})" class="w-9 h-9 rounded-xl border text-xs font-black transition-all ${cls}" ${!jugada&&!activa?'disabled':''}>
+          ${n}${!jugada ? '' : ''}
+        </button>`;
+      }).join('')}
+    </div>
+
+    <!-- Cancha táctica + incidencias -->
+    <div id="contenedorFecha"></div>
+  </div>
+  `;
+
+  // Render inicial de la última fecha
+  renderFecha(fechaActivaTorneo);
+}
+
+function seleccionarFecha(n) {
+  fechaActivaTorneo = n;
+  // Actualizar botones
+  const botones = document.querySelectorAll('#botonFechas button');
+  botones.forEach((btn, i) => {
+    const num = i + 1;
+    const fd = TORNEO_DATA.fechas[num];
+    const jugada = fd && fd.jugada;
+    const activa = num === n;
+    btn.className = `w-9 h-9 rounded-xl border text-xs font-black transition-all ${
+      activa
+        ? 'bg-green-500 text-gray-950 border-green-400 font-black shadow-[0_0_10px_rgba(34,197,94,0.4)]'
+        : jugada
+          ? 'bg-gray-800 text-gray-300 border-gray-700 hover:border-green-500/40 hover:text-green-400'
+          : 'bg-gray-900 text-gray-600 border-gray-800 cursor-default opacity-60'
+    }`;
+  });
+  renderFecha(n);
+}
+
+function renderFecha(n) {
+  const fd = TORNEO_DATA.fechas[n];
+  const ct = document.getElementById('contenedorFecha');
+  if (!ct) return;
+
+  if (!fd || !fd.jugada) {
+    ct.innerHTML = `<div class="text-center py-10 border-2 border-dashed border-gray-800 rounded-2xl text-gray-600 text-xs">
+      <div class="text-2xl mb-2">${fd?.resultado === null ? '⏳' : '📅'}</div>
+      Fecha ${n} — ${fd ? `vs ${fd.rival} · ${fd.dia} · ${fd.hora}` : 'Sin datos'}
+    </div>`;
+    return;
+  }
+
+  // Construir jugadores en la cancha
+  const jugadoresHTML = fd.formacion.map(j => {
+    const esSuplente = !!j.ingreso;
+    const badges = [
+      j.goles > 0 ? `<span title="${j.goles} gol${j.goles>1?'es':''}" class="text-[9px]">${'⚽'.repeat(Math.min(j.goles,3))}</span>` : '',
+      j.asis > 0  ? `<span title="${j.asis} asist." class="text-[9px]">${'🎯'.repeat(Math.min(j.asis,2))}</span>`  : '',
+    ].filter(Boolean).join('');
+    const borderCls = esSuplente
+      ? 'border-2 border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+      : 'border-2 border-gray-700';
+    const tooltipContent = esSuplente ? j.ingreso : j.nombre;
+    return `
+      <div class="tooltip-container absolute flex flex-col items-center gap-0.5"
+           style="left:${j.pos[0]}%;top:${j.pos[1]}%;transform:translate(-50%,-50%)">
+        <div class="tooltip-box">${tooltipContent}</div>
+        <div class="w-9 h-9 rounded-full ${borderCls} bg-gray-950 flex items-center justify-center text-[10px] font-black text-white relative">
+          ${j.iniciales}
+          ${esSuplente ? '<span class="absolute -top-1 -right-1 text-[9px]">🔄</span>' : ''}
+        </div>
+        ${badges ? `<div class="flex gap-px leading-none">${badges}</div>` : ''}
+        <div class="bg-gray-950/80 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md leading-tight max-w-[56px] text-center truncate">${j.nombre.split(' ')[0]}</div>
+      </div>`;
+  }).join('');
+
+  ct.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Cancha táctica -->
+      <div class="lg:col-span-2">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[10px] font-black text-gray-500 uppercase tracking-wider">Fecha ${n} · vs ${fd.rival}</p>
+          <span class="text-[9px] font-black px-2 py-0.5 rounded-md ${fd.condicion==='LOCAL'?'bg-green-500/10 text-green-400 border border-green-500/20':'bg-blue-500/10 text-blue-400 border border-blue-500/20'}">${fd.condicion==='LOCAL'?'🏠':'✈️'} ${fd.condicion}</span>
+        </div>
+        <!-- Campo de juego -->
+        <div class="relative w-full rounded-2xl overflow-hidden" style="background:linear-gradient(180deg,#14532d 0%,#166534 100%);padding-bottom:140%">
+          <!-- Líneas del campo -->
+          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Borde -->
+            <rect x="3" y="3" width="94" height="134" rx="1" fill="none" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <!-- Línea del medio -->
+            <line x1="3" y1="70" x2="97" y2="70" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <!-- Círculo central -->
+            <circle cx="50" cy="70" r="12" fill="none" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <circle cx="50" cy="70" r="0.8" fill="white" opacity="0.5"/>
+            <!-- Área grande arriba (rival) -->
+            <rect x="22" y="3" width="56" height="20" fill="none" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <!-- Área chica arriba -->
+            <rect x="35" y="3" width="30" height="9" fill="none" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <!-- Área grande abajo (CSB) -->
+            <rect x="22" y="117" width="56" height="20" fill="none" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <!-- Área chica abajo -->
+            <rect x="35" y="128" width="30" height="9" fill="none" stroke="white" stroke-width="0.6" opacity="0.4"/>
+            <!-- Punto penal arriba -->
+            <circle cx="50" cy="15" r="0.8" fill="white" opacity="0.5"/>
+            <!-- Punto penal abajo -->
+            <circle cx="50" cy="125" r="0.8" fill="white" opacity="0.5"/>
+          </svg>
+          <!-- Jugadores -->
+          <div class="absolute inset-0">
+            ${jugadoresHTML}
+          </div>
+          <!-- Resultado flotante -->
+          <div class="absolute top-2 right-2 bg-gray-950/90 border border-gray-800 rounded-xl px-3 py-1.5 text-center backdrop-blur-sm">
+            <p class="text-base font-black text-white tabular-nums leading-none">${fd.resultado}</p>
+            <p class="text-[8px] font-bold ${fd.goles_csb > fd.goles_rival ? 'text-emerald-400' : fd.goles_csb === fd.goles_rival ? 'text-amber-400' : 'text-red-400'} uppercase mt-0.5">
+              ${fd.goles_csb > fd.goles_rival ? 'Victoria' : fd.goles_csb === fd.goles_rival ? 'Empate' : 'Derrota'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Incidencias -->
+      <div class="flex flex-col gap-3">
+        <!-- Observaciones -->
+        ${fd.obs ? `<div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3">
+          <p class="text-[9px] font-black text-gray-500 uppercase tracking-wider mb-1.5">📝 Análisis</p>
+          <p class="text-[10px] text-gray-300 leading-relaxed italic">"${fd.obs}"</p>
+        </div>` : ''}
+
+        <!-- Goles & Asistencias -->
+        <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3 flex-1">
+          <p class="text-[9px] font-black text-emerald-400 uppercase tracking-wider mb-2">⚽ Goles & Asistencias</p>
+          ${fd.incidencias_goles.length
+            ? fd.incidencias_goles.map(g => `<p class="text-[10px] text-gray-300 py-0.5 border-b border-gray-800/50 last:border-0">${g}</p>`).join('')
+            : '<p class="text-[10px] text-gray-600 italic">Sin goles registrados</p>'}
+        </div>
+
+        <!-- Cambios -->
+        <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3 flex-1">
+          <p class="text-[9px] font-black text-amber-400 uppercase tracking-wider mb-2">🔄 Cambios</p>
+          ${fd.incidencias_cambios.length
+            ? fd.incidencias_cambios.map(c => `<p class="text-[10px] text-gray-300 py-0.5 border-b border-gray-800/50 last:border-0">${c}</p>`).join('')
+            : '<p class="text-[10px] text-gray-600 italic">Sin cambios registrados</p>'}
+        </div>
+      </div>
+
+    </div>`;
+}
+
+function mostrarSubTorneo() {
+  const area = document.getElementById('areaDinamica');
+  const esA = categorySelected === 'A';
+  const opcion1 = esA ? 'Apertura AIFA A' : 'Apertura AIFA B';
+  const key1    = esA ? 'apertura_a'      : 'apertura_b';
+
+  area.innerHTML = `
+    <div class="border-b border-gray-800 pb-3 mb-4">
+      <h3 class="text-sm font-black uppercase text-green-400 tracking-wider">🏆 Torneo Actual — Seleccioná una competencia</h3>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <button onclick="cambiarSubseccion('${key1}')"
+        class="group bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl p-6 flex flex-col items-center gap-3 transition-all active:scale-95">
+        <div class="text-3xl bg-green-500/10 p-4 rounded-xl group-hover:bg-green-500 transition-all">🏆</div>
+        <span class="text-sm font-black text-white uppercase tracking-wide group-hover:text-green-400">${opcion1}</span>
+        <span class="text-[10px] text-gray-500 font-medium">Torneo Regular 2026</span>
+      </button>
+      <button onclick="cambiarSubseccion('recopa')"
+        class="group bg-gray-900 border border-gray-800 hover:border-purple-500/40 rounded-2xl p-6 flex flex-col items-center gap-3 transition-all active:scale-95">
+        <div class="text-3xl bg-purple-500/10 p-4 rounded-xl group-hover:bg-purple-500 transition-all">🥈</div>
+        <span class="text-sm font-black text-white uppercase tracking-wide group-hover:text-purple-400">Recopa</span>
+        <span class="text-[10px] text-gray-500 font-medium">Copa Eliminatoria 2026</span>
+      </button>
+    </div>`;
+}
 
 function cambiarSubseccion(tipo) {
   const area = document.getElementById('areaDinamica');
@@ -544,11 +1227,22 @@ function cambiarSubseccion(tipo) {
     });
     html += `</div>`;
     area.innerHTML = html;
+  } else if (tipo === 'apertura_a' || tipo === 'apertura_b' || tipo === 'recopa') {
+    if (tipo === 'recopa') {
+      area.innerHTML = `<div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl text-center space-y-2">
+        <div class="text-3xl">🥈</div>
+        <h3 class="text-sm font-black text-white uppercase">Recopa 2026</h3>
+        <p class="text-xs text-gray-400 max-w-sm mx-auto">Módulo listo para vincular datos.</p>
+        <button onclick="mostrarSubTorneo()" class="mt-4 text-[10px] font-bold text-gray-500 hover:text-white border border-gray-800 px-3 py-1.5 rounded-lg transition-all">← Volver</button>
+      </div>`;
+      return;
+    }
+    renderAperturaAIFA(tipo);
   } else {
-    const titulos = { torneo:'🏆 Torneo Actual', antiguos:'⏳ Torneos Antiguos', historial:'⚔️ Historial versus Clubes' };
+    const titulos = { antiguos:'⏳ Torneos Antiguos', historial:'⚔️ Historial versus Clubes' };
     area.innerHTML = `<div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl text-center space-y-2">
       <div class="text-3xl">⚽</div>
-      <h3 class="text-sm font-black text-white uppercase">${titulos[tipo]}</h3>
+      <h3 class="text-sm font-black text-white uppercase">${titulos[tipo] || tipo}</h3>
       <p class="text-xs text-gray-400 max-w-sm mx-auto">Módulo listo para vincular datos.</p>
     </div>`;
   }
