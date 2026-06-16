@@ -18,7 +18,7 @@
             <p class="text-xs text-green-400 font-bold tracking-widest mt-1.5 uppercase">Selecciona un plantel para ingresar</p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl relative z-10">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-3xl relative z-10">
             <button onclick="seleccionarCategoria('A')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                 <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">A</div>
                 <div>
@@ -32,6 +32,11 @@
                 <div>
                     <h2 class="text-2xl font-black text-white tracking-wide">PRIMERA B</h2>
                     <p class="text-xs text-green-100/80 mt-1 font-medium">Seguimiento completo del torneo de ascenso.</p>
+             <button onclick="seleccionarCategoria('NIDO')" class="group bg-cyan-700/90 border border-cyan-500/40 hover:bg-cyan-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">🪹</div>
+                <div>
+                    <h2 class="text-2xl font-black text-white tracking-wide">EL NIDO</h2>
+                    <p class="text-xs text-cyan-100/80 mt-1 font-medium">La casa del club: cancha y estadísticas de local.</p>
                 </div>
             </button>
         </div>
@@ -149,9 +154,12 @@
 
         function seleccionarCategoria(letra) {
             categorySelected = letra;
-            document.getElementById('badgeCategoria').innerText = `🟢 Primera ${letra}`;
-            document.getElementById('badgeCategoria').className = "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
-            
+            const esNido = letra === 'NIDO';
+            document.getElementById('badgeCategoria').innerText = esNido ? `🪹 El Nido` : `🟢 Primera ${letra}`;
+            document.getElementById('badgeCategoria').className = esNido
+                ? "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                : "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
+
             document.getElementById('panelHistorico').classList.toggle('hidden', letra !== 'A');
             document.getElementById('pantallaBienvenida').classList.add('hidden');
             document.getElementById('pantallaContenido').classList.remove('hidden');
