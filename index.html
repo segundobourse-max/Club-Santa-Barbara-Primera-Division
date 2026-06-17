@@ -200,7 +200,7 @@
     }
     nav button.active, nav button:hover { color: var(--blanco); border-bottom-color: var(--dorado); }
 
-    .panel { display: none; padding: 28px 20px; max-width: 1200px; margin: 0 auto; }
+    .panel { display: none; padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
     .panel.active { display: block; }
 
     .section-title {
@@ -291,11 +291,11 @@
     /* ── RESUMEN LAYOUT ── */
     .resumen-grid {
       display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 16px;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
       margin-bottom: 20px;
     }
-    @media (max-width: 860px) { .resumen-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 960px) { .resumen-grid { grid-template-columns: 1fr; } }
 
     .stats-hist {
       background: var(--azul-card);
@@ -350,10 +350,10 @@
     .top10-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      gap: 20px;
       margin-bottom: 20px;
     }
-    @media (max-width: 860px) { .top10-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .top10-grid { grid-template-columns: 1fr; } }
 
     .top10-card {
       background: var(--azul-card);
@@ -589,10 +589,14 @@ const DATA_A = {
     { nombre:'Juan B. Basavilbaso', pos:'DFI', citado:3,  titular:1,  goles:0,  asist:1, rojas:0 },
     { nombre:'Juan Cruz Aleixo',    pos:'ARQ', citado:0,  titular:0,  goles:0,  asist:0, rojas:0 },
   ],
-  historico: { pj:15, pg:11, pe:4, pp:0, gf:31, gc:11, vi:6 },
+  historico: { pj:266, pg:123, pe:57, pp:87, gf:501, gc:365, vi:57 },
   titulos: [
-    { nombre:'Campeón 1ª División', anio:'2026 (en curso)' },
+    { nombre:'Campeón Apertura AIFA B', anio:'2019' },
+    { nombre:'Campeón Copa Maradona', anio:'2020' },
+    { nombre:'Subcampeón Recopa', anio:'2024' },
+    { nombre:'Subcampeón Recopa', anio:'2025' },
     { nombre:'Copa (Cuartos de Final)', anio:'2026' },
+    { nombre:'Líder Apertura 2026 (en curso)', anio:'2026' },
   ],
   proximos: [
     { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
@@ -671,8 +675,10 @@ const DATA_B = {
     { nombre:'Joaquin Paz',           citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
     { nombre:'Bautista Busch',        citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
   ],
-  historico: { pj:15, pg:6, pe:1, pp:8, gf:17, gc:24, vi:5 },
+  historico: { pj:108, pg:57, pe:25, pp:26, gf:212, gc:133, vi:33 },
   titulos: [
+    { nombre:'Campeón Apertura AIFA D', anio:'2024' },
+    { nombre:'Ascenso Clausura AIFA C', anio:'2024' },
     { nombre:'Copa (Octavos de Final)', anio:'2026' },
   ],
   proximos: [
