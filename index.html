@@ -103,7 +103,7 @@
                         <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4 flex items-center gap-2">
                             ⭐ Títulos Oficiales
                         </h3>
-                        <div class="space-y-3">
+                        <div class="space-y-3" id="contenedorTitulos">
                             <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
                                 <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
                                 <div>
@@ -149,11 +149,40 @@
         const GIDS = {
             A: "964524187", 
             B: "181745424",
-            HISTORIAL_A: "1158051849"
+            HISTORIAL_A: "1158051849",
+            HISTORIAL_B: "1913593241"
         };
 
         let categorySelected = '';
         let listaJugadoresProcesada = [];
+
+        // Títulos oficiales por categoría. Para agregar uno nuevo, solo sumá un objeto { nombre, anio } al array.
+        const TITULOS = {
+            A: [
+                { nombre: "Apertura AIFA B", anio: "2019" },
+                { nombre: "Copa Maradona Luefi", anio: "2020" }
+            ],
+            B: [
+                { nombre: "Apertura AIFA D", anio: "2024" }
+            ]
+        };
+
+        function renderTitulos(letra) {
+            const cont = document.getElementById('contenedorTitulos');
+            const lista = TITULOS[letra] || [];
+            if (lista.length === 0) {
+                cont.innerHTML = `<p class="text-[11px] text-gray-500 py-2">Sin títulos oficiales registrados.</p>`;
+                return;
+            }
+            cont.innerHTML = lista.map(t => `
+                <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
+                    <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
+                    <div>
+                        <h4 class="text-xs font-black text-white tracking-wide uppercase">${t.nombre}</h4>
+                        <p class="text-[10px] text-amber-400 font-bold mt-0.5">${t.anio}</p>
+                    </div>
+                </div>`).join('');
+        }
 
         function seleccionarCategoria(letra) {
             categorySelected = letra;
@@ -163,7 +192,8 @@
                 ? "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
                 : "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
 
-            document.getElementById('panelHistorico').classList.toggle('hidden', letra !== 'A');
+            document.getElementById('panelHistorico').classList.toggle('hidden', letra !== 'A' && letra !== 'B');
+            if (letra === 'A' || letra === 'B') renderTitulos(letra);
             document.getElementById('pantallaBienvenida').classList.add('hidden');
             document.getElementById('pantallaContenido').classList.remove('hidden');
 
@@ -211,9 +241,11 @@
         async function descargarDatosBase() {
             const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
             
-            if (categorySelected === 'A') {
+            if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
-                    const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=D28:J29`;
+                    const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const rangoHist = categorySelected === 'A' ? 'D28:J29' : 'D16:J17';
+                    const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoHist}`;
                     const rHist = await fetch(urlHistorial);
                     const tHistRaw = await rHist.text();
                     
@@ -338,9 +370,11 @@ async function calcularEInyectarTop5() {
             // ==========================================
             // 🏃‍♂️ COLUMNA 1: MÁS PARTIDOS (HISTÓRICO)
             // ==========================================
-            if (categorySelected === 'A') {
+            if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
-                    const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=O7:Q11`;
+                    const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const rangoPart = categorySelected === 'A' ? 'O7:Q11' : 'O5:Q9';
+                    const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoPart}`;
                     const rTop = await fetch(urlTopPartidos);
                     const tTopRaw = await rTop.text();
                     const jTopText = tTopRaw.substring(tTopRaw.indexOf("{"), tTopRaw.lastIndexOf("}") + 1);
@@ -381,9 +415,11 @@ async function calcularEInyectarTop5() {
             // ==========================================
             // ⚽ COLUMNA 2: GOLEADORES (HISTÓRICO)
             // ==========================================
-            if (categorySelected === 'A') {
+            if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
-                    const urlTopGoles = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=B33:D37`;
+                    const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const rangoGoles = categorySelected === 'A' ? 'B33:D37' : 'B22:D26';
+                    const urlTopGoles = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoGoles}`;
                     const rGoles = await fetch(urlTopGoles);
                     const tGolesRaw = await rGoles.text();
                     const jGolesText = tGolesRaw.substring(tGolesRaw.indexOf("{"), tGolesRaw.lastIndexOf("}") + 1);
@@ -424,9 +460,11 @@ async function calcularEInyectarTop5() {
             // ==========================================
             // 🎯 COLUMNA 3: ASISTIDORES (HISTÓRICO)
             // ==========================================
-            if (categorySelected === 'A') {
+            if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
-                    const urlTopAsistencias = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS.HISTORIAL_A}&range=H33:J37`;
+                    const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const rangoAsist = categorySelected === 'A' ? 'H33:J37' : 'H22:J26';
+                    const urlTopAsistencias = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoAsist}`;
                     const rAsistencias = await fetch(urlTopAsistencias);
                     const tAsistenciasRaw = await rAsistencias.text();
                     const jAsistenciasText = tAsistenciasRaw.substring(tAsistenciasRaw.indexOf("{"), tAsistenciasRaw.lastIndexOf("}") + 1);
