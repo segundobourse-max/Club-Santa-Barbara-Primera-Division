@@ -60,7 +60,31 @@
         </header>
 
         <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 w-full flex-1">
-            
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="cambiarSubseccion('torneo')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-green-500/10 p-3 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-gray-950 transition-all">🏆</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-green-400">TORNEO ACTUAL</span>
+                    </button>
+
+                    <button onclick="cambiarSubseccion('jugadores')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-blue-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-blue-500/10 p-3 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-gray-950 transition-all">📊</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-blue-400">ESTADÍSTICAS JUGADORES</span>
+                    </button>
+
+                    <button onclick="cambiarSubseccion('antiguos')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-yellow-500/10 p-3 rounded-xl text-yellow-400 group-hover:bg-yellow-500 group-hover:text-gray-950 transition-all">⏳</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-yellow-400">TORNEOS ANTIGUOS</span>
+                    </button>
+
+                    <button onclick="cambiarSubseccion('historial')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
+                        <div class="text-2xl bg-red-500/10 p-3 rounded-xl text-red-400 group-hover:bg-red-500 group-hover:text-gray-950 transition-all">⚔️</div>
+                        <span class="text-xs font-black tracking-wide text-white group-hover:text-red-400">HISTORIAL VS CLUBES</span>
+                    </button>
+                </div>
+            </div>
+
             <div id="panelHistorico" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl lg:col-span-2 flex flex-col justify-between">
@@ -108,30 +132,6 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="contenedorTop5">
                     <div class="text-xs text-gray-500 text-center py-4 animate-pulse col-span-full">Calculando las mejores marcas...</div>
-                </div>
-            </div>
-
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onclick="cambiarSubseccion('torneo')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-green-500/10 p-3 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-gray-950 transition-all">🏆</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-green-400">TORNEO ACTUAL</span>
-                    </button>
-
-                    <button onclick="cambiarSubseccion('jugadores')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-blue-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-blue-500/10 p-3 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-gray-950 transition-all">📊</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-blue-400">ESTADÍSTICAS JUGADORES</span>
-                    </button>
-
-                    <button onclick="cambiarSubseccion('antiguos')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-yellow-500/10 p-3 rounded-xl text-yellow-400 group-hover:bg-yellow-500 group-hover:text-gray-950 transition-all">⏳</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-yellow-400">TORNEOS ANTIGUOS</span>
-                    </button>
-
-                    <button onclick="cambiarSubseccion('historial')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-red-500/10 p-3 rounded-xl text-red-400 group-hover:bg-red-500 group-hover:text-gray-950 transition-all">⚔️</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-red-400">HISTORIAL VS CLUBES</span>
-                    </button>
                 </div>
             </div>
 
