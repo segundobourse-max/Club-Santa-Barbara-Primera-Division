@@ -1031,6 +1031,195 @@ function renderGraficos() {
     options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#94a3b8'} } }, scales:{ x:{ticks:{color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}}, y:{beginAtZero:true, ticks:{stepSize:1,color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}} } }
   }));
 }
+
+// ──────────────────────────────────────────────
+// LIVE DATA — Google Sheets auto-fetch
+// ──────────────────────────────────────────────
+
+const GS = {
+  A_MAIN: '153DVd4H-hTuYitiYk3M2YMkFGwODq0Ul8gKZWRQUSP0',
+  A_SIM:  '1rgxxVfIOskO0qXSU_Yw6b9VvYYmMCxVr1sYZc6Hxv40',
+  B_MAIN: '1fiw1Wd_KdE-l0ekbk6yuVy9gkvMLQ3X8k4poe9i0qkg',
+  B_SIM:  '1i9akFUzKsgrKB01lrFJdjE0djmImr64IqsnlLuMHsGI',
+};
+
+function csvUrl(id, tab) {
+  let u = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
+  if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+  return u;
+}
+
+function parseCSV(text) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i+1] === '"') { f += '"'; i++; }
+      else if (c === '"') q = false;
+      else f += c;
+    } else if (c === '"') { q = true; }
+    else if (c === ',') { row.push(f.trim()); f = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i+1] === '\n') i++;
+      row.push(f.trim()); f = '';
+      if (row.some(x => x)) rows.push(row);
+      row = [];
+    } else f += c;
+  }
+  if (row.length || f) { row.push(f.trim()); if (row.some(x=>x)) rows.push(row); }
+  return rows;
+}
+
+// Parse standings from simulador sheet: cols [offset..offset+9] = pos,team,pts,pj,pg,pe,pp,gf,gc,df
+function parseSimStandings(rows, offset) {
+  const seen = new Map();
+  for (const row of rows) {
+    if (row.length < offset + 10) continue;
+    const pos = parseInt(row[offset]);
+    const equipo = row[offset + 1];
+    const pts = parseInt(row[offset + 2]);
+    const pj  = parseInt(row[offset + 3]);
+    if (isNaN(pos) || pos < 1 || pos > 20 || !equipo || isNaN(pts)) continue;
+    seen.set(pos, {
+      pos: pos + '°', equipo, copas: '', pts, pj,
+      pg: parseInt(row[offset+4])||0, pe: parseInt(row[offset+5])||0,
+      pp: parseInt(row[offset+6])||0, gf: parseInt(row[offset+7])||0,
+      gc: parseInt(row[offset+8])||0, df: parseInt(row[offset+9])||0,
+      csb: /santa\s*barb/i.test(equipo),
+    });
+  }
+  return [...seen.values()].sort((a,b) => parseInt(a.pos) - parseInt(b.pos));
+}
+
+// Parse standings from header row "Equipo,Posicion,PTS,PJ,..."
+function parseHeaderStandings(rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const hi = r.findIndex(c => /^equipo$/i.test(c));
+    const pi = r.findIndex(c => /^pts$/i.test(c));
+    if (hi < 0 || pi < 0) continue;
+    const h = r.map(c => c.toLowerCase());
+    const idx = k => h.findIndex(c => new RegExp('^'+k+'$','i').test(c));
+    const eqI=hi, posI=h.findIndex(c=>/posici/i.test(c)), ptsI=pi;
+    const pjI=idx('pj'), pgI=idx('pg'), peI=idx('pe'), ppI=idx('pp');
+    const gfI=idx('gf'), gcI=idx('gc'), dfI=h.findIndex(c=>/^d[fi]/i.test(c));
+    const copaI=h.findIndex(c=>/copa/i.test(c));
+    const result = [];
+    for (let j = i+1; j < rows.length; j++) {
+      const row = rows[j];
+      const equipo = row[eqI]||'';
+      if (!equipo) break;
+      const pts = parseInt(row[ptsI]);
+      if (isNaN(pts)) break;
+      result.push({
+        pos:   posI>=0 ? row[posI] : (result.length+1)+'°',
+        equipo, copas: copaI>=0 ? row[copaI]||'' : '', pts,
+        pj: pjI>=0?parseInt(row[pjI])||0:0, pg: pgI>=0?parseInt(row[pgI])||0:0,
+        pe: peI>=0?parseInt(row[peI])||0:0, pp: ppI>=0?parseInt(row[ppI])||0:0,
+        gf: gfI>=0?parseInt(row[gfI])||0:0, gc: gcI>=0?parseInt(row[gcI])||0:0,
+        df: dfI>=0?parseInt(row[dfI])||0:0, csb: /santa\s*barb/i.test(equipo),
+      });
+    }
+    if (result.length >= 5) return result;
+  }
+  return [];
+}
+
+function parseMatches(rows) {
+  return rows
+    .filter(row => /^(LOCAL|VISITANTE|NEUTRAL)$/i.test(row[2]||''))
+    .map(row => {
+      const res = row[3]||null;
+      let gf=null, gc=null;
+      if (res && /\d+-\d+/.test(res)) [gf,gc] = res.split('-').map(Number);
+      return { rival:row[0]||'', fecha:row[1]||'', local:(row[2]||'').toUpperCase(),
+               resultado:res, gf, gc, parciales:row[4]||'', posCSB:row[5]||'', obs:row[7]||'' };
+    });
+}
+
+function parsePlayers(rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (!/jugador/i.test(r[0]||'') || !r.some(c=>/goles/i.test(c||''))) continue;
+    const h = r.map(c=>(c||'').toLowerCase());
+    const citI=h.findIndex(c=>c.includes('citado')), titI=h.findIndex(c=>c.includes('titular'));
+    const golI=h.findIndex(c=>c.includes('goles')), astI=h.findIndex(c=>c.includes('asist'));
+    const rojI=h.findIndex(c=>c.includes('roja'));
+    const players = [];
+    for (let j = i+1; j < rows.length; j++) {
+      const row = rows[j]; const nombre = row[0]||'';
+      if (!nombre || /^(jugador|rival|fecha)/i.test(nombre)) break;
+      const citado=citI>=0?parseInt(row[citI])||0:0, goles=golI>=0?parseInt(row[golI])||0:0;
+      if (!citado && !goles) continue;
+      players.push({ nombre, citado, titular:titI>=0?parseInt(row[titI])||0:0,
+                     goles, asist:astI>=0?parseInt(row[astI])||0:0, rojas:rojI>=0?parseInt(row[rojI])||0:0 });
+    }
+    if (players.length >= 3) return players;
+  }
+  return [];
+}
+
+function refreshCurrentView() {
+  if (!currentData) return;
+  const map = { 'panel-resumen':renderResumen, 'panel-posiciones':renderPosiciones,
+                'panel-partidos':renderPartidos, 'panel-jugadores':renderJugadores,
+                'panel-graficos':renderGraficos };
+  for (const [id, fn] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el && el.style.display === 'block') { fn(); break; }
+  }
+}
+
+async function fetchCSV(id, tab) {
+  const r = await fetch(csvUrl(id, tab), { mode: 'cors' });
+  if (!r.ok) throw new Error(r.status);
+  return parseCSV(await r.text());
+}
+
+async function loadLiveData() {
+  const [aSim, aMain, bSim, bMain] = await Promise.allSettled([
+    fetchCSV(GS.A_SIM),
+    fetchCSV(GS.A_MAIN, 'Apertura 2026'),
+    fetchCSV(GS.B_SIM),
+    fetchCSV(GS.B_MAIN),
+  ]);
+
+  const ok = r => r.status === 'fulfilled' ? r.value : null;
+
+  // PRIMERA A standings
+  const aTbl = ok(aSim) ? parseSimStandings(ok(aSim), 5) : [];
+  if (aTbl.length >= 10) DATA_A.tabla = aTbl;
+
+  // PRIMERA A matches + players
+  if (ok(aMain)) {
+    const m = parseMatches(ok(aMain));
+    const p = parsePlayers(ok(aMain));
+    if (m.length > 0) DATA_A.partidos = m;
+    if (p.length > 0) DATA_A.jugadores = p;
+  }
+
+  // PRIMERA B standings (try sim, fallback to header in main)
+  let bTbl = ok(bSim) ? parseSimStandings(ok(bSim), 5) : [];
+  if (bTbl.length < 10 && ok(bMain)) bTbl = parseHeaderStandings(ok(bMain));
+  if (bTbl.length >= 5) DATA_B.tabla = bTbl;
+
+  // PRIMERA B matches + players
+  if (ok(bMain)) {
+    const m = parseMatches(ok(bMain));
+    const p = parsePlayers(ok(bMain));
+    if (m.length > 0) DATA_B.partidos = m;
+    if (p.length > 0) DATA_B.jugadores = p;
+  }
+
+  const s = r => r.status === 'fulfilled' ? '✅' : '❌';
+  console.log(`Sheets — A_SIM:${s(aSim)} A_MAIN:${s(aMain)} B_SIM:${s(bSim)} B_MAIN:${s(bMain)}`);
+  console.log(`Tabla A:${DATA_A.tabla.length} Part A:${DATA_A.partidos.length} Jug A:${DATA_A.jugadores.length} | Tabla B:${DATA_B.tabla.length} Part B:${DATA_B.partidos.length} Jug B:${DATA_B.jugadores.length}`);
+
+  refreshCurrentView();
+}
+
+loadLiveData();
+setInterval(loadLiveData, 5 * 60 * 1000); // auto-refresh every 5 min
 </script>
 </body>
 </html>
