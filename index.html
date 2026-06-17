@@ -373,7 +373,7 @@ async function calcularEInyectarTop5() {
             if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
                     const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
-                    const rangoPart = categorySelected === 'A' ? 'O7:Q11' : 'O5:Q9';
+                    const rangoPart = categorySelected === 'A' ? 'O7:Q11' : 'O4:P8';
                     const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoPart}`;
                     const rTop = await fetch(urlTopPartidos);
                     const tTopRaw = await rTop.text();
@@ -384,10 +384,18 @@ async function calcularEInyectarTop5() {
                     
                     datosTop.table.rows.forEach((fila, idx) => {
                         const c = fila.c || [];
-                        const parte1 = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "";
-                        const parte2 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
-                        const nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
-                        const partidos = c[2] && c[2].v !== null ? c[2].v : 0;
+                        let nombreCompleto, partidos;
+                        if (categorySelected === 'A') {
+                            // A: nombre en 2 columnas (O,P), cantidad en Q
+                            const parte1 = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "";
+                            const parte2 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
+                            nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
+                            partidos = c[2] && c[2].v !== null ? c[2].v : 0;
+                        } else {
+                            // B: nombre completo en 1 columna (O), cantidad en P
+                            nombreCompleto = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "Jugador";
+                            partidos = c[1] && c[1].v !== null ? c[1].v : 0;
+                        }
                         
                         htmlPartidos += `
                             <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
