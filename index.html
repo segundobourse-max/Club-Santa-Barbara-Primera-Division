@@ -1,508 +1,748 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Club Santa Bárbara - Estadísticas Oficiales</title>
-    <link rel="icon" type="image/webp" href="logo-csb.webp">
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club Santa Bárbara – Primera División</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --azul: #1a3a6e;
+      --azul-claro: #2a5298;
+      --dorado: #c8a84b;
+      --blanco: #ffffff;
+      --gris-claro: #f4f6fa;
+      --gris: #e2e6ee;
+      --texto: #1c1c2e;
+      --verde: #22c55e;
+      --rojo: #ef4444;
+      --naranja: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--gris-claro);
+      color: var(--texto);
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);
+      color: var(--blanco);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      height: 72px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    header img { height: 48px; width: 48px; object-fit: contain; }
+    header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.02em; }
+    header h1 span { color: var(--dorado); }
+    header .temporada { margin-left: auto; font-size: 0.85rem; opacity: 0.8; white-space: nowrap; }
+
+    nav {
+      background: var(--azul);
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav button {
+      flex-shrink: 0;
+      border: none;
+      background: none;
+      color: rgba(255,255,255,0.65);
+      padding: 14px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    nav button.active, nav button:hover { color: var(--blanco); border-bottom-color: var(--dorado); }
+
+    .panel { display: none; padding: 28px 20px; max-width: 1200px; margin: 0 auto; }
+    .panel.active { display: block; }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--azul);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, var(--dorado), transparent); }
+
+    .cards { display: grid; gap: 16px; }
+    .cards-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .cards-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+    .card {
+      background: var(--blanco);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--gris);
+    }
+    .card-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 6px; }
+    .card-value { font-size: 2.2rem; font-weight: 800; color: var(--azul); line-height: 1; }
+    .card-sub { font-size: 0.8rem; color: #666; margin-top: 4px; }
+    .card-accent { border-left: 4px solid var(--dorado); }
+
+    .table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    table { width: 100%; border-collapse: collapse; background: var(--blanco); font-size: 0.875rem; }
+    thead tr { background: var(--azul); color: var(--blanco); }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.04em; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--gris); transition: background 0.15s; }
+    tbody tr:hover { background: #f0f4ff; }
+    tbody td { padding: 10px 14px; }
+
+    .pos-1 { background: linear-gradient(90deg, #fffbea 0%, #fff 100%); font-weight: 700; }
+    .csb-row { background: #e8f0fe !important; }
+    .csb-row td { font-weight: 600; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+    .badge-g { background: #dcfce7; color: #15803d; }
+    .badge-e { background: #fef9c3; color: #854d0e; }
+    .badge-p { background: #fee2e2; color: #b91c1c; }
+
+    .partidos-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .partido-card {
+      background: var(--blanco);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--gris);
+    }
+    .partido-card .p-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .partido-card .p-jornada { font-size: 0.72rem; background: var(--azul); color: #fff; padding: 2px 8px; border-radius: 20px; }
+    .partido-card .p-rival { font-size: 1rem; font-weight: 700; }
+    .partido-card .p-resultado { font-size: 1.6rem; font-weight: 900; color: var(--azul); text-align: center; margin: 8px 0; }
+    .partido-card .p-meta { font-size: 0.75rem; color: #777; display: flex; gap: 10px; flex-wrap: wrap; }
+    .partido-card .p-obs { font-size: 0.78rem; color: #555; margin-top: 8px; font-style: italic; border-top: 1px solid var(--gris); padding-top: 6px; line-height: 1.4; }
+    .partido-card.win { border-left: 4px solid var(--verde); }
+    .partido-card.draw { border-left: 4px solid var(--naranja); }
+    .partido-card.loss { border-left: 4px solid var(--rojo); }
+
+    .chart-card { background: var(--blanco); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--gris); }
+    .chart-title { font-size: 0.9rem; font-weight: 700; color: var(--azul); margin-bottom: 14px; }
+
+    .equipo-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .equipo-btn {
+      padding: 8px 20px;
+      border-radius: 8px;
+      border: 2px solid var(--azul);
+      background: var(--blanco);
+      color: var(--azul);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .equipo-btn.active { background: var(--azul); color: var(--blanco); }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1rem; }
+      .panel { padding: 16px 12px; }
+      .card-value { font-size: 1.8rem; }
+    }
+
+    footer { text-align: center; padding: 24px; font-size: 0.78rem; color: #999; border-top: 1px solid var(--gris); margin-top: 40px; }
+  </style>
 </head>
-<body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex flex-col justify-between">
+<body>
 
-    <div id="pantallaBienvenida" class="fixed inset-0 z-50 flex flex-col justify-center items-center p-4 bg-gradient-to-br from-gray-950 via-slate-900 to-green-950">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-green-500/10 via-transparent to-transparent pointer-events-none"></div>
-        
-        <div class="text-center mb-10 max-w-sm relative z-10 flex flex-col items-center">
-            <img src="logo-csb.webp" alt="Logo Club Santa Bárbara" onerror="this.src='https://placehold.co/150x150/16a34a/ffffff?text=CSB'" class="w-28 h-auto drop-shadow-[0_0_15px_rgba(34,197,94,0.3)] mb-4 rounded-full">
-            <h1 class="text-3xl font-black tracking-wider text-white uppercase">CLUB SANTA BÁRBARA</h1>
-            <p class="text-xs text-green-400 font-bold tracking-widest mt-1.5 uppercase">Selecciona un plantel para ingresar</p>
-        </div>
+<header>
+  <img src="logo-csb.webp" alt="Logo Club Santa Bárbara" />
+  <h1>Club Santa Bárbara <span>Primera División</span></h1>
+  <span class="temporada">Temporada 2026</span>
+</header>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-3xl relative z-10">
-            <button onclick="seleccionarCategoria('A')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">A</div>
-                <div>
-                    <h2 class="text-2xl font-black text-white tracking-wide">PRIMERA A</h2>
-                    <p class="text-xs text-green-100/80 mt-1 font-medium">Estadísticas, tablas y fixtures del torneo superior.</p>
-                </div>
-            </button>
+<nav>
+  <button class="active" onclick="showTab('resumen', this)">Resumen</button>
+  <button onclick="showTab('posiciones', this)">Posiciones</button>
+  <button onclick="showTab('partidos', this)">Partidos</button>
+  <button onclick="showTab('jugadores', this)">Jugadores</button>
+  <button onclick="showTab('graficos', this)">Gráficos</button>
+</nav>
 
-            <button onclick="seleccionarCategoria('B')" class="group bg-green-700/90 border border-green-500/40 hover:bg-green-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">B</div>
-                <div>
-                    <h2 class="text-2xl font-black text-white tracking-wide">PRIMERA B</h2>
-                    <p class="text-xs text-green-100/80 mt-1 font-medium">Seguimiento completo del torneo de ascenso.</p>
-                </div>
-            </button>
+<!-- RESUMEN -->
+<div class="panel active" id="tab-resumen">
+  <div class="equipo-tabs">
+    <button class="equipo-btn active" onclick="setEquipo('resumen','a',this)">1ª División – CSB A</button>
+    <button class="equipo-btn" onclick="setEquipo('resumen','b',this)">1ª División – CSB B</button>
+  </div>
 
-            <button onclick="seleccionarCategoria('NIDO')" class="group bg-cyan-700/90 border border-cyan-500/40 hover:bg-cyan-600 p-8 rounded-3xl shadow-2xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-3 active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-                <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform duration-300">🪹</div>
-                <div>
-                    <h2 class="text-2xl font-black text-white tracking-wide">EL NIDO</h2>
-                    <p class="text-xs text-cyan-100/80 mt-1 font-medium">La casa del club: cancha y estadísticas de local.</p>
-                </div>
-            </button>
-        </div>
+  <div id="resumen-a">
+    <div class="section-title">📊 Estadísticas Generales – CSB A</div>
+    <div class="cards cards-4" style="margin-bottom:24px">
+      <div class="card card-accent">
+        <div class="card-label">Posición</div>
+        <div class="card-value" style="color:var(--dorado)">1°</div>
+        <div class="card-sub">Líder de la tabla</div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">Puntos</div>
+        <div class="card-value">31</div>
+        <div class="card-sub">13 partidos jugados</div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">Record</div>
+        <div class="card-value" style="font-size:1.4rem">9G · 4E · 0P</div>
+        <div class="card-sub">Único invicto del torneo</div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">Goles</div>
+        <div class="card-value">24 – 8</div>
+        <div class="card-sub">Diferencia: +16</div>
+      </div>
     </div>
-
-
-    <div id="pantallaContenido" class="hidden flex-1 flex flex-col">
-        <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-40 shadow-lg">
-            <div class="max-w-6xl mx-auto flex justify-between items-center">
-                <button onclick="volverAlMenu()" class="text-xs font-bold text-gray-400 hover:text-white bg-gray-950 px-3 py-2 rounded-xl border border-gray-800 transition-all flex items-center gap-1">
-                    ← Volver al Menú
-                </button>
-                <div class="flex items-center gap-3">
-                    <img src="logo-csb.webp" onerror="this.style.display='none'" class="w-6 h-6 rounded-full object-contain">
-                    <div id="badgeCategoria" class="px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase">Cargando...</div>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 w-full flex-1">
-
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onclick="cambiarSubseccion('torneo')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-green-500/10 p-3 rounded-xl text-green-400 group-hover:bg-green-500 group-hover:text-gray-950 transition-all">🏆</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-green-400">TORNEO ACTUAL</span>
-                    </button>
-
-                    <button onclick="cambiarSubseccion('jugadores')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-blue-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-blue-500/10 p-3 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-gray-950 transition-all">📊</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-blue-400">ESTADÍSTICAS JUGADORES</span>
-                    </button>
-
-                    <button onclick="cambiarSubseccion('antiguos')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-yellow-500/10 p-3 rounded-xl text-yellow-400 group-hover:bg-yellow-500 group-hover:text-gray-950 transition-all">⏳</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-yellow-400">TORNEOS ANTIGUOS</span>
-                    </button>
-
-                    <button onclick="cambiarSubseccion('historial')" class="group p-5 bg-gray-900 border border-gray-800 hover:border-green-500/40 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all active:scale-95">
-                        <div class="text-2xl bg-red-500/10 p-3 rounded-xl text-red-400 group-hover:bg-red-500 group-hover:text-gray-950 transition-all">⚔️</div>
-                        <span class="text-xs font-black tracking-wide text-white group-hover:text-red-400">HISTORIAL VS CLUBES</span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="panelHistorico" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl lg:col-span-2 flex flex-col justify-between">
-                    <div>
-                        <h3 class="text-sm font-black uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
-                            📊 Estadísticas Históricas
-                        </h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center" id="statsGlobalesEquipo">
-                            <div class="col-span-full text-xs text-gray-500 py-4 animate-pulse">Cargando estadísticas en vivo...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-br from-gray-900 to-neutral-900 border border-amber-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
-                    <div>
-                        <h3 class="text-sm font-black uppercase text-amber-500 tracking-wider mb-4 flex items-center gap-2">
-                            ⭐ Títulos Oficiales
-                        </h3>
-                        <div class="space-y-3" id="contenedorTitulos">
-                            <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                                <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                                <div>
-                                    <h4 class="text-xs font-black text-white tracking-wide uppercase">Apertura AIFA B</h4>
-                                    <p class="text-[10px] text-amber-400 font-bold mt-0.5">2019</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                                <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                                <div>
-                                    <h4 class="text-xs font-black text-white tracking-wide uppercase">Copa Maradona Luefi</h4>
-                                    <p class="text-[10px] text-amber-400 font-bold mt-0.5">2020</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="seccionDestacados" class="bg-gray-900/60 border border-gray-800/80 rounded-3xl p-6 shadow-xl space-y-6 hidden">
-                <div class="border-b border-gray-800 pb-3 flex items-center justify-between">
-                    <h3 class="text-base font-black uppercase text-amber-400 tracking-wider flex items-center gap-2">
-                        ✨ Destacados del Plantel
-                    </h3>
-                    <span class="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-md font-bold uppercase tracking-widest">En Vivo</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="contenedorTop5">
-                    <div class="text-xs text-gray-500 text-center py-4 animate-pulse col-span-full">Calculando las mejores marcas...</div>
-                </div>
-            </div>
-
-            <div id="areaDinamica" class="pt-2">
-                <div class="text-center py-8 border-2 border-dashed border-gray-800 rounded-3xl text-gray-500 text-xs">
-                    Selecciona una sección de arriba para desplegar su contenido.
-                </div>
-            </div>
-            
-        </main>
+    <div class="cards cards-3" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-label">Máximo goleador</div>
+        <div class="card-value" style="font-size:1.1rem;padding-top:4px">Lolo Pellegrino</div>
+        <div class="card-sub">10 goles en el torneo</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Más asistencias</div>
+        <div class="card-value" style="font-size:1.1rem;padding-top:4px">Francisco Vittar</div>
+        <div class="card-sub">4 asistencias</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Copa</div>
+        <div class="card-value" style="font-size:1.1rem;padding-top:4px">Cuartos de Final</div>
+        <div class="card-sub">Ganó vs El Chasqui y Libertador</div>
+      </div>
     </div>
+    <div class="section-title">🗓 Próximos Partidos</div>
+    <div class="partidos-grid">
+      <div class="partido-card" style="border-left:4px solid var(--azul-claro)">
+        <div class="p-header"><span class="p-jornada">Fecha 14</span><span style="font-size:0.8rem;color:#888">VISITANTE</span></div>
+        <div class="p-rival">vs GEBA</div>
+        <div class="p-resultado" style="font-size:1rem;color:#aaa">Pendiente</div>
+        <div class="p-meta"><span>Posición rival: 13°</span></div>
+      </div>
+      <div class="partido-card" style="border-left:4px solid var(--azul-claro)">
+        <div class="p-header"><span class="p-jornada">Fecha 15</span><span style="font-size:0.8rem;color:#888">LOCAL</span></div>
+        <div class="p-rival">vs SITAS</div>
+        <div class="p-resultado" style="font-size:1rem;color:#aaa">Pendiente</div>
+        <div class="p-meta"><span>Posición rival: 8°</span></div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const SPREADSHEET_ID = "153DVd4H-hTuYitiYk3M2YMkFGwODq0Ul8gKZWRQUSP0";
-        // La hoja "Estadisticas Historicas" de Primera B vive en OTRO documento de Google Sheets.
-        const SPREADSHEET_ID_HIST_B = "1FiExBWfpmbopelhlAtv9toq1ewuWXR3FrHbbuvS18Rk";
-        const GIDS = {
-            A: "964524187", 
-            B: "181745424",
-            HISTORIAL_A: "1158051849",
-            HISTORIAL_B: "1913593241"
-        };
+  <div id="resumen-b" style="display:none">
+    <div class="section-title">📊 Estadísticas Generales – CSB B</div>
+    <div class="cards cards-4" style="margin-bottom:24px">
+      <div class="card card-accent">
+        <div class="card-label">Posición</div>
+        <div class="card-value">10°</div>
+        <div class="card-sub">De 16 equipos</div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">Puntos</div>
+        <div class="card-value">16</div>
+        <div class="card-sub">13 partidos jugados</div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">Record</div>
+        <div class="card-value" style="font-size:1.4rem">5G · 1E · 7P</div>
+        <div class="card-sub">Torneo irregular</div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">Goles</div>
+        <div class="card-value">16 – 21</div>
+        <div class="card-sub">Diferencia: -5</div>
+      </div>
+    </div>
+    <div class="cards cards-3" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-label">Máximo goleador</div>
+        <div class="card-value" style="font-size:1.1rem;padding-top:4px">Patricio Garre</div>
+        <div class="card-sub">3 goles en el torneo</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Mayor victoria</div>
+        <div class="card-value" style="font-size:1.1rem;padding-top:4px">4-0 vs Hacoaj</div>
+        <div class="card-sub">Fecha 12</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Copa</div>
+        <div class="card-value" style="font-size:1.1rem;padding-top:4px">Eliminado en Cuartos</div>
+        <div class="card-sub">0-3 vs Sholem</div>
+      </div>
+    </div>
+    <div class="section-title">🗓 Próximos Partidos</div>
+    <div class="partidos-grid">
+      <div class="partido-card" style="border-left:4px solid var(--azul-claro)">
+        <div class="p-header"><span class="p-jornada">Fecha 14</span><span style="font-size:0.8rem;color:#888">VISITANTE</span></div>
+        <div class="p-rival">vs P.A.C</div>
+        <div class="p-resultado" style="font-size:1rem;color:#aaa">Pendiente</div>
+        <div class="p-meta"><span>Posición rival: 12°</span></div>
+      </div>
+      <div class="partido-card" style="border-left:4px solid var(--azul-claro)">
+        <div class="p-header"><span class="p-jornada">Fecha 15</span><span style="font-size:0.8rem;color:#888">LOCAL</span></div>
+        <div class="p-rival">vs SITAS B</div>
+        <div class="p-resultado" style="font-size:1rem;color:#aaa">Pendiente</div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        let categorySelected = '';
-        let listaJugadoresProcesada = [];
+<!-- POSICIONES -->
+<div class="panel" id="tab-posiciones">
+  <div class="equipo-tabs">
+    <button class="equipo-btn active" onclick="setEquipo('posiciones','a',this)">1ª División – CSB A</button>
+    <button class="equipo-btn" onclick="setEquipo('posiciones','b',this)">1ª División – CSB B</button>
+  </div>
+  <div id="posiciones-a">
+    <div class="section-title">🏅 Tabla de Posiciones – 1ª División</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Equipo</th><th>Copas</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DF</th></tr></thead>
+        <tbody id="tabla-a"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:0.78rem;color:#666;display:flex;gap:16px;flex-wrap:wrap">
+      <span style="color:var(--dorado);font-weight:600">■ Campeón / Supercopa</span>
+      <span style="color:var(--verde)">■ Recopa / Promoción</span>
+      <span style="color:#3b82f6">■ Copa de Honor</span>
+      <span style="color:var(--rojo)">■ Descenso</span>
+    </div>
+  </div>
+  <div id="posiciones-b" style="display:none">
+    <div class="section-title">🏅 Tabla de Posiciones – 1ª División B</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Equipo</th><th>Copas</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DF</th></tr></thead>
+        <tbody id="tabla-b"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:0.78rem;color:#666;display:flex;gap:16px;flex-wrap:wrap">
+      <span style="color:var(--dorado);font-weight:600">■ Campeón / Supercopa</span>
+      <span style="color:var(--verde)">■ Ascenso / Recopa</span>
+      <span style="color:#3b82f6">■ Copa de Honor</span>
+      <span style="color:var(--rojo)">■ Descenso</span>
+    </div>
+  </div>
+</div>
 
-        // Títulos oficiales por categoría. Para agregar uno nuevo, solo sumá un objeto { nombre, anio } al array.
-        const TITULOS = {
-            A: [
-                { nombre: "Apertura AIFA B", anio: "2019" },
-                { nombre: "Copa Maradona Luefi", anio: "2020" }
-            ],
-            B: [
-                { nombre: "Apertura AIFA D", anio: "2024" }
-            ]
-        };
+<!-- PARTIDOS -->
+<div class="panel" id="tab-partidos">
+  <div class="equipo-tabs">
+    <button class="equipo-btn active" onclick="setEquipo('partidos','a',this)">1ª División – CSB A</button>
+    <button class="equipo-btn" onclick="setEquipo('partidos','b',this)">1ª División – CSB B</button>
+  </div>
+  <div id="partidos-a">
+    <div class="section-title">🗓 Resultados y Fixtures – CSB A</div>
+    <div class="partidos-grid" id="grid-partidos-a"></div>
+  </div>
+  <div id="partidos-b" style="display:none">
+    <div class="section-title">🗓 Resultados y Fixtures – CSB B</div>
+    <div class="partidos-grid" id="grid-partidos-b"></div>
+  </div>
+</div>
 
-        function renderTitulos(letra) {
-            const cont = document.getElementById('contenedorTitulos');
-            const lista = TITULOS[letra] || [];
-            if (lista.length === 0) {
-                cont.innerHTML = `<p class="text-[11px] text-gray-500 py-2">Sin títulos oficiales registrados.</p>`;
-                return;
-            }
-            cont.innerHTML = lista.map(t => `
-                <div class="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl">
-                    <div class="text-2xl bg-amber-500/10 w-10 h-10 rounded-xl flex items-center justify-center text-amber-400">🏆</div>
-                    <div>
-                        <h4 class="text-xs font-black text-white tracking-wide uppercase">${t.nombre}</h4>
-                        <p class="text-[10px] text-amber-400 font-bold mt-0.5">${t.anio}</p>
-                    </div>
-                </div>`).join('');
-        }
+<!-- JUGADORES -->
+<div class="panel" id="tab-jugadores">
+  <div class="equipo-tabs">
+    <button class="equipo-btn active" onclick="setEquipo('jugadores','a',this)">1ª División – CSB A</button>
+    <button class="equipo-btn" onclick="setEquipo('jugadores','b',this)">1ª División – CSB B</button>
+  </div>
+  <div id="jugadores-a">
+    <div class="section-title">👟 Estadísticas de Jugadores – CSB A</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Jugador</th><th>Pos</th><th>Convocado</th><th>Titular</th><th>⚽ Goles</th><th>🎯 Asistencias</th><th>🟥 Rojas</th></tr></thead>
+        <tbody id="jug-a"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="jugadores-b" style="display:none">
+    <div class="section-title">👟 Estadísticas de Jugadores – CSB B</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Jugador</th><th>Convocado</th><th>Titular</th><th>⚽ Goles</th><th>🎯 Asistencias</th><th>🟥 Rojas</th></tr></thead>
+        <tbody id="jug-b"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-        function seleccionarCategoria(letra) {
-            categorySelected = letra;
-            const esNido = letra === 'NIDO';
-            document.getElementById('badgeCategoria').innerText = esNido ? `🪹 El Nido` : `🟢 Primera ${letra}`;
-            document.getElementById('badgeCategoria').className = esNido
-                ? "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                : "px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20";
+<!-- GRAFICOS -->
+<div class="panel" id="tab-graficos">
+  <div class="equipo-tabs">
+    <button class="equipo-btn active" onclick="setGraf('a',this)">1ª División – CSB A</button>
+    <button class="equipo-btn" onclick="setGraf('b',this)">1ª División – CSB B</button>
+  </div>
+  <div id="graficos-a">
+    <div class="section-title">📈 Análisis Visual – CSB A</div>
+    <div class="cards cards-3" style="gap:20px">
+      <div class="chart-card">
+        <div class="chart-title">Goleadores del torneo</div>
+        <div style="height:260px"><canvas id="chart-goles-a"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Evolución de posición en la tabla</div>
+        <div style="height:260px"><canvas id="chart-pos-a"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Resultados del torneo</div>
+        <div style="height:260px"><canvas id="chart-res-a"></canvas></div>
+      </div>
+    </div>
+    <div style="margin-top:20px" class="chart-card">
+      <div class="chart-title">Goles a favor y en contra por partido</div>
+      <div style="height:240px"><canvas id="chart-gfgc-a"></canvas></div>
+    </div>
+  </div>
+  <div id="graficos-b" style="display:none">
+    <div class="section-title">📈 Análisis Visual – CSB B</div>
+    <div class="cards cards-3" style="gap:20px">
+      <div class="chart-card">
+        <div class="chart-title">Goleadores del torneo</div>
+        <div style="height:260px"><canvas id="chart-goles-b"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Evolución de posición en la tabla</div>
+        <div style="height:260px"><canvas id="chart-pos-b"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Resultados del torneo</div>
+        <div style="height:260px"><canvas id="chart-res-b"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-            document.getElementById('panelHistorico').classList.toggle('hidden', letra !== 'A' && letra !== 'B');
-            if (letra === 'A' || letra === 'B') renderTitulos(letra);
-            document.getElementById('pantallaBienvenida').classList.add('hidden');
-            document.getElementById('pantallaContenido').classList.remove('hidden');
+<footer>
+  Club Santa Bárbara – Primera División &nbsp;|&nbsp; Temporada 2026 &nbsp;|&nbsp; Datos actualizados desde Google Sheets
+</footer>
 
-            document.getElementById('areaDinamica').innerHTML = `
-                <div class="text-center py-8 border-2 border-dashed border-gray-800 rounded-3xl text-gray-500 text-xs">
-                    Selecciona una sección de arriba para desplegar su contenido.
-                </div>`;
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
 
-            // EL NIDO todavía está en construcción: lo dejamos pendiente y no descargamos datos.
-            if (esNido) {
-                document.getElementById('seccionDestacados').classList.add('hidden');
-                document.getElementById('areaDinamica').innerHTML = `
-                    <div class="text-center py-10 border-2 border-dashed border-cyan-800/50 rounded-3xl text-cyan-400/70 text-xs space-y-2">
-                        <div class="text-3xl">🪹</div>
-                        <p class="font-black uppercase tracking-wider">El Nido</p>
-                        <p class="text-gray-500">Sección en construcción. Próximamente: estadísticas combinadas de Primera A y B.</p>
-                    </div>`;
-                return;
-            }
+const DATA_A = {
+  tabla: [
+    { pos:'1°',  equipo:'SANTA BARBARA', copas:'Campeón y Supercopa', pts:31, pj:13, pg:9, pe:4, pp:0, gf:24, gc:8,  df:16, csb:true },
+    { pos:'2°',  equipo:'REGATAS',       copas:'Supercopa',           pts:27, pj:13, pg:8, pe:3, pp:2, gf:23, gc:13, df:10 },
+    { pos:'3°',  equipo:'LA NEGRA',      copas:'Recopa',              pts:24, pj:13, pg:7, pe:3, pp:3, gf:19, gc:13, df:6 },
+    { pos:'4°',  equipo:'ITALIANO',      copas:'Recopa',              pts:21, pj:13, pg:6, pe:3, pp:4, gf:12, gc:9,  df:3 },
+    { pos:'5°',  equipo:'HARRODS',       copas:'Copa de Honor',       pts:21, pj:13, pg:6, pe:3, pp:4, gf:16, gc:17, df:-1 },
+    { pos:'6°',  equipo:'LA PLATA',      copas:'Copa de Honor',       pts:17, pj:13, pg:5, pe:2, pp:6, gf:15, gc:15, df:0 },
+    { pos:'7°',  equipo:'AFALP',         copas:'',                    pts:17, pj:13, pg:4, pe:5, pp:4, gf:12, gc:12, df:0 },
+    { pos:'8°',  equipo:'SITAS',         copas:'',                    pts:17, pj:13, pg:4, pe:5, pp:4, gf:12, gc:12, df:0 },
+    { pos:'9°',  equipo:'MACABI',        copas:'',                    pts:17, pj:13, pg:5, pe:2, pp:6, gf:18, gc:19, df:-1 },
+    { pos:'10°', equipo:'UBA',           copas:'',                    pts:16, pj:13, pg:4, pe:4, pp:5, gf:20, gc:19, df:1 },
+    { pos:'11°', equipo:'VILO',          copas:'',                    pts:15, pj:13, pg:4, pe:3, pp:6, gf:20, gc:18, df:2 },
+    { pos:'12°', equipo:'NORDELTA',      copas:'',                    pts:15, pj:13, pg:4, pe:3, pp:6, gf:15, gc:18, df:-3 },
+    { pos:'13°', equipo:'GEBA',          copas:'',                    pts:14, pj:13, pg:3, pe:5, pp:5, gf:11, gc:18, df:-7 },
+    { pos:'14°', equipo:'CISSAB',        copas:'Promoción',           pts:14, pj:13, pg:4, pe:2, pp:7, gf:12, gc:20, df:-8 },
+    { pos:'15°', equipo:'LOS MOLINOS',   copas:'Descenso',            pts:11, pj:13, pg:3, pe:2, pp:8, gf:14, gc:25, df:-11 },
+    { pos:'16°', equipo:'TOCALLI',       copas:'Descenso',            pts:10, pj:13, pg:3, pe:1, pp:9, gf:20, gc:28, df:-8 },
+  ],
+  partidos: [
+    { rival:'EL CHASQUI', fecha:'COPA', local:'LOCAL',    resultado:'2-1', gf:2, gc:1, parciales:'0-1; 2-1', posCSB:'Octavos', obs:'Buen partido en líneas generales. Lo ganamos desde el banco. Erramos muchos goles.' },
+    { rival:'VILO',        fecha:'1',   local:'VISITANTE', resultado:'1-1', gf:1, gc:1, parciales:'0-1; 1-1', posCSB:'–',       obs:'Partido más de empuje que buen juego. Meten un golazo de corner. El 2T fuimos a buscarlo y los cambios entraron bien para empatar.' },
+    { rival:'REGATAS',     fecha:'2',   local:'LOCAL',    resultado:'1-1', gf:1, gc:1, parciales:'0-1; 1-1', posCSB:'2°',      obs:'Partido muy físico. De nuevo nos convierten de pelota parada. El 2T con más espacios estuvimos mejor. Se meten un gol en contra insólito.' },
+    { rival:'LA NEGRA',    fecha:'3',   local:'VISITANTE', resultado:'1-0', gf:1, gc:0, parciales:'1-0',      posCSB:'12°',     obs:'Mejor 2T que 1T. Ellos salieron a presionarnos alto y se quedaron sin piernas. Muy sólidos defensivamente.' },
+    { rival:'LA PLATA',    fecha:'4',   local:'LOCAL',    resultado:'0-0', gf:0, gc:0, parciales:'–',         posCSB:'7°',      obs:'Manejamos bien la pelota en el 1T. En el 2T generamos dos claras de gol y no pudimos concretar.' },
+    { rival:'NORDELTA',    fecha:'5',   local:'VISITANTE', resultado:'2-1', gf:2, gc:1, parciales:'1-0, 1-1, 2-1', posCSB:'8°', obs:'Controlamos la pelota casi todo el partido. Les expulsan un jugador a los 40\'. Nos empatan con pelota parada. Lo ganamos en el agregado.' },
+    { rival:'MACABI',      fecha:'6',   local:'LOCAL',    resultado:'5-2', gf:5, gc:2, parciales:'1-0,1-1,2-1,2-2,5-2', posCSB:'7°', obs:'Gran partido en ataque, flojos defensivamente. Se quedan con uno menos y cometen un penal con el partido 2-2. Los últimos 10 minutos fueron nuestros.' },
+    { rival:'CISSAB',      fecha:'7',   local:'VISITANTE', resultado:'2-1', gf:2, gc:1, parciales:'0-1, 2-1', posCSB:'2°',     obs:'Cancha MUY chica. Empezamos perdiendo pero lo empatamos antes del 1T. El cambio de sistema en el 2T nos benefició para darlo vuelta.' },
+    { rival:'TOCALLI',     fecha:'8',   local:'VISITANTE', resultado:'3-1', gf:3, gc:1, parciales:'0-1, 3-1', posCSB:'2°',     obs:'Entramos dormidos y nos convierten a los 5\'. Lo remontamos con 3 goles de Lolo antes del entretiempo.' },
+    { rival:'LOS MOLINOS', fecha:'9',   local:'LOCAL',    resultado:'2-1', gf:2, gc:1, parciales:'2-0, 2-1', posCSB:'1°',     obs:'Gran 1T. Expulsión pelotuda a los 35\'. Ellos descuentan con pelota parada en la última jugada del PT. En el 2T bloque bajo con uno menos.' },
+    { rival:'HARRODS',     fecha:'10',  local:'VISITANTE', resultado:'3-0', gf:3, gc:0, parciales:'3-0',      posCSB:'1°',     obs:'Partidazo defensivo. Arranca con penal errado de ellos. Nos vamos 2-0 al ET. En el 2T Lolo hace un golazo. Mucho corazón para mantener el 0.' },
+    { rival:'LIBERTADOR',  fecha:'COPA',local:'LOCAL',    resultado:'5-2', gf:5, gc:2, parciales:'2-0, 2-2, 5-2', posCSB:'Cuartos', obs:'Buenos primeros 25\'. Entramos dormidos al 2T y el rival empata. Después lo vamos a buscar con el doble 9 y les metimos 3 goles.' },
+    { rival:'UBA',         fecha:'11',  local:'LOCAL',    resultado:'3-0', gf:3, gc:0, parciales:'3-0',      posCSB:'1°',     obs:'Los 3 goles en el PT, todos de contraataque. Sólidos con bloque medio. En el 2T se rompe el partido con expulsiones.' },
+    { rival:'AFALP',       fecha:'12',  local:'VISITANTE', resultado:'0-0', gf:0, gc:0, parciales:'–',        posCSB:'1°',     obs:'Partido chato con pocas situaciones para ambos equipos. Faltó intensidad. Merecido empate.' },
+    { rival:'ITALIANO',    fecha:'13',  local:'LOCAL',    resultado:'1-0', gf:1, gc:0, parciales:'1-0',      posCSB:'1°',     obs:'Partido duro. Nos pusimos en ventaja en el PT. En el 2T sufrimos en el final con el rival buscando el empate.' },
+    { rival:'GEBA',        fecha:'14',  local:'VISITANTE', resultado:null, gf:null, gc:null, parciales:'',    posCSB:'1°',     obs:'' },
+    { rival:'SITAS',       fecha:'15',  local:'LOCAL',    resultado:null, gf:null, gc:null, parciales:'',    posCSB:'1°',     obs:'' },
+  ],
+  jugadores: [
+    { nombre:'Lolo Pellegrino',        pos:'DC',  citado:14, titular:10, goles:10, asist:1, rojas:0 },
+    { nombre:'Justo Gottlieb',         pos:'DC',  citado:15, titular:4,  goles:7,  asist:0, rojas:0 },
+    { nombre:'Ramiro Hermida',         pos:'MD',  citado:16, titular:16, goles:5,  asist:3, rojas:0 },
+    { nombre:'Felipe Bello',           pos:'MI',  citado:13, titular:7,  goles:2,  asist:3, rojas:0 },
+    { nombre:'Benito Jasiukiewicz',    pos:'MI',  citado:7,  titular:2,  goles:2,  asist:0, rojas:0 },
+    { nombre:'Theo Jurs',              pos:'DFC', citado:14, titular:13, goles:1,  asist:1, rojas:0 },
+    { nombre:'Carlos M. Cecchi',       pos:'MC',  citado:11, titular:8,  goles:1,  asist:1, rojas:0 },
+    { nombre:'Francisco Vittar',       pos:'MCO', citado:16, titular:13, goles:1,  asist:4, rojas:0 },
+    { nombre:'Fernando Cobian',        pos:'DC',  citado:15, titular:0,  goles:1,  asist:1, rojas:0 },
+    { nombre:'Iñaki Usandizaga',       pos:'ARQ', citado:16, titular:15, goles:0,  asist:1, rojas:0 },
+    { nombre:'Alexis Pereyra',         pos:'ARQ', citado:15, titular:1,  goles:0,  asist:0, rojas:0 },
+    { nombre:'Fermin Garces',          pos:'DFI', citado:16, titular:14, goles:0,  asist:0, rojas:0 },
+    { nombre:'Juan Moyano',            pos:'DFC', citado:14, titular:14, goles:0,  asist:0, rojas:0 },
+    { nombre:'Marcos Gicovate',        pos:'DFD', citado:16, titular:15, goles:0,  asist:0, rojas:0 },
+    { nombre:'Segundo Bourse',         pos:'MI',  citado:15, titular:14, goles:0,  asist:0, rojas:0 },
+    { nombre:'Bautista Elhaiek',       pos:'MC',  citado:14, titular:12, goles:0,  asist:0, rojas:0 },
+    { nombre:'Facundo Llauro',         pos:'MC',  citado:13, titular:9,  goles:0,  asist:0, rojas:0 },
+    { nombre:'Mateo Schwartz',         pos:'DFI', citado:13, titular:3,  goles:0,  asist:1, rojas:0 },
+    { nombre:'Tato Castro',            pos:'MI',  citado:11, titular:4,  goles:0,  asist:0, rojas:0 },
+    { nombre:'Genaro Falconi',         pos:'DFD', citado:9,  titular:3,  goles:0,  asist:0, rojas:0 },
+    { nombre:'Valentin Ruocco',        pos:'DFC', citado:8,  titular:2,  goles:0,  asist:0, rojas:0 },
+    { nombre:'Juan B. Basavilbaso',    pos:'DFI', citado:3,  titular:1,  goles:0,  asist:1, rojas:0 },
+    { nombre:'Juan Cruz Aleixo',       pos:'ARQ', citado:0,  titular:0,  goles:0,  asist:0, rojas:0 },
+  ],
+};
 
-            descargarDatosBase();
-        }
+const DATA_B = {
+  tabla: [
+    { pos:'1°',  equipo:'GEBA AZUL',       copas:'Campeón y Supercopa',  pts:30, pj:13, pg:9, pe:3, pp:1, gf:23, gc:3,  df:20 },
+    { pos:'2°',  equipo:'LAMROTH HAKOL',   copas:'Ascenso y Supercopa',  pts:27, pj:13, pg:8, pe:3, pp:2, gf:18, gc:10, df:8 },
+    { pos:'3°',  equipo:'UNLAM',           copas:'Promoción y Recopa',   pts:24, pj:13, pg:7, pe:3, pp:3, gf:20, gc:13, df:7 },
+    { pos:'4°',  equipo:'ITALIANO B',      copas:'Recopa',               pts:23, pj:13, pg:5, pe:8, pp:0, gf:21, gc:14, df:7 },
+    { pos:'5°',  equipo:'SITAS B',         copas:'Copa de Honor',        pts:23, pj:13, pg:6, pe:5, pp:2, gf:21, gc:16, df:5 },
+    { pos:'6°',  equipo:'TROVADOR',        copas:'Copa de Honor',        pts:22, pj:13, pg:6, pe:4, pp:3, gf:22, gc:16, df:6 },
+    { pos:'7°',  equipo:'MELMAC',          copas:'',                     pts:20, pj:13, pg:5, pe:5, pp:3, gf:20, gc:12, df:8 },
+    { pos:'8°',  equipo:'BANCO CIUDAD',    copas:'',                     pts:18, pj:13, pg:4, pe:6, pp:3, gf:19, gc:11, df:8 },
+    { pos:'9°',  equipo:'LIBERTADOR',      copas:'',                     pts:16, pj:13, pg:4, pe:4, pp:5, gf:19, gc:18, df:1 },
+    { pos:'10°', equipo:'SANTA BARBARA B', copas:'',                     pts:16, pj:13, pg:5, pe:1, pp:7, gf:16, gc:21, df:-5, csb:true },
+    { pos:'11°', equipo:'GALICIA BLANCO',  copas:'',                     pts:15, pj:13, pg:4, pe:3, pp:6, gf:15, gc:20, df:-5 },
+    { pos:'12°', equipo:'HACOAJ',          copas:'',                     pts:13, pj:13, pg:3, pe:4, pp:6, gf:13, gc:18, df:-5 },
+    { pos:'13°', equipo:'HEBRAICA',        copas:'',                     pts:11, pj:13, pg:3, pe:2, pp:8, gf:10, gc:20, df:-10 },
+    { pos:'14°', equipo:'LIBERTADOR B',    copas:'',                     pts:10, pj:13, pg:2, pe:4, pp:7, gf:15, gc:22, df:-7 },
+    { pos:'15°', equipo:'P.A.C',           copas:'Descenso',             pts:7,  pj:13, pg:1, pe:4, pp:8, gf:12, gc:23, df:-11 },
+    { pos:'16°', equipo:'REGATAS B',       copas:'Descenso',             pts:6,  pj:13, pg:1, pe:3, pp:9, gf:9,  gc:26, df:-17 },
+  ],
+  partidos: [
+    { rival:'ZAFADOS F.C.',   fecha:'COPA', local:'LOCAL',    resultado:'1-0', gf:1, gc:0, parciales:'1-0',             posCSB:'Octavos', obs:'' },
+    { rival:'SITAS C',        fecha:'1',    local:'VISITANTE', resultado:'3-0', gf:3, gc:0, parciales:'3-0',             posCSB:'–',       obs:'Ganó, gustó y goleó. Rival flojo pero jugamos muy bien.' },
+    { rival:'REGATAS B',      fecha:'2',    local:'LOCAL',    resultado:'2-1', gf:2, gc:1, parciales:'0-1, 2-1',        posCSB:'2°',      obs:'Manejamos bien la pelota. Nos meten un gol de corner pero lo damos vuelta con un penal y golazo de Fossa.' },
+    { rival:'MELMAC',         fecha:'3',    local:'VISITANTE', resultado:'1-7', gf:1, gc:7, parciales:'0-6, 1-7',       posCSB:'1°',      obs:'Partido para el olvido. Jugamos con 1 menos desde los 20 PT. Máxima derrota en la historia de Primera B.' },
+    { rival:'TROVADOR',       fecha:'4',    local:'LOCAL',    resultado:'0-1', gf:0, gc:1, parciales:'0-1',             posCSB:'6°',      obs:'Jugamos con 15 jugadores total. Se lesionan 2 en el primer tiempo. El rival nos mete el gol faltando 5 min.' },
+    { rival:'GALICIA BLANCO', fecha:'5',    local:'VISITANTE', resultado:'0-3', gf:0, gc:3, parciales:'0-3',            posCSB:'6°',      obs:'' },
+    { rival:'UNLAM',          fecha:'6',    local:'LOCAL',    resultado:'0-2', gf:0, gc:2, parciales:'0-2',             posCSB:'10°',     obs:'Nos meten un golazo temprano. Falta peso ofensivo. Se rompe con expulsión tardía y el 0-2 de ellos.' },
+    { rival:'ITALIANO B',     fecha:'7',    local:'VISITANTE', resultado:'0-1', gf:0, gc:1, parciales:'0-1',            posCSB:'12°',     obs:'Cambio de sistema y de actitud pero los cambios en el 2T nos desordenaron. El rival gana con un gol en contra nuestro.' },
+    { rival:'HEBRAICA',       fecha:'8',    local:'VISITANTE', resultado:'1-0', gf:1, gc:0, parciales:'1-0',            posCSB:'13°',     obs:'Rival flojo. Nos costó concretar pero lo ganamos en el final del 2T.' },
+    { rival:'LIBERTADOR',     fecha:'9',    local:'LOCAL',    resultado:'3-4', gf:3, gc:4, parciales:'0-1,1-2,2-2,2-4,3-4', posCSB:'11°', obs:'' },
+    { rival:'LAMROTH HAKOL',  fecha:'10',   local:'VISITANTE', resultado:'0-1', gf:0, gc:1, parciales:'0-1',            posCSB:'13°',     obs:'Buen partido en líneas generales. Ellos nos llegaron 2 veces y metieron gol en el PT. No pudimos concretar.' },
+    { rival:'SHOLEM',         fecha:'COPA', local:'LOCAL',    resultado:'0-3', gf:0, gc:3, parciales:'0-3',             posCSB:'Cuartos', obs:'No se transmitió nada y en ningún momento nos metimos en el partido.' },
+    { rival:'GEBA AZUL',      fecha:'11',   local:'LOCAL',    resultado:'1-1', gf:1, gc:1, parciales:'0-1, 1-1',       posCSB:'13°',     obs:'Gran partido desde el esfuerzo. Volvimos a ser un equipo. Casi lo ganamos en el 2T contra el puntero.' },
+    { rival:'HACOAJ',         fecha:'12',   local:'VISITANTE', resultado:'4-0', gf:4, gc:0, parciales:'4-0',            posCSB:'12°',     obs:'Empezamos ganando en el primer tiempo. Se abre al final con 3 goles en los últimos 10 minutos. Gran victoria.' },
+    { rival:'BANCO CIUDAD',   fecha:'13',   local:'LOCAL',    resultado:'1-0', gf:1, gc:0, parciales:'1-0',             posCSB:'12°',     obs:'' },
+    { rival:'P.A.C',          fecha:'14',   local:'VISITANTE', resultado:null, gf:null, gc:null, parciales:'',          posCSB:'10°',     obs:'' },
+    { rival:'SITAS B',        fecha:'15',   local:'LOCAL',    resultado:null, gf:null, gc:null, parciales:'',           posCSB:'',        obs:'' },
+  ],
+  jugadores: [
+    { nombre:'Patricio Garre',         citado:14, titular:11, goles:3, asist:0, rojas:0 },
+    { nombre:'Francisco Moresco',      citado:12, titular:10, goles:2, asist:3, rojas:0 },
+    { nombre:'Felipe Fossa',           citado:13, titular:9,  goles:2, asist:1, rojas:1 },
+    { nombre:'Vicente Fiore',          citado:13, titular:10, goles:1, asist:1, rojas:0 },
+    { nombre:'Bautista Fossa',         citado:14, titular:12, goles:1, asist:0, rojas:0 },
+    { nombre:'Joaquin Cadenas (c)',    citado:15, titular:13, goles:0, asist:1, rojas:0 },
+    { nombre:'Mateo Alfonso',          citado:13, titular:11, goles:0, asist:0, rojas:0 },
+    { nombre:'Esteban Fernandez King', citado:12, titular:10, goles:0, asist:0, rojas:0 },
+    { nombre:'Santiago Chapur',        citado:11, titular:8,  goles:0, asist:0, rojas:0 },
+    { nombre:'Agustin Gounaridis',     citado:12, titular:9,  goles:0, asist:0, rojas:0 },
+    { nombre:'Bautista Baylac',        citado:11, titular:9,  goles:0, asist:0, rojas:0 },
+    { nombre:'Jaime Cafferata',        citado:11, titular:10, goles:0, asist:0, rojas:0 },
+    { nombre:'Matias Garcia Lanusse',  citado:10, titular:6,  goles:0, asist:0, rojas:0 },
+    { nombre:'Jeronimo Costa',         citado:9,  titular:5,  goles:0, asist:0, rojas:0 },
+    { nombre:'Teo Bellotti',           citado:9,  titular:4,  goles:0, asist:0, rojas:0 },
+    { nombre:'Matias Gerber',          citado:8,  titular:4,  goles:0, asist:0, rojas:0 },
+    { nombre:'Alfonso Lamm',           citado:8,  titular:3,  goles:0, asist:0, rojas:0 },
+    { nombre:'Matias Vera',            citado:7,  titular:3,  goles:0, asist:0, rojas:0 },
+    { nombre:'Rocco Tessarolo',        citado:5,  titular:2,  goles:0, asist:0, rojas:0 },
+    { nombre:'Juan Tutaglio',          citado:5,  titular:2,  goles:0, asist:0, rojas:0 },
+    { nombre:'Felipe Navasal',         citado:5,  titular:2,  goles:0, asist:0, rojas:0 },
+    { nombre:'Matias Guidoni',         citado:4,  titular:2,  goles:0, asist:0, rojas:0 },
+    { nombre:'Tomas Bernard',          citado:4,  titular:1,  goles:0, asist:0, rojas:0 },
+    { nombre:'Eugenio Saguier',        citado:3,  titular:1,  goles:0, asist:0, rojas:0 },
+    { nombre:'Simon Gazzera',          citado:2,  titular:0,  goles:0, asist:0, rojas:0 },
+    { nombre:'Juan Vigano',            citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
+    { nombre:'Joaquin Paz',            citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
+    { nombre:'Bautista Busch',         citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
+  ],
+};
 
-        function volverAlMenu() {
-            document.getElementById('pantallaBienvenida').classList.remove('hidden');
-            document.getElementById('pantallaContenido').classList.add('hidden');
-            document.getElementById('seccionDestacados').classList.add('hidden');
-        }
+// ─── RENDER ──────────────────────────────────────────────────────────────────
 
-        function extraerTextoValido(celda, esPorcentaje = false) {
-            if (!celda) return esPorcentaje ? "0%" : "0";
-            let txt = "";
-            if (celda.f !== undefined && celda.f !== null) txt = celda.f.toString();
-            else if (celda.v !== undefined && celda.v !== null) txt = celda.v.toString();
-            else return esPorcentaje ? "0%" : "0";
-
-            txt = txt.trim();
-            if (esPorcentaje && !txt.includes('%')) {
-                let n = parseFloat(txt.replace(',', '.'));
-                if (!isNaN(n) && n > 0 && n < 1) return Math.round(n * 100) + "%";
-            }
-            return txt || "0";
-        }
-
-        async function descargarDatosBase() {
-            const contenedorGlobal = document.getElementById('statsGlobalesEquipo');
-            
-            if (categorySelected === 'A' || categorySelected === 'B') {
-                try {
-                    const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
-                    const idHist = categorySelected === 'A' ? SPREADSHEET_ID : SPREADSHEET_ID_HIST_B;
-                    const rangoHist = categorySelected === 'A' ? 'D28:J29' : 'D16:J17';
-                    const urlHistorial = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoHist}`;
-                    const rHist = await fetch(urlHistorial);
-                    const tHistRaw = await rHist.text();
-                    
-                    const jHistText = tHistRaw.substring(tHistRaw.indexOf("{"), tHistRaw.lastIndexOf("}") + 1);
-                    const datosHist = JSON.parse(jHistText);
-                    const filas = datosHist.table.rows;
-                    
-                    if (filas && filas.length >= 2) {
-                        const r28 = filas[0].c || [];
-                        const r29 = filas[1].c || [];
-
-                        const pj = extraerTextoValido(r28[0]);
-                        const pg = extraerTextoValido(r28[1]);
-                        const pe = extraerTextoValido(r28[2]);
-                        const pp = extraerTextoValido(r28[3]);
-                        const gf = extraerTextoValido(r28[4]);
-                        const gc = extraerTextoValido(r28[5]);
-                        const vi = extraerTextoValido(r28[6]);
-
-                        const pctPG = extraerTextoValido(r29[1], true);
-                        const pctPE = extraerTextoValido(r29[2], true);
-                        const pctPP = extraerTextoValido(r29[3], true);
-                        const promGF = extraerTextoValido(r29[4]);
-                        const promGC = extraerTextoValido(r29[5]);
-                        const pctVI = extraerTextoValido(r29[6], true);
-
-                        contenedorGlobal.innerHTML = `
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-gray-500 font-bold uppercase">PJ</p>
-                                <p class="text-base font-black text-white mt-0.5">${pj}</p>
-                                <p class="text-[8px] text-gray-600 font-medium">Totales</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-emerald-500 font-bold uppercase">PG</p>
-                                <p class="text-base font-black text-emerald-400 mt-0.5">${pg}</p>
-                                <p class="text-[8px] text-emerald-600/80 font-bold">${pctPG}</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-yellow-500 font-bold uppercase">PE</p>
-                                <p class="text-base font-black text-yellow-400 mt-0.5">${pe}</p>
-                                <p class="text-[8px] text-yellow-600/80 font-bold">${pctPE}</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-red-500 font-bold uppercase">PP</p>
-                                <p class="text-base font-black text-red-400 mt-0.5">${pp}</p>
-                                <p class="text-[8px] text-red-600/80 font-bold">${pctPP}</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-blue-500 font-bold uppercase">GF</p>
-                                <p class="text-base font-black text-blue-400 mt-0.5">${gf}</p>
-                                <p class="text-[8px] text-blue-500/60 font-medium">${promGF} p/p</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-orange-500 font-bold uppercase">GC</p>
-                                <p class="text-base font-black text-orange-400 mt-0.5">${gc}</p>
-                                <p class="text-[8px] text-orange-500/60 font-medium">${promGC} p/p</p>
-                            </div>
-                            <div class="bg-gray-950 p-2 border border-gray-800 rounded-xl">
-                                <p class="text-[9px] text-cyan-400 font-bold uppercase">Vallas Inv.</p>
-                                <p class="text-base font-black text-cyan-400 mt-0.5">${vi}</p>
-                                <p class="text-[8px] text-cyan-600 font-bold">${pctVI}</p>
-                            </div>
-                            <div class="bg-gradient-to-t from-green-950/40 to-gray-950 p-2 border border-green-500/20 rounded-xl col-span-full mt-2 flex justify-between items-center px-4">
-                                <span class="text-[10px] text-green-400 font-bold uppercase tracking-wider">Efectividad Histórica del Club:</span>
-                                <span class="text-base font-black text-green-400">${pctPG} de Victorias</span>
-                            </div>
-                        `;
-                    }
-                } catch (e) {
-                    console.error(e);
-                    contenedorGlobal.innerHTML = `<div class="text-xs text-red-400 col-span-full py-2">⚠️ Error temporal al sincronizar con Google.</div>`;
-                }
-            }
-
-            try {
-                const urlJugadores = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${GIDS[categorySelected]}`;
-                const rJug = await fetch(urlJugadores);
-                const tJugRaw = await rJug.text();
-                const jJugText = tJugRaw.substring(tJugRaw.indexOf("{"), tJugRaw.lastIndexOf("}") + 1);
-                const datosJug = JSON.parse(jJugText);
-                
-                const filasJug = datosJug.table.rows;
-                listaJugadoresProcesada = [];
-
-                for (let i = 2; i < filasJug.length; i++) {
-                    const celdas = filasJug[i].c;
-                    if (!celdas || !celdas[1] || !celdas[1].v) continue;
-                    
-                    const nombre = celdas[1].v.toString();
-                    if (nombre.toLowerCase().includes("total") || nombre.toLowerCase().includes("promedio")) continue;
-
-                    const puesto = celdas[2] && celdas[2].v ? celdas[2].v : "Jugador";
-                    const pj = celdas[3] && celdas[3].v !== null ? parseInt(celdas[3].v) : 0;
-                    const goles = celdas[4] && celdas[4].v !== null ? parseInt(celdas[4].v) : 0;
-                    const asistencias = celdas[5] && celdas[5].v !== null ? parseInt(celdas[5].v) : 0;
-                    
-                    listaJugadoresProcesada.push({ nombre, puesto, pj, goles, asistencias });
-                }
-
-                await calcularEInyectarTop5();
-
-            } catch (e) { 
-                console.error("Error calculando plantel:", e); 
-            }
-        }
-
-async function calcularEInyectarTop5() {
-    const contenedor = document.getElementById('contenedorTop5');
-    
-    // Función auxiliar para generar las medallas del ranking
-    function obtenerBadgePosicion(idx) {
-        if (idx === 0) return `<span class="w-5 h-5 rounded-full bg-amber-500 text-gray-950 font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(245,158,11,0.4)]">1</span>`;
-        if (idx === 1) return `<span class="w-5 h-5 rounded-full bg-slate-400 text-gray-950 font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(148,163,184,0.4)]">2</span>`;
-        if (idx === 2) return `<span class="w-5 h-5 rounded-full bg-amber-700 text-white font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(180,83,9,0.4)]">3</span>`;
-        return `<span class="text-gray-500 font-bold ml-1.5 mr-1">#${idx + 1}</span>`;
-    }
-
-    let htmlPartidos = '';
-    let htmlGoles = '';
-    let htmlAsistencias = '';
-
-    if (categorySelected === 'A' || categorySelected === 'B') {
-        try {
-            const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
-            const idHist = categorySelected === 'A' ? SPREADSHEET_ID : SPREADSHEET_ID_HIST_B;
-            
-            // Definición dinámica de rangos según la categoría basada en tu documento
-            const rangoPart = categorySelected === 'A' ? 'O7:Q11' : 'N5:Q9';
-            const rangoGoles = categorySelected === 'A' ? 'B33:D37' : 'A22:D26';
-            const rangoAsist = categorySelected === 'A' ? 'G33:J37' : 'G22:J26';
-
-            // 1. PROCESAR MÁS PARTIDOS
-            const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoPart}`;
-            const rTop = await fetch(urlTopPartidos);
-            const tTopRaw = await rTop.text();
-            const jTopText = tTopRaw.substring(tTopRaw.indexOf("{"), tTopRaw.lastIndexOf("}") + 1);
-            const datosTop = JSON.parse(jTopText);
-            
-            htmlPartidos += `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🏃‍♂️ Más Partidos</h4><div class="space-y-2">`;
-            
-            datosTop.table.rows.forEach((fila, idx) => {
-                const c = fila.c || [];
-                let nombreCompleto, partidos;
-                
-                if (categorySelected === 'A') {
-                    const parte1 = c[0] && c[0].v !== null ? c[0].v.toString().trim() : "";
-                    const parte2 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
-                    nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
-                    partidos = c[2] && c[2].v !== null ? c[2].v : 0;
-                } else {
-                    // Primera B (N5:Q9): Nombre en O y P (índices 1 y 2), Cantidad en Q (índice 3)
-                    const parte1 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
-                    const parte2 = c[2] && c[2].v !== null ? c[2].v.toString().trim() : "";
-                    nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
-                    partidos = c[3] && c[3].v !== null ? c[3].v : 0;
-                }
-                
-                htmlPartidos += `
-                    <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
-                        <div class="flex items-center gap-2 truncate max-w-[130px]">
-                            ${obtenerBadgePosicion(idx)}
-                            <span class="font-medium text-gray-300 truncate">${nombreCompleto}</span>
-                        </div>
-                        <span class="font-black text-white bg-gray-800 px-2 py-0.5 rounded-md text-[11px]">${partidos} PJ</span>
-                    </div>`;
-            });
-            htmlPartidos += `</div></div>`;
-
-
-            // 2. PROCESAR MÁXIMOS GOLEADORES
-            const urlTopGoles = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoGoles}`;
-            const rGoles = await fetch(urlTopGoles);
-            const tGolesRaw = await rGoles.text();
-            const jGolesText = tGolesRaw.substring(tGolesRaw.indexOf("{"), tGolesRaw.lastIndexOf("}") + 1);
-            const datosGoles = JSON.parse(jGolesText);
-
-            htmlGoles += `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-emerald-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">⚽ Goleadores</h4><div class="space-y-2">`;
-
-            datosGoles.table.rows.forEach((fila, idx) => {
-                const c = fila.c || [];
-                // Para ambas categorías, el nombre se compone de las columnas B y C (índices 1 y 2) y el valor está en D (índice 3)
-                const parte1 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : "";
-                const parte2 = c[2] && c[2].v !== null ? c[2].v.toString().trim() : "";
-                const nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
-                const goles = c[3] && c[3].v !== null ? c[3].v : 0;
-
-                htmlGoles += `
-                    <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
-                        <div class="flex items-center gap-2 truncate max-w-[130px]">
-                            ${obtenerBadgePosicion(idx)}
-                            <span class="font-medium text-gray-300 truncate">${nombreCompleto}</span>
-                        </div>
-                        <span class="font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[11px]">${goles} G</span>
-                    </div>`;
-            });
-            htmlGoles += `</div></div>`;
-
-
-            // 3. PROCESAR MÁXIMOS ASISTENTES
-            const urlTopAsist = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoAsist}`;
-            const rAsist = await fetch(urlTopAsist);
-            const tAsistRaw = await rAsist.text();
-            const jAsistText = tAsistRaw.substring(tAsistRaw.indexOf("{"), tAsistRaw.lastIndexOf("}") + 1);
-            const datosAsist = JSON.parse(jAsistText);
-
-            htmlAsistencias += `<div class="bg-gray-950/40 border border-gray-800/60 rounded-2xl p-4 shadow-md"><h4 class="text-xs font-black text-blue-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">🎯 Asistentes</h4><div class="space-y-2">`;
-
-            datosAsist.table.rows.forEach((fila, idx) => {
-                const c = fila.c || [];
-                // Rangos G22:J26 para B y G33:J37 para A. 
-                // El formato de la API de Sheets recorta el rango, por lo que el primer elemento devuelto (índice 0) siempre mapea a la columna H (Nombre) y el índice 1 a la columna I (Apellido) debido a que la columna G sólo contiene la posición física y a veces viene vacía o nula.
-                // Para asegurar compatibilidad exacta:
-                const parte1 = c[1] && c[1].v !== null ? c[1].v.toString().trim() : (c[0] && c[0].v !== null ? c[0].v.toString().trim() : "");
-                const parte2 = c[2] && c[2].v !== null ? c[2].v.toString().trim() : "";
-                const nombreCompleto = `${parte1} ${parte2}`.trim() || "Jugador";
-                const asistencias = c[3] && c[3].v !== null ? c[3].v : 0;
-
-                htmlAsistencias += `
-                    <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl text-xs border border-gray-800/40">
-                        <div class="flex items-center gap-2 truncate max-w-[130px]">
-                            ${obtenerBadgePosicion(idx)}
-                            <span class="font-medium text-gray-300 truncate">${nombreCompleto}</span>
-                        </div>
-                        <span class="font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-[11px]">${asistencias} A</span>
-                    </div>`;
-            });
-            htmlAsistencias += `</div></div>`;
-
-            // Inyectamos las 3 columnas juntas de forma limpia en el contenedor de Tailwind
-            contenedor.innerHTML = htmlPartidos + htmlGoles + htmlAsistencias;
-            document.getElementById('seccionDestacados').classList.remove('hidden');
-
-        } catch (e) {
-            console.error("Error trayendo destacados históricos desde Google Sheets:", e);
-            contenedor.innerHTML = `<div class="text-xs text-red-400 col-span-full py-2">⚠️ Error al cargar los rankings históricos. Asegúrate de que las celdas contengan datos válidos.</div>`;
-        }
-    }
+function copaColor(copa) {
+  if (!copa) return '';
+  if (copa.includes('Descenso')) return 'color:var(--rojo)';
+  if (copa.includes('Campeón') || copa.includes('Ascenso')) return 'color:var(--dorado)';
+  if (copa.includes('Recopa') || copa.includes('Promoción')) return 'color:var(--verde)';
+  if (copa.includes('Copa de Honor')) return 'color:#3b82f6';
+  return '';
 }
 
-        function cambiarSubseccion(tipo) {
-            const area = document.getElementById('areaDinamica');
-            
-            if (tipo === 'jugadores') {
-                let html = `<div class="border-b border-gray-800 pb-2 mb-4"><h3 class="text-sm font-black uppercase text-blue-400 tracking-wider">📋 Plantel Completo</h3></div><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">`;
-                listaJugadoresProcesada.forEach(j => {
-                    html += `<div class="bg-gray-900 rounded-2xl p-5 border border-gray-800 shadow-xl flex flex-col justify-between group hover:border-blue-500/20 transition-all"><div class="text-[10px] font-black uppercase text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md w-max">${j.puesto}</div><h3 class="text-lg font-bold text-white mt-3">${j.nombre}</h3><div class="grid grid-cols-3 gap-2 mt-6 text-center border-t border-gray-800/60 pt-4"><div><p class="text-[10px] text-gray-500 font-bold uppercase">PJ</p><p class="text-base font-black text-gray-200">${j.pj}</p></div><div><p class="text-[10px] text-gray-500 font-bold uppercase">Goles</p><p class="text-base font-black text-emerald-400">${j.goles}</p></div><div><p class="text-[10px] text-gray-500 font-bold uppercase">Asist.</p><p class="text-base font-black text-blue-400">${j.asistencias}</p></div></div></div>`;
-                });
-                html += `</div>`;
-                area.innerHTML = html;
-            } else {
-                const titulos = { torneo: "🏆 Torneo Actual", antiguos: "⏳ Torneos Antiguos", historial: "⚔️ Historial versus Clubes" };
-                area.innerHTML = `<div class="bg-gray-900 border border-gray-800 p-8 rounded-3xl text-center space-y-2"><div class="text-3xl">⚽</div><h3 class="text-sm font-black text-white uppercase">${titulos[tipo]}</h3><p class="text-xs text-gray-400 max-w-sm mx-auto">Módulo listo para vincular datos.</p></div>`;
-            }
-        }
-    </script>
+function renderTabla(data, id) {
+  document.getElementById(id).innerHTML = data.tabla.map(t => {
+    const rc = t.csb ? 'csb-row' : (t.pos === '1°' ? 'pos-1' : '');
+    const dfStr = t.df > 0 ? '+' + t.df : '' + t.df;
+    const dfColor = t.df > 0 ? 'var(--verde)' : t.df < 0 ? 'var(--rojo)' : 'inherit';
+    return `<tr class="${rc}">
+      <td><strong>${t.pos}</strong></td>
+      <td>${t.csb ? '<strong>⭐ ' + t.equipo + '</strong>' : t.equipo}</td>
+      <td style="font-size:0.75rem;${copaColor(t.copas)}">${t.copas || ''}</td>
+      <td><strong>${t.pts}</strong></td><td>${t.pj}</td>
+      <td style="color:var(--verde)">${t.pg}</td><td>${t.pe}</td>
+      <td style="color:var(--rojo)">${t.pp}</td>
+      <td>${t.gf}</td><td>${t.gc}</td>
+      <td style="font-weight:600;color:${dfColor}">${dfStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+function resultClass(p) {
+  if (p.gf === null) return '';
+  return p.gf > p.gc ? 'win' : p.gf === p.gc ? 'draw' : 'loss';
+}
+
+function resultBadge(p) {
+  if (p.gf === null) return '<span style="color:#bbb;font-size:0.8rem">Pendiente</span>';
+  if (p.gf > p.gc) return '<span class="badge badge-g">G</span>';
+  if (p.gf === p.gc) return '<span class="badge badge-e">E</span>';
+  return '<span class="badge badge-p">P</span>';
+}
+
+function renderPartidos(data, id) {
+  document.getElementById(id).innerHTML = data.partidos.map(p => {
+    const isCopa = isNaN(parseInt(p.fecha));
+    const jornada = isCopa ? '🏆 Copa – ' + (p.posCSB || '') : 'Fecha ' + p.fecha;
+    const resultado = p.resultado || '– vs –';
+    return `<div class="partido-card ${resultClass(p)}">
+      <div class="p-header">
+        <span class="p-jornada">${jornada}</span>
+        <span style="font-size:0.78rem;color:#888">${p.local}</span>
+      </div>
+      <div class="p-rival">vs ${p.rival} &nbsp; ${resultBadge(p)}</div>
+      <div class="p-resultado">${resultado}</div>
+      ${p.parciales ? `<div class="p-meta"><span>Parciales: ${p.parciales}</span></div>` : ''}
+      ${p.obs ? `<div class="p-obs">${p.obs}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderJugadores(data, id, showPos) {
+  const sorted = [...data.jugadores].sort((a,b) => b.goles - a.goles || b.asist - a.asist || b.titular - a.titular);
+  document.getElementById(id).innerHTML = sorted.map((j, i) => {
+    const posTag = showPos ? `<td><span style="font-size:0.75rem;background:var(--gris);padding:2px 6px;border-radius:4px">${j.pos}</span></td>` : '';
+    return `<tr>
+      <td><strong>${j.nombre}</strong></td>
+      ${posTag}
+      <td>${j.citado}</td>
+      <td>${j.titular}</td>
+      <td>${j.goles > 0 ? '<strong style="color:var(--verde)">'+j.goles+'</strong>' : '–'}</td>
+      <td>${j.asist > 0 ? '<strong style="color:var(--azul-claro)">'+j.asist+'</strong>' : '–'}</td>
+      <td>${j.rojas > 0 ? '<span style="color:var(--rojo)">'+j.rojas+'</span>' : '–'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+
+const charts = {};
+
+function initCharts(eq) {
+  if (charts[eq]) return;
+  charts[eq] = true;
+
+  const data = eq === 'a' ? DATA_A : DATA_B;
+  const suffix = '-' + eq;
+
+  // Goleadores
+  const goleadores = data.jugadores.filter(j => j.goles > 0).sort((a,b) => b.goles - a.goles);
+  new Chart(document.getElementById('chart-goles' + suffix), {
+    type: 'bar',
+    data: {
+      labels: goleadores.map(j => j.nombre.split(' ')[0] + ' ' + (j.nombre.split(' ').slice(-1)[0] || '')),
+      datasets: [
+        { label: 'Goles', data: goleadores.map(j => j.goles), backgroundColor: '#1a3a6e', borderRadius: 6 },
+        { label: 'Asistencias', data: goleadores.map(j => j.asist), backgroundColor: '#c8a84b', borderRadius: 6 },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  // Evolución posición
+  const torneoPartidos = data.partidos.filter(p => !isNaN(parseInt(p.fecha)));
+  const labels = torneoPartidos.map(p => 'F' + p.fecha);
+  const posiciones = torneoPartidos.map(p => parseInt(p.posCSB) || null);
+  new Chart(document.getElementById('chart-pos' + suffix), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{ label: 'Posición', data: posiciones, borderColor: '#1a3a6e', backgroundColor: 'rgba(26,58,110,0.1)', tension: 0.3, fill: true, pointBackgroundColor: '#c8a84b', pointRadius: 5, spanGaps: false }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { reverse: true, min: 1, max: 16, ticks: { stepSize: 3 } } } }
+  });
+
+  // Resultados doughnut
+  const csbRow = data.tabla.find(t => t.csb);
+  new Chart(document.getElementById('chart-res' + suffix), {
+    type: 'doughnut',
+    data: {
+      labels: ['Victorias', 'Empates', 'Derrotas'],
+      datasets: [{ data: [csbRow.pg, csbRow.pe, csbRow.pp], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // GF/GC por partido (solo equipo A)
+  if (eq === 'a') {
+    const jugados = data.partidos.filter(p => !isNaN(parseInt(p.fecha)) && p.gf !== null);
+    new Chart(document.getElementById('chart-gfgc-a'), {
+      type: 'bar',
+      data: {
+        labels: jugados.map(p => 'F'+p.fecha+' '+p.rival.slice(0,7)),
+        datasets: [
+          { label: 'Goles a favor', data: jugados.map(p => p.gf), backgroundColor: '#22c55e', borderRadius: 4 },
+          { label: 'Goles en contra', data: jugados.map(p => p.gc), backgroundColor: '#ef4444', borderRadius: 4 },
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  }
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+
+const navBtns = document.querySelectorAll('nav button');
+
+function showTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  navBtns.forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'graficos') initCharts('a');
+}
+
+function setEquipo(tab, eq, btn) {
+  const section = document.getElementById('tab-' + tab);
+  section.querySelectorAll('.equipo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  section.querySelectorAll('[id^="' + tab + '-"]').forEach(el => {
+    el.style.display = el.id.endsWith('-' + eq) ? '' : 'none';
+  });
+}
+
+function setGraf(eq, btn) {
+  const section = document.getElementById('tab-graficos');
+  section.querySelectorAll('.equipo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('graficos-a').style.display = eq === 'a' ? '' : 'none';
+  document.getElementById('graficos-b').style.display = eq === 'b' ? '' : 'none';
+  initCharts(eq);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderTabla(DATA_A, 'tabla-a');
+renderTabla(DATA_B, 'tabla-b');
+renderPartidos(DATA_A, 'grid-partidos-a');
+renderPartidos(DATA_B, 'grid-partidos-b');
+renderJugadores(DATA_A, 'jug-a', true);
+renderJugadores(DATA_B, 'jug-b', false);
+</script>
 </body>
 </html>
