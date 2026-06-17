@@ -146,6 +146,8 @@
 
     <script>
         const SPREADSHEET_ID = "153DVd4H-hTuYitiYk3M2YMkFGwODq0Ul8gKZWRQUSP0";
+        // La hoja "Estadisticas Historicas" de Primera B vive en OTRO documento de Google Sheets.
+        const SPREADSHEET_ID_HIST_B = "1FiExBWfpmbopelhlAtv9toq1ewuWXR3FrHbbuvS18Rk";
         const GIDS = {
             A: "964524187", 
             B: "181745424",
@@ -244,8 +246,9 @@
             if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
                     const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const idHist = categorySelected === 'A' ? SPREADSHEET_ID : SPREADSHEET_ID_HIST_B;
                     const rangoHist = categorySelected === 'A' ? 'D28:J29' : 'D16:J17';
-                    const urlHistorial = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoHist}`;
+                    const urlHistorial = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoHist}`;
                     const rHist = await fetch(urlHistorial);
                     const tHistRaw = await rHist.text();
                     
@@ -373,8 +376,9 @@ async function calcularEInyectarTop5() {
             if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
                     const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const idHist = categorySelected === 'A' ? SPREADSHEET_ID : SPREADSHEET_ID_HIST_B;
                     const rangoPart = categorySelected === 'A' ? 'O7:Q11' : 'O4:P8';
-                    const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoPart}`;
+                    const urlTopPartidos = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoPart}`;
                     const rTop = await fetch(urlTopPartidos);
                     const tTopRaw = await rTop.text();
                     const jTopText = tTopRaw.substring(tTopRaw.indexOf("{"), tTopRaw.lastIndexOf("}") + 1);
@@ -426,8 +430,9 @@ async function calcularEInyectarTop5() {
             if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
                     const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const idHist = categorySelected === 'A' ? SPREADSHEET_ID : SPREADSHEET_ID_HIST_B;
                     const rangoGoles = categorySelected === 'A' ? 'B33:D37' : 'B22:D26';
-                    const urlTopGoles = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoGoles}`;
+                    const urlTopGoles = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoGoles}`;
                     const rGoles = await fetch(urlTopGoles);
                     const tGolesRaw = await rGoles.text();
                     const jGolesText = tGolesRaw.substring(tGolesRaw.indexOf("{"), tGolesRaw.lastIndexOf("}") + 1);
@@ -471,8 +476,9 @@ async function calcularEInyectarTop5() {
             if (categorySelected === 'A' || categorySelected === 'B') {
                 try {
                     const gidHist = categorySelected === 'A' ? GIDS.HISTORIAL_A : GIDS.HISTORIAL_B;
+                    const idHist = categorySelected === 'A' ? SPREADSHEET_ID : SPREADSHEET_ID_HIST_B;
                     const rangoAsist = categorySelected === 'A' ? 'H33:J37' : 'H22:J26';
-                    const urlTopAsistencias = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoAsist}`;
+                    const urlTopAsistencias = `https://docs.google.com/spreadsheets/d/${idHist}/gviz/tq?tqx=out:json&gid=${gidHist}&range=${rangoAsist}`;
                     const rAsistencias = await fetch(urlTopAsistencias);
                     const tAsistenciasRaw = await rAsistencias.text();
                     const jAsistenciasText = tAsistenciasRaw.substring(tAsistenciasRaw.indexOf("{"), tAsistenciasRaw.lastIndexOf("}") + 1);
