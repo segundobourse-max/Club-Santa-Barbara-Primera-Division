@@ -590,13 +590,32 @@ const DATA_A = {
     { nombre:'Juan Cruz Aleixo',    pos:'ARQ', citado:0,  titular:0,  goles:0,  asist:0, rojas:0 },
   ],
   historico: { pj:266, pg:123, pe:57, pp:87, gf:501, gc:365, vi:57 },
+  topHist: {
+    partidos: [
+      { nombre:'Tomas Elhaiek',      valor:215 },
+      { nombre:'Felipe Bello',       valor:204 },
+      { nombre:'Juan Moyano',        valor:171 },
+      { nombre:'Mateo Schwartz',     valor:153 },
+      { nombre:'Theo Jurs',          valor:137 },
+    ],
+    goles: [
+      { nombre:'Felipe Bello',       valor:108 },
+      { nombre:'Tomas Elhaiek',      valor:72  },
+      { nombre:'Ramiro Hermida',     valor:68  },
+      { nombre:'Lorenzo Pellegrino', valor:45  },
+      { nombre:'Bautista Elhaiek',   valor:32  },
+    ],
+    asist: [
+      { nombre:'Felipe Bello',       valor:32  },
+      { nombre:'Ramiro Hermida',     valor:27  },
+      { nombre:'Tomas Elhaiek',      valor:24  },
+      { nombre:'Marcos Gicovate',    valor:14  },
+      { nombre:'Adrian Cavallero',   valor:12  },
+    ],
+  },
   titulos: [
     { nombre:'Campeón Apertura AIFA B', anio:'2019' },
-    { nombre:'Campeón Copa Maradona', anio:'2020' },
-    { nombre:'Subcampeón Recopa', anio:'2024' },
-    { nombre:'Subcampeón Recopa', anio:'2025' },
-    { nombre:'Copa (Cuartos de Final)', anio:'2026' },
-    { nombre:'Líder Apertura 2026 (en curso)', anio:'2026' },
+    { nombre:'Campeón Copa Maradona',   anio:'2020' },
   ],
   proximos: [
     { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
@@ -676,10 +695,31 @@ const DATA_B = {
     { nombre:'Bautista Busch',        citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
   ],
   historico: { pj:108, pg:57, pe:25, pp:26, gf:212, gc:133, vi:33 },
+  topHist: {
+    partidos: [
+      { nombre:'Joaquin Cadenas',       valor:99 },
+      { nombre:'Teo Bellotti',          valor:87 },
+      { nombre:'Mateo Alfonso',         valor:81 },
+      { nombre:'Esteban Fernandez King',valor:70 },
+      { nombre:'Manuel Diaz Bridge',    valor:65 },
+    ],
+    goles: [
+      { nombre:'Vicente Fiore',         valor:40 },
+      { nombre:'Segundo Bourse',        valor:36 },
+      { nombre:'Joaquin Cadenas',       valor:36 },
+      { nombre:'Juan Vigano',           valor:25 },
+      { nombre:'Carlos Marcelo Cecchi', valor:21 },
+    ],
+    asist: [
+      { nombre:'Segundo Bourse',        valor:22 },
+      { nombre:'Joaquin Cadenas',       valor:21 },
+      { nombre:'Carlos Marcelo Cecchi', valor:14 },
+      { nombre:'Vicente Fiore',         valor:9  },
+      { nombre:'Tomas Mayer',           valor:6  },
+    ],
+  },
   titulos: [
     { nombre:'Campeón Apertura AIFA D', anio:'2024' },
-    { nombre:'Ascenso Clausura AIFA C', anio:'2024' },
-    { nombre:'Copa (Octavos de Final)', anio:'2026' },
   ],
   proximos: [
     { fecha:'Fecha 14', rival:'P.A.C', local:'VISITANTE', rivalPos:'12°' },
@@ -766,20 +806,14 @@ function renderResumen() {
   const h = d.historico;
   const pct = (n) => ((n / h.pj) * 100).toFixed(0) + '%';
 
-  // ── TOP 10 lists ──
-  const hasPos = isA;
-  const byPartidos  = [...d.jugadores].sort((a,b) => b.citado - a.citado || b.titular - a.titular).slice(0, 10);
-  const byGoles     = [...d.jugadores].sort((a,b) => b.goles  - a.goles  || b.asist - a.asist).slice(0, 10);
-  const byAsist     = [...d.jugadores].sort((a,b) => b.asist  - a.asist  || b.goles - a.goles).slice(0, 10);
+  // ── TOP 5 historical lists ──
+  const { partidos: byPartidos, goles: byGoles, asist: byAsist } = d.topHist;
 
-  function top10Row(jug, i, val, showPos) {
+  function top10Row(jug, i) {
     return `<div class="top10-row">
       <span class="top10-rank ${rankClass(i)}">${rankLabel(i)}</span>
-      <span class="top10-name">
-        <strong>${jug.nombre}</strong>
-        ${showPos && jug.pos ? `<br><span class="top10-pos">${jug.pos}</span>` : ''}
-      </span>
-      <span class="top10-val">${val}</span>
+      <span class="top10-name"><strong>${jug.nombre}</strong></span>
+      <span class="top10-val">${jug.valor}</span>
     </div>`;
   }
 
@@ -790,7 +824,7 @@ function renderResumen() {
     <!-- Estadísticas históricas + Títulos -->
     <div class="resumen-grid">
       <div class="stats-hist">
-        <div class="stats-hist-title">📊 Estadísticas Temporada 2026</div>
+        <div class="stats-hist-title">📊 Estadísticas Históricas</div>
         <div class="stats-hist-grid">
           <div class="sh-item">
             <div class="sh-value">${h.pj}</div>
@@ -845,19 +879,19 @@ function renderResumen() {
       </div>
     </div>
 
-    <!-- TOP 10 -->
+    <!-- TOP 5 histórico -->
     <div class="top10-grid">
       <div class="top10-card">
-        <div class="top10-header">👟 TOP 10 – Más partidos</div>
-        ${byPartidos.map((j,i) => top10Row(j, i, j.citado, hasPos)).join('')}
+        <div class="top10-header">👟 TOP 5 – Más partidos</div>
+        ${byPartidos.map((j,i) => top10Row(j, i)).join('')}
       </div>
       <div class="top10-card">
-        <div class="top10-header">⚽ TOP 10 – Máximos goleadores</div>
-        ${byGoles.map((j,i) => top10Row(j, i, j.goles || '–', hasPos)).join('')}
+        <div class="top10-header">⚽ TOP 5 – Máximos goleadores</div>
+        ${byGoles.map((j,i) => top10Row(j, i)).join('')}
       </div>
       <div class="top10-card">
-        <div class="top10-header">🎯 TOP 10 – Máximos asistidores</div>
-        ${byAsist.map((j,i) => top10Row(j, i, j.asist || '–', hasPos)).join('')}
+        <div class="top10-header">🎯 TOP 5 – Máximos asistidores</div>
+        ${byAsist.map((j,i) => top10Row(j, i)).join('')}
       </div>
     </div>
 
