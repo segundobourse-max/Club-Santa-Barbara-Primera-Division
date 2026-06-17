@@ -287,6 +287,113 @@
     }
 
     footer { text-align: center; padding: 24px; font-size: 0.72rem; color: var(--gris-texto); border-top: 1px solid var(--gris); margin-top: 40px; }
+
+    /* ── RESUMEN LAYOUT ── */
+    .resumen-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 860px) { .resumen-grid { grid-template-columns: 1fr; } }
+
+    .stats-hist {
+      background: var(--azul-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 20px 24px;
+    }
+    .stats-hist-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gris-texto);
+      margin-bottom: 16px;
+    }
+    .stats-hist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 12px;
+    }
+    .sh-item { text-align: center; }
+    .sh-value { font-size: 1.7rem; font-weight: 900; color: var(--blanco); line-height: 1; }
+    .sh-pct   { font-size: 0.72rem; color: var(--dorado); font-weight: 700; margin-top: 2px; }
+    .sh-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gris-texto); margin-top: 2px; }
+    .sh-divider { width: 1px; background: rgba(255,255,255,0.06); align-self: stretch; }
+
+    .titulos-card {
+      background: var(--azul-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 20px 22px;
+    }
+    .titulos-card-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gris-texto);
+      margin-bottom: 14px;
+    }
+    .titulo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.82rem;
+    }
+    .titulo-item:last-child { border-bottom: none; }
+    .titulo-name { color: var(--texto); }
+    .titulo-count { font-weight: 800; color: var(--dorado); }
+
+    /* ── TOP 10 TABLES ── */
+    .top10-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 860px) { .top10-grid { grid-template-columns: 1fr; } }
+
+    .top10-card {
+      background: var(--azul-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .top10-header {
+      padding: 14px 16px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gris-texto);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .top10-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+    .top10-row:last-child { border-bottom: none; }
+    .top10-row:hover { background: rgba(255,255,255,0.03); }
+    .top10-rank {
+      width: 22px;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .rank-1 { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.6); }
+    .rank-2 { color: #cbd5e1; text-shadow: 0 0 6px rgba(203,213,225,0.4); }
+    .rank-3 { color: #cd7f32; text-shadow: 0 0 6px rgba(205,127,50,0.4); }
+    .rank-n { color: var(--gris-texto); }
+    .top10-name { flex: 1; font-size: 0.82rem; color: var(--texto); }
+    .top10-name strong { color: var(--blanco); font-weight: 600; }
+    .top10-pos { font-size: 0.68rem; background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 4px; color: var(--gris-texto); }
+    .top10-val { font-size: 1rem; font-weight: 900; color: var(--dorado); min-width: 24px; text-align: right; }
   </style>
 </head>
 <body>
@@ -482,16 +589,10 @@ const DATA_A = {
     { nombre:'Juan B. Basavilbaso', pos:'DFI', citado:3,  titular:1,  goles:0,  asist:1, rojas:0 },
     { nombre:'Juan Cruz Aleixo',    pos:'ARQ', citado:0,  titular:0,  goles:0,  asist:0, rojas:0 },
   ],
-  resumenCards: [
-    { label:'Posición', value:'1°', sub:'Líder de la tabla', color:'var(--dorado)' },
-    { label:'Puntos', value:'31', sub:'13 partidos jugados' },
-    { label:'Record', value:'9G · 4E · 0P', small:true, sub:'Único invicto del torneo' },
-    { label:'Goles', value:'24 – 8', small:true, sub:'Diferencia: +16' },
-  ],
-  resumenExtra: [
-    { label:'Máximo goleador', value:'Lolo Pellegrino', sub:'10 goles en el torneo' },
-    { label:'Más asistencias', value:'Francisco Vittar', sub:'4 asistencias' },
-    { label:'Copa', value:'Cuartos de Final', sub:'Ganó vs El Chasqui y Libertador' },
+  historico: { pj:15, pg:11, pe:4, pp:0, gf:31, gc:11, vi:6 },
+  titulos: [
+    { nombre:'Campeón 1ª División', anio:'2026 (en curso)' },
+    { nombre:'Copa (Cuartos de Final)', anio:'2026' },
   ],
   proximos: [
     { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
@@ -570,16 +671,9 @@ const DATA_B = {
     { nombre:'Joaquin Paz',           citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
     { nombre:'Bautista Busch',        citado:1,  titular:0,  goles:0, asist:0, rojas:0 },
   ],
-  resumenCards: [
-    { label:'Posición', value:'10°', sub:'De 16 equipos' },
-    { label:'Puntos', value:'16', sub:'13 partidos jugados' },
-    { label:'Record', value:'5G · 1E · 7P', small:true, sub:'Torneo irregular' },
-    { label:'Goles', value:'16 – 21', small:true, sub:'Diferencia: -5' },
-  ],
-  resumenExtra: [
-    { label:'Máximo goleador', value:'Patricio Garre', sub:'3 goles en el torneo' },
-    { label:'Mayor victoria', value:'4-0 vs Hacoaj', sub:'Fecha 12' },
-    { label:'Copa', value:'Eliminado en Cuartos', sub:'0-3 vs Sholem' },
+  historico: { pj:15, pg:6, pe:1, pp:8, gf:17, gc:24, vi:5 },
+  titulos: [
+    { nombre:'Copa (Octavos de Final)', anio:'2026' },
   ],
   proximos: [
     { fecha:'Fecha 14', rival:'P.A.C', local:'VISITANTE', rivalPos:'12°' },
@@ -653,28 +747,115 @@ function showTab(name, btn) {
 // ──────────────────────────────────────────────
 // RENDER: RESUMEN
 // ──────────────────────────────────────────────
+function rankClass(i) {
+  return i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n';
+}
+function rankLabel(i) {
+  return i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '';
+}
+
 function renderResumen() {
   const d = currentData;
-  const hasPos = d === DATA_A;
+  const isA = d === DATA_A;
+  const h = d.historico;
+  const pct = (n) => ((n / h.pj) * 100).toFixed(0) + '%';
+
+  // ── TOP 10 lists ──
+  const hasPos = isA;
+  const byPartidos  = [...d.jugadores].sort((a,b) => b.citado - a.citado || b.titular - a.titular).slice(0, 10);
+  const byGoles     = [...d.jugadores].sort((a,b) => b.goles  - a.goles  || b.asist - a.asist).slice(0, 10);
+  const byAsist     = [...d.jugadores].sort((a,b) => b.asist  - a.asist  || b.goles - a.goles).slice(0, 10);
+
+  function top10Row(jug, i, val, showPos) {
+    return `<div class="top10-row">
+      <span class="top10-rank ${rankClass(i)}">${rankLabel(i)}</span>
+      <span class="top10-name">
+        <strong>${jug.nombre}</strong>
+        ${showPos && jug.pos ? `<br><span class="top10-pos">${jug.pos}</span>` : ''}
+      </span>
+      <span class="top10-val">${val}</span>
+    </div>`;
+  }
+
   const container = document.getElementById('resumen-content');
   container.innerHTML = `
-    <div class="section-title">${hasPos ? '🏆' : '⚽'} Estadísticas Generales – ${d.nombre}</div>
-    <div class="cards cards-4" style="margin-bottom:20px">
-      ${d.resumenCards.map(c => `
-        <div class="card card-accent">
-          <div class="card-label">${c.label}</div>
-          <div class="card-value" style="${c.small?'font-size:1.3rem;':''} ${c.color?'color:'+c.color+';':''}">${c.value}</div>
-          <div class="card-sub">${c.sub}</div>
-        </div>`).join('')}
+    <div class="section-title" style="margin-bottom:16px">${isA ? '🏆' : '⚽'} Resumen – ${d.nombre}</div>
+
+    <!-- Estadísticas históricas + Títulos -->
+    <div class="resumen-grid">
+      <div class="stats-hist">
+        <div class="stats-hist-title">📊 Estadísticas Temporada 2026</div>
+        <div class="stats-hist-grid">
+          <div class="sh-item">
+            <div class="sh-value">${h.pj}</div>
+            <div class="sh-label">Partidos<br>Jugados</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="color:var(--verde)">${h.pg}</div>
+            <div class="sh-pct">${pct(h.pg)}</div>
+            <div class="sh-label">Ganados</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="color:var(--dorado)">${h.pe}</div>
+            <div class="sh-pct">${pct(h.pe)}</div>
+            <div class="sh-label">Empatados</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="color:var(--rojo)">${h.pp}</div>
+            <div class="sh-pct">${pct(h.pp)}</div>
+            <div class="sh-label">Perdidos</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="color:var(--azul-claro)">${h.gf}</div>
+            <div class="sh-label">Goles a<br>Favor</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="color:var(--rojo)">${h.gc}</div>
+            <div class="sh-label">Goles en<br>Contra</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value">${h.vi}</div>
+            <div class="sh-pct">${pct(h.vi)}</div>
+            <div class="sh-label">Vallas<br>Invictas</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="font-size:1.3rem">${(h.gf/h.pj).toFixed(1)}</div>
+            <div class="sh-label">Goles/Partido<br>a Favor</div>
+          </div>
+          <div class="sh-item">
+            <div class="sh-value" style="font-size:1.3rem">${(h.gc/h.pj).toFixed(1)}</div>
+            <div class="sh-label">Goles/Partido<br>en Contra</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="titulos-card">
+        <div class="titulos-card-title">🏅 Títulos Oficiales</div>
+        ${d.titulos.map(t => `
+          <div class="titulo-item">
+            <span class="titulo-name">${t.nombre}</span>
+            <span class="titulo-count">${t.anio}</span>
+          </div>`).join('')}
+      </div>
     </div>
-    <div class="cards cards-3" style="margin-bottom:28px">
-      ${d.resumenExtra.map(c => `
-        <div class="card">
-          <div class="card-label">${c.label}</div>
-          <div class="card-value" style="font-size:1rem;padding-top:4px">${c.value}</div>
-          <div class="card-sub">${c.sub}</div>
-        </div>`).join('')}
+
+    <!-- TOP 10 -->
+    <div class="top10-grid">
+      <div class="top10-card">
+        <div class="top10-header">👟 TOP 10 – Más partidos</div>
+        ${byPartidos.map((j,i) => top10Row(j, i, j.citado, hasPos)).join('')}
+      </div>
+      <div class="top10-card">
+        <div class="top10-header">⚽ TOP 10 – Máximos goleadores</div>
+        ${byGoles.map((j,i) => top10Row(j, i, j.goles || '–', hasPos)).join('')}
+      </div>
+      <div class="top10-card">
+        <div class="top10-header">🎯 TOP 10 – Máximos asistidores</div>
+        ${byAsist.map((j,i) => top10Row(j, i, j.asist || '–', hasPos)).join('')}
+      </div>
     </div>
+
+    <!-- Próximos -->
     <div class="section-title">🗓 Próximos Partidos</div>
     <div class="partidos-grid">
       ${d.proximos.map(p => `
