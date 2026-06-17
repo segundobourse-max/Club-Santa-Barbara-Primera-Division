@@ -200,8 +200,9 @@
     }
     nav button.active, nav button:hover { color: var(--blanco); border-bottom-color: var(--dorado); }
 
-    .panel { display: none; padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
+    .panel { display: none; padding: 24px 20px; width: 100%; }
     .panel.active { display: block; }
+    @media (min-width: 1200px) { .panel { padding: 28px 40px; } }
 
     .section-title {
       font-size: 1.15rem;
@@ -363,11 +364,12 @@
     }
     .top10-header {
       padding: 14px 16px;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--gris-texto);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--blanco);
+      background: rgba(255,255,255,0.04);
+      border-bottom: 2px solid var(--dorado);
     }
     .top10-row {
       display: flex;
@@ -404,7 +406,7 @@
 <div id="landing">
   <img src="logo-csb.webp" class="landing-logo" alt="Club Santa Bárbara" />
   <div class="landing-title">Club <span>Santa Bárbara</span></div>
-  <div class="landing-sub">Temporada 2026</div>
+  <div class="landing-sub">Estadísticas Generales</div>
 
   <div class="landing-cards">
     <div class="landing-card" onclick="openSection('a')">
@@ -443,10 +445,10 @@
 
   <nav id="main-nav">
     <button class="active" onclick="showTab('resumen', this)">Resumen</button>
-    <button onclick="showTab('posiciones', this)">Posiciones</button>
-    <button onclick="showTab('partidos', this)">Partidos</button>
-    <button onclick="showTab('jugadores', this)">Jugadores</button>
-    <button onclick="showTab('graficos', this)">Gráficos</button>
+    <button onclick="showTab('posiciones', this)">Torneos Actuales</button>
+    <button onclick="showTab('jugadores', this)">Estadísticas Jugadores</button>
+    <button onclick="showTab('partidos', this)">Historial vs Clubes</button>
+    <button onclick="showTab('graficos', this)">Torneos Antiguos</button>
   </nav>
 
   <!-- RESUMEN -->
@@ -704,11 +706,11 @@ const DATA_B = {
       { nombre:'Manuel Diaz Bridge',    valor:65 },
     ],
     goles: [
-      { nombre:'Vicente Fiore',         valor:40 },
-      { nombre:'Segundo Bourse',        valor:36 },
-      { nombre:'Joaquin Cadenas',       valor:36 },
-      { nombre:'Juan Vigano',           valor:25 },
-      { nombre:'Carlos Marcelo Cecchi', valor:21 },
+      { nombre:'Vicente Fiore',         valor:31 },
+      { nombre:'Juan Vigano',           valor:19 },
+      { nombre:'Joaquin Cadenas',       valor:15 },
+      { nombre:'Segundo Bourse',        valor:14 },
+      { nombre:'Guillermo Diaz Mayer',  valor:13 },
     ],
     asist: [
       { nombre:'Segundo Bourse',        valor:22 },
