@@ -463,32 +463,50 @@
     /* ── APERTURA TORNEO PAGE ── */
     .ap-overview {
       display: grid;
-      grid-template-columns: 1fr 210px 210px;
+      grid-template-columns: 1fr 270px;
       gap: 16px;
       margin-bottom: 24px;
-      align-items: start;
+      align-items: stretch;
     }
     @media (max-width: 960px) { .ap-overview { grid-template-columns: 1fr; } }
+    .ap-match-cards { display:flex; flex-direction:column; gap:12px; }
     .ap-card-title {
       font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
       color: var(--gris-texto); font-weight: 700;
       margin-bottom: 10px; padding-bottom: 8px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    .ap-standings-card, .ap-match-card {
+    .ap-standings-card {
       background: var(--azul-card);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 14px;
       padding: 16px;
     }
-    .ap-match-card { display:flex; flex-direction:column; gap:5px; }
-    .ap-mc-rival { font-size:1rem; font-weight:800; color:var(--blanco); }
-    .ap-mc-score { font-size:1.9rem; font-weight:900; color:var(--dorado); }
-    .ap-mc-meta  { font-size:0.72rem; color:var(--gris-texto); line-height:1.5; }
-    .ap-mc-pending { font-size:0.85rem; color:var(--gris-texto); font-style:italic; margin-top:6px; }
+    .ap-match-card {
+      background: var(--azul-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 6px;
+      flex: 1; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .ap-match-card:hover { border-color: rgba(255,255,255,0.16); }
+    .ap-mc-rival { font-size:1.15rem; font-weight:800; color:var(--blanco); line-height:1.2; }
+    .ap-mc-score { font-size:2.4rem; font-weight:900; color:var(--dorado); line-height:1.1; margin:4px 0; }
+    .ap-mc-meta  { font-size:0.72rem; color:var(--gris-texto); line-height:1.7; }
+    .ap-mc-pending { font-size:0.95rem; color:var(--dorado); font-weight:700; margin:4px 0; }
+    .ap-mc-badge { display:inline-block; font-size:0.6rem; font-weight:700; text-transform:uppercase;
+                   letter-spacing:0.07em; padding:2px 7px; border-radius:20px; margin-bottom:4px; }
+    .ap-mc-badge.won  { background:rgba(34,197,94,0.18); color:var(--verde); }
+    .ap-mc-badge.lost { background:rgba(239,68,68,0.18); color:var(--rojo); }
+    .ap-mc-badge.draw { background:rgba(245,158,11,0.18); color:var(--dorado); }
+    .ap-mc-badge.next { background:rgba(59,130,246,0.18); color:var(--azul-claro); }
     .ap-table { width:100%; border-collapse:collapse; font-size:0.73rem; }
-    .ap-table th { color:var(--gris-texto); font-weight:600; padding:3px 5px; text-align:left; font-size:0.62rem; text-transform:uppercase; }
-    .ap-table td { padding:4px 5px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--texto); }
+    .ap-table th { color:var(--gris-texto); font-weight:600; padding:3px 5px; text-align:center; font-size:0.6rem; text-transform:uppercase; }
+    .ap-table th:nth-child(2) { text-align:left; }
+    .ap-table td { padding:4px 5px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--texto); text-align:center; }
+    .ap-table td:nth-child(2) { text-align:left; }
     .ap-table tr.csb-row td { color:var(--azul-claro); font-weight:700; background:rgba(59,130,246,0.08); }
     .ap-fechas-title { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); margin-bottom:10px; font-weight:700; }
     .ap-fecha-nav { display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; padding-bottom:6px; margin-bottom:20px; }
@@ -509,12 +527,12 @@
     }
     @media (max-width:600px) { .ap-match-summary { grid-template-columns:1fr; text-align:center; } }
     .ap-ms-rival { font-size:1.05rem; font-weight:800; color:var(--blanco); }
-    .ap-ms-score { font-size:2.2rem; font-weight:900; color:var(--dorado); text-align:center; }
+    .ap-ms-score { font-size:2.4rem; font-weight:900; color:var(--dorado); text-align:center; }
     .ap-ms-meta  { font-size:0.75rem; color:var(--gris-texto); display:flex; flex-direction:column; gap:3px; }
     .ap-detail-grid {
-      display:grid; grid-template-columns:1fr 210px; gap:16px; align-items:start;
+      display:grid; grid-template-columns:1fr 310px; gap:16px; align-items:start;
     }
-    @media (max-width:800px) { .ap-detail-grid { grid-template-columns:1fr; } }
+    @media (max-width:900px) { .ap-detail-grid { grid-template-columns:1fr; } }
     .ap-pitch-outer {
       background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
       border-radius:14px; padding:16px;
@@ -524,44 +542,53 @@
       position:relative;
       background:linear-gradient(180deg,#15803d 0%,#166534 100%);
       border-radius:6px; width:100%; aspect-ratio:2/3;
-      overflow:hidden; max-width:400px; margin:0 auto;
+      overflow:hidden; max-width:420px; margin:0 auto;
     }
     .ap-pitch-line { position:absolute; background:rgba(255,255,255,0.22); }
     .ap-pitch-circle { position:absolute; border:2px solid rgba(255,255,255,0.22); border-radius:50%; transform:translate(-50%,-50%); }
     .ap-player {
       position:absolute; transform:translate(-50%,-50%);
-      display:flex; flex-direction:column; align-items:center; gap:2px; z-index:2;
+      display:flex; flex-direction:column; align-items:center; gap:3px; z-index:2;
     }
     .ap-pdot {
-      width:28px; height:28px; border-radius:50%; background:var(--azul-claro);
+      width:32px; height:32px; border-radius:50%; background:var(--azul-claro);
       border:2px solid rgba(255,255,255,0.9);
       display:flex; align-items:center; justify-content:center;
-      font-size:0.6rem; font-weight:900; color:#fff;
+      font-size:0.58rem; font-weight:900; color:#fff; letter-spacing:-0.02em;
       box-shadow:0 2px 6px rgba(0,0,0,0.5);
     }
     .ap-pdot.scored { background:var(--verde); }
     .ap-pname {
-      background:rgba(0,0,0,0.72); color:#fff; font-size:0.53rem; font-weight:700;
+      background:rgba(0,0,0,0.78); color:#fff; font-size:0.52rem; font-weight:700;
       padding:1px 4px; border-radius:3px; white-space:nowrap;
-      max-width:68px; overflow:hidden; text-overflow:ellipsis; text-align:center;
+      max-width:72px; overflow:hidden; text-overflow:ellipsis; text-align:center;
     }
     .ap-squad-panel {
       background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
-      border-radius:14px; padding:14px 16px;
+      border-radius:14px; padding:16px 18px;
     }
-    .ap-squad-sec { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); font-weight:700; margin:10px 0 5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .ap-squad-sec { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); font-weight:700; margin:12px 0 6px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.06); }
     .ap-squad-sec:first-child { margin-top:0; }
-    .ap-squad-item { display:flex; align-items:center; gap:6px; padding:3px 0; font-size:0.75rem; color:var(--texto); }
-    .ap-squad-pos { font-size:0.58rem; background:rgba(255,255,255,0.07); padding:1px 5px; border-radius:4px; color:var(--gris-texto); min-width:26px; text-align:center; flex-shrink:0; }
-    .ap-squad-stat { font-size:0.67rem; color:var(--verde); margin-left:auto; }
-    .ap-change { display:flex; align-items:center; gap:5px; padding:3px 0; font-size:0.72rem; flex-wrap:wrap; }
+    .ap-squad-item { display:flex; align-items:center; gap:7px; padding:4px 0; font-size:0.78rem; color:var(--texto); border-bottom:1px solid rgba(255,255,255,0.03); }
+    .ap-squad-item:last-child { border-bottom:none; }
+    .ap-squad-pos { font-size:0.58rem; background:rgba(255,255,255,0.07); padding:1px 5px; border-radius:4px; color:var(--gris-texto); min-width:28px; text-align:center; flex-shrink:0; }
+    .ap-squad-stat { font-size:0.67rem; margin-left:auto; }
+    .ap-squad-stat.gol { color:var(--verde); }
+    .ap-squad-stat.roja { color:var(--rojo); }
+    .ap-change { display:flex; align-items:baseline; gap:6px; padding:5px 0; font-size:0.76rem; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .ap-change:last-child { border-bottom:none; }
     .ap-change .cin { color:var(--verde); font-weight:700; }
-    .ap-change .cout { color:var(--rojo); }
+    .ap-change .cout { color:var(--rojo); opacity:0.85; }
     .ap-change .cmet { font-size:0.65rem; color:var(--gris-texto); }
     .ap-ms-obs { font-size:0.78rem; color:var(--gris-texto); margin-top:8px; font-style:italic; grid-column:1/-1; }
     .ap-copa-legend { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); }
     .ap-legend-item { display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--gris-texto); }
     .ap-legend-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .ap-incidencias { margin-top:14px; background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 18px; }
+    .ap-inc-group { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.78rem; }
+    .ap-inc-group:last-child { border-bottom:none; }
+    .ap-inc-label { font-size:0.68rem; font-weight:700; color:var(--gris-texto); min-width:90px; }
+    .ap-inc-item { background:rgba(255,255,255,0.06); border-radius:6px; padding:2px 8px; color:var(--texto); font-size:0.74rem; }
   </style>
 </head>
 <body>
@@ -1041,13 +1068,17 @@ function buildPitch(titulares) {
     const y = AP_BAND_Y[bi];
     group.forEach((jug, i) => {
       const x = n === 1 ? 50 : (100 * (2*i + 1)) / (2*n);
-      // Show last name (or full name if single word)
-      const parts = jug.nombre.replace(/\s*\(c\)/i,'').trim().split(' ');
-      const label = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+      const parts = jug.nombre.replace(/\s*\(c\)/i,'').trim().split(/\s+/);
+      const initials = parts.length > 1
+        ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+        : parts[0].substring(0,2).toUpperCase();
+      const displayName = parts.length > 1
+        ? parts[0] + ' ' + parts[parts.length-1]
+        : parts[0];
       const scored = jug.goles > 0;
       markers += `<div class="ap-player" style="left:${x.toFixed(1)}%;top:${y}%">
-        <div class="ap-pdot${scored?' scored':''}"></div>
-        <div class="ap-pname">${label}</div>
+        <div class="ap-pdot${scored?' scored':''}">${initials}</div>
+        <div class="ap-pname">${displayName}</div>
       </div>`;
     });
   }
@@ -1116,10 +1147,36 @@ function renderFechaDetail(basic, detail) {
   const suplentes  = jugadores.filter(j => !j.titular && j.entro);
   const convocados = jugadores.filter(j => j.citado && !j.titular && !j.entro);
   const salieron   = jugadores.filter(j => j.salio);
-  const cambios    = suplentes.map(j => {
-    const out = salieron.find(s => apBand(s.pos) === apBand(j.pos));
-    return { inp: j, out };
+
+  // Build cambios: pair each entrant with who they replaced (by positional band)
+  const usedOut = new Set();
+  const cambios = suplentes.map(inp => {
+    const out = salieron.find(s => !usedOut.has(s.nombre) && apBand(s.pos) === apBand(inp.pos))
+             || salieron.find(s => !usedOut.has(s.nombre));
+    if (out) usedOut.add(out.nombre);
+    return { inp, out: out || null };
   });
+
+  // Incidencias
+  const goalScorers = jugadores.filter(j => j.goles > 0);
+  const assisters   = jugadores.filter(j => j.asist  > 0);
+  const redCards    = jugadores.filter(j => j.rojas  > 0);
+  const incidenciasHtml = played && (goalScorers.length || assisters.length || redCards.length) ? `
+    <div class="ap-incidencias">
+      <div class="ap-card-title" style="margin-bottom:8px">📋 Incidencias del Partido</div>
+      ${goalScorers.length ? `<div class="ap-inc-group">
+        <span class="ap-inc-label">⚽ Goles</span>
+        ${goalScorers.map(j => `<span class="ap-inc-item">${j.nombre}${j.goles > 1 ? ' ×'+j.goles : ''}</span>`).join('')}
+      </div>` : ''}
+      ${assisters.length ? `<div class="ap-inc-group">
+        <span class="ap-inc-label">🎯 Asistencias</span>
+        ${assisters.map(j => `<span class="ap-inc-item">${j.nombre}${j.asist > 1 ? ' ×'+j.asist : ''}</span>`).join('')}
+      </div>` : ''}
+      ${redCards.length ? `<div class="ap-inc-group">
+        <span class="ap-inc-label">🟥 Tarjetas rojas</span>
+        ${redCards.map(j => `<span class="ap-inc-item">${j.nombre}</span>`).join('')}
+      </div>` : ''}
+    </div>` : '';
 
   const pitchSection = titulares.length > 0 ? `
     <div class="ap-detail-grid">
@@ -1131,15 +1188,16 @@ function renderFechaDetail(basic, detail) {
         <div class="ap-squad-sec">🟢 Titulares</div>
         ${titulares.map(j => `<div class="ap-squad-item">
           <span class="ap-squad-pos">${j.pos}</span>
-          <span>${j.nombre.replace(/\s*\(c\)/i,' ©')}</span>
-          ${j.goles > 0 ? `<span class="ap-squad-stat">⚽ ${j.goles}</span>` : ''}
+          <span style="flex:1">${j.nombre.replace(/\s*\(c\)/i,' ©')}</span>
+          ${j.goles > 0 ? `<span class="ap-squad-stat gol">⚽ ${j.goles > 1 ? j.goles : ''}</span>` : ''}
+          ${j.rojas > 0 ? `<span class="ap-squad-stat roja">🟥</span>` : ''}
         </div>`).join('')}
         ${suplentes.length ? `
         <div class="ap-squad-sec">🔄 Suplentes que ingresaron</div>
         ${suplentes.map(j => `<div class="ap-squad-item">
           <span class="ap-squad-pos">${j.pos}</span>
-          <span>${j.nombre}</span>
-          ${j.goles > 0 ? `<span class="ap-squad-stat">⚽ ${j.goles}</span>` : ''}
+          <span style="flex:1">${j.nombre}</span>
+          ${j.goles > 0 ? `<span class="ap-squad-stat gol">⚽ ${j.goles > 1 ? j.goles : ''}</span>` : ''}
         </div>`).join('')}` : ''}
         ${convocados.length ? `
         <div class="ap-squad-sec">📋 En el banco</div>
@@ -1147,15 +1205,15 @@ function renderFechaDetail(basic, detail) {
           <span class="ap-squad-pos">${j.pos}</span>
           <span>${j.nombre}</span>
         </div>`).join('')}` : ''}
-        ${cambios.filter(c => c.out).length ? `
+        ${cambios.length ? `
         <div class="ap-squad-sec">↔ Cambios</div>
-        ${cambios.filter(c => c.out).map(c => `<div class="ap-change">
-          <span class="cin">▲ ${c.inp.nombre.split(' ').pop()}</span>
-          <span class="cmet">↔</span>
-          <span class="cout">▽ ${c.out.nombre.split(' ').pop()}</span>
+        ${cambios.map(c => `<div class="ap-change">
+          <span class="cin">▲ ${c.inp.nombre}</span>
+          ${c.out ? `<span class="cmet">por</span><span class="cout">▽ ${c.out.nombre}</span>` : ''}
         </div>`).join('')}` : ''}
       </div>
-    </div>` : (played ? `<div style="color:var(--gris-texto);font-size:0.82rem;padding:12px 0">Dato no disponible – formación no registrada</div>` : '');
+    </div>
+    ${incidenciasHtml}` : (played ? `<div style="color:var(--gris-texto);font-size:0.82rem;padding:12px 0">Dato no disponible – formación no registrada para este partido.</div>` : '');
 
   el.innerHTML = summary + pitchSection;
 }
@@ -1186,24 +1244,28 @@ function renderTorneoApertura() {
   const detLast = last && (d.apertura || []).find(m => String(m.fecha) === String(last.fecha));
   const detNext = next && (d.apertura || []).find(m => String(m.fecha) === String(next.fecha));
 
-  const resColor = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
+  const rc = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
+  const badge = m => m.gf > m.gc ? '<span class="ap-mc-badge won">Victoria</span>' : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>' : '<span class="ap-mc-badge draw">Empate</span>';
 
   const lastCard = last ? `
-    <div class="ap-match-card" style="cursor:pointer" onclick="selectFecha(${last.fecha})">
+    <div class="ap-match-card" onclick="selectFecha(${last.fecha})">
       <div class="ap-card-title">⚽ Último Partido</div>
+      ${badge(last)}
       <div class="ap-mc-rival">vs ${last.rival}</div>
-      <div class="ap-mc-score" style="color:${resColor(last)}">${last.resultado}</div>
-      <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}${detLast && detLast.dia ? ' · ' + detLast.dia : ''}</div>
-      ${last.posCSB ? `<div class="ap-mc-meta">🏅 Pos: ${last.posCSB}</div>` : ''}
+      <div class="ap-mc-score" style="color:${rc(last)}">${last.resultado}</div>
+      <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}${detLast && detLast.dia ? '<br>' + detLast.dia : ''}${detLast && detLast.hora ? ' · ' + detLast.hora : ''}</div>
+      ${last.posCSB ? `<div class="ap-mc-meta" style="color:var(--dorado)">🏅 Posición: ${last.posCSB}</div>` : ''}
+      ${last.obs ? `<div class="ap-mc-meta" style="font-style:italic;margin-top:4px">${last.obs}</div>` : ''}
     </div>` : `<div class="ap-match-card"><div class="ap-card-title">⚽ Último Partido</div><div class="ap-mc-pending">Sin partidos jugados</div></div>`;
 
   const nextCard = next ? `
-    <div class="ap-match-card" style="cursor:pointer" onclick="selectFecha(${next.fecha})">
+    <div class="ap-match-card" onclick="selectFecha(${next.fecha})">
       <div class="ap-card-title">🗓 Próximo Partido</div>
+      <span class="ap-mc-badge next">Próximo</span>
       <div class="ap-mc-rival">vs ${next.rival}</div>
       <div class="ap-mc-pending">Pendiente</div>
-      <div class="ap-mc-meta">Fecha ${next.fecha}${next.local ? ' · ' + next.local : ''}${detNext && detNext.dia ? ' · ' + detNext.dia : ''}</div>
-      ${next.posCSB ? `<div class="ap-mc-meta">🏅 Pos prev: ${next.posCSB}</div>` : ''}
+      <div class="ap-mc-meta">Fecha ${next.fecha}${next.local ? ' · ' + next.local : ''}${detNext && detNext.dia ? '<br>' + detNext.dia : ''}${detNext && detNext.hora ? ' · ' + detNext.hora : ''}</div>
+      ${next.posCSB ? `<div class="ap-mc-meta" style="color:var(--dorado)">🏅 Última pos: ${next.posCSB}</div>` : ''}
     </div>` : `<div class="ap-match-card"><div class="ap-card-title">🗓 Próximo Partido</div><div class="ap-mc-pending">Torneo finalizado</div></div>`;
 
   // Standings table – full columns with copa color coding
@@ -1220,20 +1282,20 @@ function renderTorneoApertura() {
       <div style="overflow-x:auto">
       <table class="ap-table">
         <thead><tr>
-          <th>#</th><th style="text-align:left">Equipo</th>
-          <th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
-          <th>GF</th><th>GC</th><th>DF</th>
-          <th style="text-align:left;min-width:90px">Clasificación</th>
+          <th>#</th><th>Equipo</th>
+          <th style="text-align:left;min-width:80px">Clasificación</th>
+          <th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
+          <th>GF</th><th>GC</th><th>PTS</th><th>DF</th>
         </tr></thead>
         <tbody>${tabla.map(t => {
           const cc = copaColor(t.copas);
           return `<tr class="${t.csb ? 'csb-row' : ''}">
             <td>${t.pos}</td>
-            <td style="text-align:left;font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
-            <td><strong>${t.pts}</strong></td>
+            <td style="font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
+            <td style="text-align:left;font-size:0.7rem;${cc}">${t.copas || ''}</td>
             <td>${t.pj ?? '–'}</td><td>${t.pg ?? '–'}</td><td>${t.pe ?? '–'}</td><td>${t.pp ?? '–'}</td>
-            <td>${t.gf ?? '–'}</td><td>${t.gc ?? '–'}</td><td>${t.df ?? '–'}</td>
-            <td style="text-align:left;font-size:0.72rem;${cc}">${t.copas || ''}</td>
+            <td>${t.gf ?? '–'}</td><td>${t.gc ?? '–'}</td>
+            <td><strong>${t.pts}</strong></td><td>${t.df ?? '–'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table>
@@ -1254,7 +1316,7 @@ function renderTorneoApertura() {
   document.getElementById('torneo-apertura-content').innerHTML = `
     <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
     <div class="section-title" style="margin-bottom:20px">🥇 ${name}</div>
-    <div class="ap-overview">${tablaHtml}${lastCard}${nextCard}</div>
+    <div class="ap-overview">${tablaHtml}<div class="ap-match-cards">${lastCard}${nextCard}</div></div>
     <div class="ap-fechas-title">📅 Fechas del Torneo</div>
     <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas registradas</span>'}</div>
     <div id="ap-fecha-detail"></div>`;
