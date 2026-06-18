@@ -558,6 +558,10 @@
     .ap-change .cin { color:var(--verde); font-weight:700; }
     .ap-change .cout { color:var(--rojo); }
     .ap-change .cmet { font-size:0.65rem; color:var(--gris-texto); }
+    .ap-ms-obs { font-size:0.78rem; color:var(--gris-texto); margin-top:8px; font-style:italic; grid-column:1/-1; }
+    .ap-copa-legend { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); }
+    .ap-legend-item { display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--gris-texto); }
+    .ap-legend-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
   </style>
 </head>
 <body>
@@ -1063,54 +1067,64 @@ function buildPitch(titulares) {
   return `<div class="ap-pitch">${markings}${markers}</div>`;
 }
 
-function renderFechaDetail(match) {
+function renderFechaDetail(basic, detail) {
   const el = document.getElementById('ap-fecha-detail');
-  if (!match) { el.innerHTML = ''; return; }
+  if (!basic && !detail) { el.innerHTML = ''; return; }
 
-  const titulares  = match.jugadores.filter(j => j.titular);
-  const suplentes  = match.jugadores.filter(j => !j.titular && j.entro);
-  const convocados = match.jugadores.filter(j => j.citado && !j.titular && !j.entro);
-  const salieron   = match.jugadores.filter(j => j.salio);
+  // Merge: detail fields override basic when available
+  const rival     = (detail && detail.rival)     || (basic && basic.rival)     || 'Dato no disponible';
+  const fecha     = (detail && detail.fecha)     || (basic && basic.fecha)     || '?';
+  const resultado = (detail && detail.resultado) || (basic && basic.resultado) || null;
+  const gf        = detail ? detail.gf : (basic ? basic.gf : null);
+  const gc        = detail ? detail.gc : (basic ? basic.gc : null);
+  const local     = (basic && basic.local)       || (detail && detail.lugar)   || null;
+  const dia       = (detail && detail.dia)       || null;
+  const hora      = (detail && detail.hora)      || null;
+  const lugar     = (detail && detail.lugar)     || null;
+  const formCSB   = (detail && detail.formacionCSB) || null;
+  const formRiv   = (detail && detail.formacionRival) || null;
+  const posCSB    = (basic && basic.posCSB)      || null;
+  const obs       = (basic && basic.obs)         || null;
+  const jugadores = (detail && detail.jugadores) || [];
+
+  const played = resultado !== null;
+  const resColor = gf === null ? '' : gf > gc ? 'var(--verde)' : gf < gc ? 'var(--rojo)' : 'var(--dorado)';
+
+  const metaItems = [
+    local  ? `<span>📍 ${local}</span>` : '',
+    dia    ? `<span>📅 ${dia}</span>` : '',
+    hora   ? `<span>🕐 ${hora}</span>` : '',
+    lugar && lugar !== local ? `<span>🏟 ${lugar}</span>` : '',
+    formCSB ? `<span>📋 ${formCSB}${formRiv ? ' vs ' + formRiv : ''}</span>` : '',
+    posCSB  ? `<span>🏅 Pos. CSB: ${posCSB}</span>` : '',
+  ].filter(Boolean).join('');
+
+  const summary = `
+    <div class="ap-match-summary">
+      <div>
+        <div style="font-size:0.7rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Fecha ${fecha}</div>
+        <div class="ap-ms-rival">vs ${rival}</div>
+      </div>
+      ${played
+        ? `<div class="ap-ms-score" style="color:${resColor}">${resultado}</div>`
+        : `<div style="text-align:center"><span style="font-size:1rem;color:var(--dorado)">⏳ Pendiente</span></div>`}
+      ${metaItems ? `<div class="ap-ms-meta">${metaItems}</div>` : ''}
+      ${obs ? `<div class="ap-ms-obs">💬 ${obs}</div>` : ''}
+    </div>`;
+
+  const titulares  = jugadores.filter(j => j.titular);
+  const suplentes  = jugadores.filter(j => !j.titular && j.entro);
+  const convocados = jugadores.filter(j => j.citado && !j.titular && !j.entro);
+  const salieron   = jugadores.filter(j => j.salio);
   const cambios    = suplentes.map(j => {
     const out = salieron.find(s => apBand(s.pos) === apBand(j.pos));
     return { inp: j, out };
   });
 
-  const resColor = match.gf === null ? '' : match.gf > match.gc ? 'var(--verde)' : match.gf < match.gc ? 'var(--rojo)' : 'var(--dorado)';
-  const played = match.resultado !== null;
-
-  const summary = played ? `
-    <div class="ap-match-summary">
-      <div>
-        <div style="font-size:0.7rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Fecha ${match.fecha}</div>
-        <div class="ap-ms-rival">vs ${match.rival}</div>
-      </div>
-      <div class="ap-ms-score" style="color:${resColor}">${match.resultado || '–'}</div>
-      <div class="ap-ms-meta">
-        ${match.dia ? `<span>📅 ${match.dia}</span>` : ''}
-        ${match.hora ? `<span>🕐 ${match.hora}</span>` : ''}
-        ${match.lugar ? `<span>📍 ${match.lugar}</span>` : ''}
-        ${match.formacionCSB ? `<span>📋 ${match.formacionCSB}${match.formacionRival ? ' vs '+match.formacionRival : ''}</span>` : ''}
-      </div>
-    </div>` : `
-    <div class="ap-match-summary">
-      <div>
-        <div style="font-size:0.7rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Fecha ${match.fecha}</div>
-        <div class="ap-ms-rival">vs ${match.rival}</div>
-      </div>
-      <div style="text-align:center"><span style="font-size:1rem;color:var(--dorado)">⏳ Pendiente</span></div>
-      <div class="ap-ms-meta">
-        ${match.dia ? `<span>📅 ${match.dia}</span>` : ''}
-        ${match.hora ? `<span>🕐 ${match.hora}</span>` : ''}
-        ${match.lugar ? `<span>📍 ${match.lugar}</span>` : ''}
-        ${match.formacionCSB ? `<span>📋 ${match.formacionCSB}</span>` : ''}
-      </div>
-    </div>`;
-
   const pitchSection = titulares.length > 0 ? `
     <div class="ap-detail-grid">
       <div class="ap-pitch-outer">
-        <div class="ap-pitch-label">⚽ ${match.formacionCSB || 'Formación'} – Titulares</div>
+        <div class="ap-pitch-label">⚽ ${formCSB || 'Formación'} – Titulares</div>
         ${buildPitch(titulares)}
       </div>
       <div class="ap-squad-panel">
@@ -1141,7 +1155,7 @@ function renderFechaDetail(match) {
           <span class="cout">▽ ${c.out.nombre.split(' ').pop()}</span>
         </div>`).join('')}` : ''}
       </div>
-    </div>` : '';
+    </div>` : (played ? `<div style="color:var(--gris-texto);font-size:0.82rem;padding:12px 0">Dato no disponible – formación no registrada</div>` : '');
 
   el.innerHTML = summary + pitchSection;
 }
@@ -1151,72 +1165,98 @@ function selectFecha(n) {
   document.querySelectorAll('.ap-fecha-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.fecha === String(n));
   });
-  const match = (currentData.apertura || []).find(m => String(m.fecha) === String(n));
-  renderFechaDetail(match);
+  const basic  = (currentData.partidos || []).find(m => String(m.fecha) === String(n));
+  const detail = (currentData.apertura  || []).find(m => String(m.fecha) === String(n));
+  renderFechaDetail(basic, detail);
 }
 
 function renderTorneoApertura() {
   const d = currentData;
   const isA = d === DATA_A;
   const name = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
-  const matches = d.apertura || [];
 
-  // Last played & next upcoming
-  const played = matches.filter(m => m.resultado !== null && /^\d+$/.test(m.fecha));
-  const pending = matches.filter(m => m.resultado === null && /^\d+$/.test(m.fecha));
-  const last = played.length ? played[played.length - 1] : null;
-  const next = pending.length ? pending[0] : null;
+  // Use partidos (always populated) as primary source; filter to numeric fechas only
+  const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
+  const played   = partidos.filter(m => m.resultado !== null);
+  const pending  = partidos.filter(m => m.resultado === null);
+  const last     = played.length ? played[played.length - 1] : null;
+  const next     = pending.length ? pending[0] : null;
+
+  // Supplement last/next with apertura detail if available
+  const detLast = last && (d.apertura || []).find(m => String(m.fecha) === String(last.fecha));
+  const detNext = next && (d.apertura || []).find(m => String(m.fecha) === String(next.fecha));
 
   const resColor = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
 
   const lastCard = last ? `
-    <div class="ap-match-card">
+    <div class="ap-match-card" style="cursor:pointer" onclick="selectFecha(${last.fecha})">
       <div class="ap-card-title">⚽ Último Partido</div>
       <div class="ap-mc-rival">vs ${last.rival}</div>
       <div class="ap-mc-score" style="color:${resColor(last)}">${last.resultado}</div>
-      <div class="ap-mc-meta">Fecha ${last.fecha}${last.dia ? ' · ' + last.dia : ''}${last.hora ? ' · ' + last.hora : ''}</div>
-      ${last.lugar ? `<div class="ap-mc-meta">📍 ${last.lugar}</div>` : ''}
+      <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}${detLast && detLast.dia ? ' · ' + detLast.dia : ''}</div>
+      ${last.posCSB ? `<div class="ap-mc-meta">🏅 Pos: ${last.posCSB}</div>` : ''}
     </div>` : `<div class="ap-match-card"><div class="ap-card-title">⚽ Último Partido</div><div class="ap-mc-pending">Sin partidos jugados</div></div>`;
 
   const nextCard = next ? `
-    <div class="ap-match-card">
+    <div class="ap-match-card" style="cursor:pointer" onclick="selectFecha(${next.fecha})">
       <div class="ap-card-title">🗓 Próximo Partido</div>
       <div class="ap-mc-rival">vs ${next.rival}</div>
       <div class="ap-mc-pending">Pendiente</div>
-      <div class="ap-mc-meta">Fecha ${next.fecha}${next.dia ? ' · ' + next.dia : ''}${next.hora ? ' · ' + next.hora : ''}</div>
-      ${next.lugar ? `<div class="ap-mc-meta">📍 ${next.lugar}</div>` : ''}
+      <div class="ap-mc-meta">Fecha ${next.fecha}${next.local ? ' · ' + next.local : ''}${detNext && detNext.dia ? ' · ' + detNext.dia : ''}</div>
+      ${next.posCSB ? `<div class="ap-mc-meta">🏅 Pos prev: ${next.posCSB}</div>` : ''}
     </div>` : `<div class="ap-match-card"><div class="ap-card-title">🗓 Próximo Partido</div><div class="ap-mc-pending">Torneo finalizado</div></div>`;
 
-  // Standings table
+  // Standings table – full columns with copa color coding
   const tabla = d.tabla || [];
+  const copaLegendItems = [
+    { color: 'var(--dorado)', label: 'Campeón / Ascenso' },
+    { color: 'var(--verde)',  label: 'Recopa / Promoción' },
+    { color: 'var(--azul-claro)', label: 'Copa de Honor' },
+    { color: 'var(--rojo)',   label: 'Descenso' },
+  ];
   const tablaHtml = tabla.length ? `
     <div class="ap-standings-card">
       <div class="ap-card-title">📊 Tabla de Posiciones</div>
+      <div style="overflow-x:auto">
       <table class="ap-table">
-        <thead><tr><th>#</th><th>Equipo</th><th>PTS</th><th>PJ</th><th>GF</th><th>GC</th></tr></thead>
-        <tbody>${tabla.map(t => `<tr class="${t.csb?'csb-row':''}">
-          <td>${t.pos}</td><td>${t.csb?'⭐ '+t.equipo:t.equipo}</td>
-          <td><strong>${t.pts}</strong></td><td>${t.pj}</td><td>${t.gf}</td><td>${t.gc}</td>
-        </tr>`).join('')}</tbody>
+        <thead><tr>
+          <th>#</th><th style="text-align:left">Equipo</th>
+          <th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
+          <th>GF</th><th>GC</th><th>DF</th>
+          <th style="text-align:left;min-width:90px">Clasificación</th>
+        </tr></thead>
+        <tbody>${tabla.map(t => {
+          const cc = copaColor(t.copas);
+          return `<tr class="${t.csb ? 'csb-row' : ''}">
+            <td>${t.pos}</td>
+            <td style="text-align:left;font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
+            <td><strong>${t.pts}</strong></td>
+            <td>${t.pj ?? '–'}</td><td>${t.pg ?? '–'}</td><td>${t.pe ?? '–'}</td><td>${t.pp ?? '–'}</td>
+            <td>${t.gf ?? '–'}</td><td>${t.gc ?? '–'}</td><td>${t.df ?? '–'}</td>
+            <td style="text-align:left;font-size:0.72rem;${cc}">${t.copas || ''}</td>
+          </tr>`;
+        }).join('')}</tbody>
       </table>
+      </div>
+      <div class="ap-copa-legend">
+        ${copaLegendItems.map(l => `<span class="ap-legend-item"><span class="ap-legend-dot" style="background:${l.color}"></span>${l.label}</span>`).join('')}
+      </div>
     </div>` : `<div class="ap-standings-card"><div class="ap-card-title">📊 Tabla de Posiciones</div><div style="color:var(--gris-texto);font-size:0.82rem">Cargando…</div></div>`;
 
-  // Fecha buttons
-  const allFechas = matches.filter(m => /^\d+$/.test(m.fecha))
-                           .map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null }))
-                           .sort((a,b) => a.n - b.n);
-  const fechaBtns = allFechas.map(f => `<button class="ap-fecha-btn ${f.played?'played':'pending'}" data-fecha="${f.n}" onclick="selectFecha(${f.n})">Fecha ${f.n}</button>`).join('');
-
-  // Copa/extra buttons
-  const copas = matches.filter(m => !/^\d+$/.test(m.fecha));
-  const copaBtns = copas.map(m => `<button class="ap-fecha-btn ${m.resultado?'played':'pending'}" data-fecha="${m.fecha}" onclick="selectFecha('${m.fecha}')">${m.rival} (${m.fecha})</button>`).join('');
+  // Fecha buttons — numeric only, from partidos
+  const allFechas = partidos
+    .map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null }))
+    .sort((a, b) => a.n - b.n);
+  const fechaBtns = allFechas.map(f =>
+    `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="selectFecha(${f.n})">Fecha ${f.n}</button>`
+  ).join('');
 
   document.getElementById('torneo-apertura-content').innerHTML = `
     <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
     <div class="section-title" style="margin-bottom:20px">🥇 ${name}</div>
     <div class="ap-overview">${tablaHtml}${lastCard}${nextCard}</div>
     <div class="ap-fechas-title">📅 Fechas del Torneo</div>
-    <div class="ap-fecha-nav">${fechaBtns}${copaBtns}</div>
+    <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas registradas</span>'}</div>
     <div id="ap-fecha-detail"></div>`;
 
   // Auto-select last played fecha
