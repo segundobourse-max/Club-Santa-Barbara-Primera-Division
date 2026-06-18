@@ -1146,15 +1146,13 @@ function renderFechaDetail(basic, detail) {
   const titulares  = jugadores.filter(j => j.titular);
   const suplentes  = jugadores.filter(j => !j.titular && j.entro);
   const convocados = jugadores.filter(j => j.citado && !j.titular && !j.entro);
-  const salieron   = jugadores.filter(j => j.salio);
 
-  // Build cambios: pair each entrant with who they replaced (by positional band)
-  const usedOut = new Set();
+  // Build cambios using the "Por quien ingreso" column — direct substitution data from the sheet
   const cambios = suplentes.map(inp => {
-    const out = salieron.find(s => !usedOut.has(s.nombre) && apBand(s.pos) === apBand(inp.pos))
-             || salieron.find(s => !usedOut.has(s.nombre));
-    if (out) usedOut.add(out.nombre);
-    return { inp, out: out || null };
+    const outName = inp.porQuien || null;
+    const out = outName ? jugadores.find(j => j.nombre.toLowerCase().includes(outName.toLowerCase())
+                                           || outName.toLowerCase().includes(j.nombre.toLowerCase().split(' ').pop())) : null;
+    return { inp, outName, out };
   });
 
   // Incidencias
@@ -1209,7 +1207,8 @@ function renderFechaDetail(basic, detail) {
         <div class="ap-squad-sec">↔ Cambios</div>
         ${cambios.map(c => `<div class="ap-change">
           <span class="cin">▲ ${c.inp.nombre}</span>
-          ${c.out ? `<span class="cmet">por</span><span class="cout">▽ ${c.out.nombre}</span>` : ''}
+          <span class="cmet">por</span>
+          <span class="cout">▽ ${c.outName || (c.out ? c.out.nombre : '?')}</span>
         </div>`).join('')}` : ''}
       </div>
     </div>
@@ -1730,16 +1729,39 @@ function parsePlayers(rows) {
 }
 
 function parseDetailedMatches(rows) {
+  // Sheet columns — Match header row:
+  //   [0]Rival  [1]Fecha  [2]Lugar  [3]Dia  [4]Hora  [5]FormCSB  [6]FormRival  [7]Resultado Final
+  // Sheet columns — Player row (below each match header):
+  //   [0]Jugador  [1]Citado  [2]Titular  [3]Entro  [4]Salio  [5]Goles
+  //   [6]Asistencia  [7]Rojas  [8]Posicion  [9]Por quien ingreso
   const matches = [];
   let current = null;
+  let inSection = false;
+
   for (const row of rows) {
     const c0 = (row[0]||'').trim();
     const c1 = (row[1]||'').trim();
     const c2 = (row[2]||'').trim();
-    if (!c0 || /^(Rival|Jugador|Nombre|:-)/i.test(c0)) continue;
-    // Match header: col2 is a venue (non-empty, not "1", not a position code)
-    const isFecha = parseInt(c1) > 0 || /copa|cuartos|octavos|final/i.test(c1);
-    const isVenue = c2 && c2 !== '1' && !/^(ARQ|DF[ICD]?|MC[EOI]?|MD|MI|DC|DEL|AT[ADI]?)$/i.test(c2);
+
+    // Anchor: the "Fecha a Fecha" section header has column names Rival/Fecha/Lugar
+    // (the basic match table uses Rival/Fecha/Local-Visita — different c2)
+    if (/^rival$/i.test(c0) && /^fecha$/i.test(c1) && /^lugar$/i.test(c2)) {
+      inSection = true;
+      current = null;
+      continue;
+    }
+
+    // Skip player-list header rows and cell-separator rows
+    if (!c0 || /^(Jugador|Nombre|:-)/i.test(c0)) continue;
+
+    // Ignore everything before the "Fecha a Fecha" anchor (basic table, player stats, etc.)
+    if (!inSection) continue;
+
+    // Match header: c2 is a real venue name (not "1", not a position code)
+    const isFecha = parseInt(c1) > 0 || /copa|cuartos|octavos|semifinal|final/i.test(c1);
+    const isVenue = c2 && c2 !== '1'
+      && !/^(ARQ|DF[ICD]?|MC[EOI]?|MD|MI|DC|DEL|AT[ADI]?)$/i.test(c2);
+
     if (isFecha && isVenue) {
       const res = (row[7]||'').trim();
       let gf = null, gc = null;
@@ -1753,18 +1775,22 @@ function parseDetailedMatches(rows) {
       matches.push(current);
       continue;
     }
+
     if (!current) continue;
-    // Player row: c2 is "1" or empty
-    const citado  = c1 === '1';
-    const titular = c2 === '1';
-    const entro   = (row[3]||'').trim() === '1';
-    const salio   = (row[4]||'').trim() === '1';
-    const goles   = parseInt(row[5]||'0') || 0;
-    const asist   = parseInt(row[6]||'0') || 0;
-    const rojas   = parseInt(row[7]||'0') || 0;
-    const pos     = (row[8]||'').trim();
-    if ((citado || pos) && !/^(rival|jugador|nombre)/i.test(c0)) {
-      current.jugadores.push({ nombre:c0, citado, titular, entro, salio, goles, asist, rojas, pos });
+
+    // Player row
+    const citado   = c1 === '1';
+    const titular  = c2 === '1';
+    const entro    = (row[3]||'').trim() === '1';
+    const salio    = (row[4]||'').trim() === '1';
+    const goles    = parseInt(row[5]||'0') || 0;
+    const asist    = parseInt(row[6]||'0') || 0;
+    const rojas    = parseInt(row[7]||'0') || 0;
+    const pos      = (row[8]||'').trim();
+    const porQuien = (row[9]||'').trim(); // "Por quien ingreso" — direct substitution target
+
+    if (citado || titular || entro || pos) {
+      current.jugadores.push({ nombre:c0, citado, titular, entro, salio, goles, asist, rojas, pos, porQuien });
     }
   }
   return matches.filter(m => m.jugadores.length > 0 || m.resultado);
