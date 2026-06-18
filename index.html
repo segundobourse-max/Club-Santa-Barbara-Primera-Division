@@ -459,6 +459,105 @@
     .top10-name strong { color: var(--blanco); font-weight: 600; }
     .top10-pos { font-size: 0.68rem; background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 4px; color: var(--gris-texto); }
     .top10-val { font-size: 1rem; font-weight: 900; color: var(--dorado); min-width: 24px; text-align: right; }
+
+    /* ── APERTURA TORNEO PAGE ── */
+    .ap-overview {
+      display: grid;
+      grid-template-columns: 1fr 210px 210px;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: start;
+    }
+    @media (max-width: 960px) { .ap-overview { grid-template-columns: 1fr; } }
+    .ap-card-title {
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--gris-texto); font-weight: 700;
+      margin-bottom: 10px; padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .ap-standings-card, .ap-match-card {
+      background: var(--azul-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .ap-match-card { display:flex; flex-direction:column; gap:5px; }
+    .ap-mc-rival { font-size:1rem; font-weight:800; color:var(--blanco); }
+    .ap-mc-score { font-size:1.9rem; font-weight:900; color:var(--dorado); }
+    .ap-mc-meta  { font-size:0.72rem; color:var(--gris-texto); line-height:1.5; }
+    .ap-mc-pending { font-size:0.85rem; color:var(--gris-texto); font-style:italic; margin-top:6px; }
+    .ap-table { width:100%; border-collapse:collapse; font-size:0.73rem; }
+    .ap-table th { color:var(--gris-texto); font-weight:600; padding:3px 5px; text-align:left; font-size:0.62rem; text-transform:uppercase; }
+    .ap-table td { padding:4px 5px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--texto); }
+    .ap-table tr.csb-row td { color:var(--azul-claro); font-weight:700; background:rgba(59,130,246,0.08); }
+    .ap-fechas-title { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); margin-bottom:10px; font-weight:700; }
+    .ap-fecha-nav { display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; padding-bottom:6px; margin-bottom:20px; }
+    .ap-fecha-nav::-webkit-scrollbar { display:none; }
+    .ap-fecha-btn {
+      flex-shrink:0; background:var(--azul-card); border:1px solid rgba(255,255,255,0.08);
+      border-radius:8px; color:var(--gris-texto); padding:5px 11px;
+      font-size:0.73rem; font-weight:600; cursor:pointer; transition:all 0.15s; white-space:nowrap;
+    }
+    .ap-fecha-btn:hover { color:var(--blanco); border-color:rgba(255,255,255,0.2); }
+    .ap-fecha-btn.active { background:var(--azul-claro); border-color:var(--azul-claro); color:#fff; }
+    .ap-fecha-btn.played { border-color:rgba(34,197,94,0.35); }
+    .ap-fecha-btn.pending { color:var(--dorado); border-color:rgba(245,158,11,0.25); }
+    .ap-match-summary {
+      background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px; padding:18px 22px; margin-bottom:16px;
+      display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center;
+    }
+    @media (max-width:600px) { .ap-match-summary { grid-template-columns:1fr; text-align:center; } }
+    .ap-ms-rival { font-size:1.05rem; font-weight:800; color:var(--blanco); }
+    .ap-ms-score { font-size:2.2rem; font-weight:900; color:var(--dorado); text-align:center; }
+    .ap-ms-meta  { font-size:0.75rem; color:var(--gris-texto); display:flex; flex-direction:column; gap:3px; }
+    .ap-detail-grid {
+      display:grid; grid-template-columns:1fr 210px; gap:16px; align-items:start;
+    }
+    @media (max-width:800px) { .ap-detail-grid { grid-template-columns:1fr; } }
+    .ap-pitch-outer {
+      background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px; padding:16px;
+    }
+    .ap-pitch-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); margin-bottom:10px; font-weight:700; }
+    .ap-pitch {
+      position:relative;
+      background:linear-gradient(180deg,#15803d 0%,#166534 100%);
+      border-radius:6px; width:100%; aspect-ratio:2/3;
+      overflow:hidden; max-width:400px; margin:0 auto;
+    }
+    .ap-pitch-line { position:absolute; background:rgba(255,255,255,0.22); }
+    .ap-pitch-circle { position:absolute; border:2px solid rgba(255,255,255,0.22); border-radius:50%; transform:translate(-50%,-50%); }
+    .ap-player {
+      position:absolute; transform:translate(-50%,-50%);
+      display:flex; flex-direction:column; align-items:center; gap:2px; z-index:2;
+    }
+    .ap-pdot {
+      width:28px; height:28px; border-radius:50%; background:var(--azul-claro);
+      border:2px solid rgba(255,255,255,0.9);
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.6rem; font-weight:900; color:#fff;
+      box-shadow:0 2px 6px rgba(0,0,0,0.5);
+    }
+    .ap-pdot.scored { background:var(--verde); }
+    .ap-pname {
+      background:rgba(0,0,0,0.72); color:#fff; font-size:0.53rem; font-weight:700;
+      padding:1px 4px; border-radius:3px; white-space:nowrap;
+      max-width:68px; overflow:hidden; text-overflow:ellipsis; text-align:center;
+    }
+    .ap-squad-panel {
+      background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px; padding:14px 16px;
+    }
+    .ap-squad-sec { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); font-weight:700; margin:10px 0 5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .ap-squad-sec:first-child { margin-top:0; }
+    .ap-squad-item { display:flex; align-items:center; gap:6px; padding:3px 0; font-size:0.75rem; color:var(--texto); }
+    .ap-squad-pos { font-size:0.58rem; background:rgba(255,255,255,0.07); padding:1px 5px; border-radius:4px; color:var(--gris-texto); min-width:26px; text-align:center; flex-shrink:0; }
+    .ap-squad-stat { font-size:0.67rem; color:var(--verde); margin-left:auto; }
+    .ap-change { display:flex; align-items:center; gap:5px; padding:3px 0; font-size:0.72rem; flex-wrap:wrap; }
+    .ap-change .cin { color:var(--verde); font-weight:700; }
+    .ap-change .cout { color:var(--rojo); }
+    .ap-change .cmet { font-size:0.65rem; color:var(--gris-texto); }
   </style>
 </head>
 <body>
@@ -689,6 +788,7 @@ const DATA_A = {
     { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
     { fecha:'Fecha 15', rival:'SITAS', local:'LOCAL', rivalPos:'8°' },
   ],
+  apertura: [],
 };
 
 const DATA_B = {
@@ -793,6 +893,7 @@ const DATA_B = {
     { fecha:'Fecha 14', rival:'P.A.C', local:'VISITANTE', rivalPos:'12°' },
     { fecha:'Fecha 15', rival:'SITAS B', local:'LOCAL', rivalPos:'' },
   ],
+  apertura: [],
 };
 
 // ──────────────────────────────────────────────
@@ -800,6 +901,7 @@ const DATA_B = {
 // ──────────────────────────────────────────────
 let currentData = null;
 let activeCharts = [];
+let selectedFecha = null;
 
 function destroyCharts() {
   activeCharts.forEach(c => c.destroy());
@@ -878,30 +980,248 @@ function renderTorneosMenu() {
 }
 
 function showTorneo(key) {
-  const isA = currentData === DATA_A;
-  const names = {
-    apertura: isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026',
-    recopa:   'Recopa 2026',
-  };
-  const icons = { apertura: '🥇', recopa: '🏅' };
-
-  // Keep "Torneos Actuales" nav button highlighted
   document.querySelectorAll('#main-nav button').forEach((b, i) => {
-    b.classList.toggle('active', i === 1); // second button = Torneos Actuales
+    b.classList.toggle('active', i === 1);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-torneo-' + key).classList.add('active');
+
+  if (key === 'apertura') {
+    renderTorneoApertura();
+  } else {
+    const isA = currentData === DATA_A;
+    const name = 'Recopa 2026';
+    document.getElementById('torneo-recopa-content').innerHTML = `
+      <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+      <div class="section-title" style="margin-bottom:24px">🏅 ${name}</div>
+      <div class="torneo-wip">
+        <div class="torneo-wip-icon">🚧</div>
+        <div class="torneo-wip-title">${name}</div>
+        <div class="torneo-wip-sub">Información en desarrollo. Próximamente estará disponible el detalle completo de este torneo.</div>
+      </div>`;
+  }
+}
+
+// ── Position band for pitch rendering ──
+const AP_BAND_Y  = [87, 70, 56, 40, 20];
+const AP_BAND_OF = { // horizontal order within each band (lower = more left)
+  ARQ:0,
+  DFI:0, DFC:1, DFD:3,
+  MCI:0, MC:1, MCE:1, MCC:1, MCD:2,
+  MI:0, MCO:1, MD:3,
+  ATI:0, ATA:1, DC:1, DEL:2, ATD:3,
+};
+function apBand(pos) {
+  const p = (pos||'').toUpperCase();
+  if (p === 'ARQ') return 0;
+  if (p.startsWith('DF')) return 1;
+  if (['MC','MCE','MCI','MCC','MCD'].includes(p)) return 2;
+  if (['MI','MCO','MD'].includes(p)) return 3;
+  return 4;
+}
+function buildPitch(titulares) {
+  // Group by band
+  const bands = [[], [], [], [], []];
+  for (const jug of titulares) {
+    const b = apBand(jug.pos);
+    bands[b].push({ ...jug, _horder: AP_BAND_OF[jug.pos.toUpperCase()] ?? 1 });
+  }
+  // Sort each band by horizontal order
+  bands.forEach(b => b.sort((a, z) => a._horder - z._horder));
+  // Build markers HTML
+  let markers = '';
+  for (let bi = 0; bi < 5; bi++) {
+    const group = bands[bi];
+    const n = group.length;
+    if (!n) continue;
+    const y = AP_BAND_Y[bi];
+    group.forEach((jug, i) => {
+      const x = n === 1 ? 50 : (100 * (2*i + 1)) / (2*n);
+      // Show last name (or full name if single word)
+      const parts = jug.nombre.replace(/\s*\(c\)/i,'').trim().split(' ');
+      const label = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+      const scored = jug.goles > 0;
+      markers += `<div class="ap-player" style="left:${x.toFixed(1)}%;top:${y}%">
+        <div class="ap-pdot${scored?' scored':''}"></div>
+        <div class="ap-pname">${label}</div>
+      </div>`;
+    });
+  }
+  // Field markings
+  const markings = `
+    <div class="ap-pitch-line" style="left:0;right:0;top:50%;height:2px"></div>
+    <div class="ap-pitch-circle" style="left:50%;top:50%;width:22%;padding-top:22%;"></div>
+    <div class="ap-pitch-line" style="left:15%;right:15%;top:13%;height:2px"></div>
+    <div class="ap-pitch-line" style="left:15%;top:7%;height:6%;width:2px"></div>
+    <div class="ap-pitch-line" style="right:15%;top:7%;height:6%;width:2px"></div>
+    <div class="ap-pitch-line" style="left:15%;right:15%;top:7%;height:2px"></div>
+    <div class="ap-pitch-line" style="left:15%;right:15%;bottom:13%;height:2px"></div>
+    <div class="ap-pitch-line" style="left:15%;bottom:7%;height:6%;width:2px"></div>
+    <div class="ap-pitch-line" style="right:15%;bottom:7%;height:6%;width:2px"></div>
+    <div class="ap-pitch-line" style="left:15%;right:15%;bottom:7%;height:2px"></div>
+  `;
+  return `<div class="ap-pitch">${markings}${markers}</div>`;
+}
+
+function renderFechaDetail(match) {
+  const el = document.getElementById('ap-fecha-detail');
+  if (!match) { el.innerHTML = ''; return; }
+
+  const titulares  = match.jugadores.filter(j => j.titular);
+  const suplentes  = match.jugadores.filter(j => !j.titular && j.entro);
+  const convocados = match.jugadores.filter(j => j.citado && !j.titular && !j.entro);
+  const salieron   = match.jugadores.filter(j => j.salio);
+  const cambios    = suplentes.map(j => {
+    const out = salieron.find(s => apBand(s.pos) === apBand(j.pos));
+    return { inp: j, out };
   });
 
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const panel = document.getElementById('tab-torneo-' + key);
-  panel.classList.add('active');
+  const resColor = match.gf === null ? '' : match.gf > match.gc ? 'var(--verde)' : match.gf < match.gc ? 'var(--rojo)' : 'var(--dorado)';
+  const played = match.resultado !== null;
 
-  document.getElementById('torneo-' + key + '-content').innerHTML = `
-    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
-    <div class="section-title" style="margin-bottom:24px">${icons[key]} ${names[key]}</div>
-    <div class="torneo-wip">
-      <div class="torneo-wip-icon">🚧</div>
-      <div class="torneo-wip-title">${names[key]}</div>
-      <div class="torneo-wip-sub">Información en desarrollo. Próximamente estará disponible el detalle completo de este torneo.</div>
+  const summary = played ? `
+    <div class="ap-match-summary">
+      <div>
+        <div style="font-size:0.7rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Fecha ${match.fecha}</div>
+        <div class="ap-ms-rival">vs ${match.rival}</div>
+      </div>
+      <div class="ap-ms-score" style="color:${resColor}">${match.resultado || '–'}</div>
+      <div class="ap-ms-meta">
+        ${match.dia ? `<span>📅 ${match.dia}</span>` : ''}
+        ${match.hora ? `<span>🕐 ${match.hora}</span>` : ''}
+        ${match.lugar ? `<span>📍 ${match.lugar}</span>` : ''}
+        ${match.formacionCSB ? `<span>📋 ${match.formacionCSB}${match.formacionRival ? ' vs '+match.formacionRival : ''}</span>` : ''}
+      </div>
+    </div>` : `
+    <div class="ap-match-summary">
+      <div>
+        <div style="font-size:0.7rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Fecha ${match.fecha}</div>
+        <div class="ap-ms-rival">vs ${match.rival}</div>
+      </div>
+      <div style="text-align:center"><span style="font-size:1rem;color:var(--dorado)">⏳ Pendiente</span></div>
+      <div class="ap-ms-meta">
+        ${match.dia ? `<span>📅 ${match.dia}</span>` : ''}
+        ${match.hora ? `<span>🕐 ${match.hora}</span>` : ''}
+        ${match.lugar ? `<span>📍 ${match.lugar}</span>` : ''}
+        ${match.formacionCSB ? `<span>📋 ${match.formacionCSB}</span>` : ''}
+      </div>
     </div>`;
+
+  const pitchSection = titulares.length > 0 ? `
+    <div class="ap-detail-grid">
+      <div class="ap-pitch-outer">
+        <div class="ap-pitch-label">⚽ ${match.formacionCSB || 'Formación'} – Titulares</div>
+        ${buildPitch(titulares)}
+      </div>
+      <div class="ap-squad-panel">
+        <div class="ap-squad-sec">🟢 Titulares</div>
+        ${titulares.map(j => `<div class="ap-squad-item">
+          <span class="ap-squad-pos">${j.pos}</span>
+          <span>${j.nombre.replace(/\s*\(c\)/i,' ©')}</span>
+          ${j.goles > 0 ? `<span class="ap-squad-stat">⚽ ${j.goles}</span>` : ''}
+        </div>`).join('')}
+        ${suplentes.length ? `
+        <div class="ap-squad-sec">🔄 Suplentes que ingresaron</div>
+        ${suplentes.map(j => `<div class="ap-squad-item">
+          <span class="ap-squad-pos">${j.pos}</span>
+          <span>${j.nombre}</span>
+          ${j.goles > 0 ? `<span class="ap-squad-stat">⚽ ${j.goles}</span>` : ''}
+        </div>`).join('')}` : ''}
+        ${convocados.length ? `
+        <div class="ap-squad-sec">📋 En el banco</div>
+        ${convocados.map(j => `<div class="ap-squad-item">
+          <span class="ap-squad-pos">${j.pos}</span>
+          <span>${j.nombre}</span>
+        </div>`).join('')}` : ''}
+        ${cambios.filter(c => c.out).length ? `
+        <div class="ap-squad-sec">↔ Cambios</div>
+        ${cambios.filter(c => c.out).map(c => `<div class="ap-change">
+          <span class="cin">▲ ${c.inp.nombre.split(' ').pop()}</span>
+          <span class="cmet">↔</span>
+          <span class="cout">▽ ${c.out.nombre.split(' ').pop()}</span>
+        </div>`).join('')}` : ''}
+      </div>
+    </div>` : '';
+
+  el.innerHTML = summary + pitchSection;
+}
+
+function selectFecha(n) {
+  selectedFecha = n;
+  document.querySelectorAll('.ap-fecha-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.fecha === String(n));
+  });
+  const match = (currentData.apertura || []).find(m => String(m.fecha) === String(n));
+  renderFechaDetail(match);
+}
+
+function renderTorneoApertura() {
+  const d = currentData;
+  const isA = d === DATA_A;
+  const name = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
+  const matches = d.apertura || [];
+
+  // Last played & next upcoming
+  const played = matches.filter(m => m.resultado !== null && /^\d+$/.test(m.fecha));
+  const pending = matches.filter(m => m.resultado === null && /^\d+$/.test(m.fecha));
+  const last = played.length ? played[played.length - 1] : null;
+  const next = pending.length ? pending[0] : null;
+
+  const resColor = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
+
+  const lastCard = last ? `
+    <div class="ap-match-card">
+      <div class="ap-card-title">⚽ Último Partido</div>
+      <div class="ap-mc-rival">vs ${last.rival}</div>
+      <div class="ap-mc-score" style="color:${resColor(last)}">${last.resultado}</div>
+      <div class="ap-mc-meta">Fecha ${last.fecha}${last.dia ? ' · ' + last.dia : ''}${last.hora ? ' · ' + last.hora : ''}</div>
+      ${last.lugar ? `<div class="ap-mc-meta">📍 ${last.lugar}</div>` : ''}
+    </div>` : `<div class="ap-match-card"><div class="ap-card-title">⚽ Último Partido</div><div class="ap-mc-pending">Sin partidos jugados</div></div>`;
+
+  const nextCard = next ? `
+    <div class="ap-match-card">
+      <div class="ap-card-title">🗓 Próximo Partido</div>
+      <div class="ap-mc-rival">vs ${next.rival}</div>
+      <div class="ap-mc-pending">Pendiente</div>
+      <div class="ap-mc-meta">Fecha ${next.fecha}${next.dia ? ' · ' + next.dia : ''}${next.hora ? ' · ' + next.hora : ''}</div>
+      ${next.lugar ? `<div class="ap-mc-meta">📍 ${next.lugar}</div>` : ''}
+    </div>` : `<div class="ap-match-card"><div class="ap-card-title">🗓 Próximo Partido</div><div class="ap-mc-pending">Torneo finalizado</div></div>`;
+
+  // Standings table
+  const tabla = d.tabla || [];
+  const tablaHtml = tabla.length ? `
+    <div class="ap-standings-card">
+      <div class="ap-card-title">📊 Tabla de Posiciones</div>
+      <table class="ap-table">
+        <thead><tr><th>#</th><th>Equipo</th><th>PTS</th><th>PJ</th><th>GF</th><th>GC</th></tr></thead>
+        <tbody>${tabla.map(t => `<tr class="${t.csb?'csb-row':''}">
+          <td>${t.pos}</td><td>${t.csb?'⭐ '+t.equipo:t.equipo}</td>
+          <td><strong>${t.pts}</strong></td><td>${t.pj}</td><td>${t.gf}</td><td>${t.gc}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>` : `<div class="ap-standings-card"><div class="ap-card-title">📊 Tabla de Posiciones</div><div style="color:var(--gris-texto);font-size:0.82rem">Cargando…</div></div>`;
+
+  // Fecha buttons
+  const allFechas = matches.filter(m => /^\d+$/.test(m.fecha))
+                           .map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null }))
+                           .sort((a,b) => a.n - b.n);
+  const fechaBtns = allFechas.map(f => `<button class="ap-fecha-btn ${f.played?'played':'pending'}" data-fecha="${f.n}" onclick="selectFecha(${f.n})">Fecha ${f.n}</button>`).join('');
+
+  // Copa/extra buttons
+  const copas = matches.filter(m => !/^\d+$/.test(m.fecha));
+  const copaBtns = copas.map(m => `<button class="ap-fecha-btn ${m.resultado?'played':'pending'}" data-fecha="${m.fecha}" onclick="selectFecha('${m.fecha}')">${m.rival} (${m.fecha})</button>`).join('');
+
+  document.getElementById('torneo-apertura-content').innerHTML = `
+    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+    <div class="section-title" style="margin-bottom:20px">🥇 ${name}</div>
+    <div class="ap-overview">${tablaHtml}${lastCard}${nextCard}</div>
+    <div class="ap-fechas-title">📅 Fechas del Torneo</div>
+    <div class="ap-fecha-nav">${fechaBtns}${copaBtns}</div>
+    <div id="ap-fecha-detail"></div>`;
+
+  // Auto-select last played fecha
+  const autoFecha = last ? last.fecha : (allFechas.length ? allFechas[0].n : null);
+  if (autoFecha !== null) selectFecha(autoFecha);
 }
 
 // ──────────────────────────────────────────────
@@ -1307,6 +1627,47 @@ function parsePlayers(rows) {
   return [];
 }
 
+function parseDetailedMatches(rows) {
+  const matches = [];
+  let current = null;
+  for (const row of rows) {
+    const c0 = (row[0]||'').trim();
+    const c1 = (row[1]||'').trim();
+    const c2 = (row[2]||'').trim();
+    if (!c0 || /^(Rival|Jugador|Nombre|:-)/i.test(c0)) continue;
+    // Match header: col2 is a venue (non-empty, not "1", not a position code)
+    const isFecha = parseInt(c1) > 0 || /copa|cuartos|octavos|final/i.test(c1);
+    const isVenue = c2 && c2 !== '1' && !/^(ARQ|DF[ICD]?|MC[EOI]?|MD|MI|DC|DEL|AT[ADI]?)$/i.test(c2);
+    if (isFecha && isVenue) {
+      const res = (row[7]||'').trim();
+      let gf = null, gc = null;
+      if (/^\d+-\d+$/.test(res)) { const p = res.split('-').map(Number); gf=p[0]; gc=p[1]; }
+      current = {
+        rival: c0, fecha: c1, lugar: c2,
+        dia: (row[3]||'').trim(), hora: (row[4]||'').trim(),
+        formacionCSB: (row[5]||'').trim(), formacionRival: (row[6]||'').trim(),
+        resultado: res || null, gf, gc, jugadores: [],
+      };
+      matches.push(current);
+      continue;
+    }
+    if (!current) continue;
+    // Player row: c2 is "1" or empty
+    const citado  = c1 === '1';
+    const titular = c2 === '1';
+    const entro   = (row[3]||'').trim() === '1';
+    const salio   = (row[4]||'').trim() === '1';
+    const goles   = parseInt(row[5]||'0') || 0;
+    const asist   = parseInt(row[6]||'0') || 0;
+    const rojas   = parseInt(row[7]||'0') || 0;
+    const pos     = (row[8]||'').trim();
+    if ((citado || pos) && !/^(rival|jugador|nombre)/i.test(c0)) {
+      current.jugadores.push({ nombre:c0, citado, titular, entro, salio, goles, asist, rojas, pos });
+    }
+  }
+  return matches.filter(m => m.jugadores.length > 0 || m.resultado);
+}
+
 function refreshCurrentView() {
   if (!currentData) return;
   const map = { 'tab-resumen':renderResumen, 'tab-posiciones':renderTorneosMenu,
@@ -1338,12 +1699,14 @@ async function loadLiveData() {
   const aTbl = ok(aSim) ? parseSimStandings(ok(aSim), 5) : [];
   if (aTbl.length >= 10) DATA_A.tabla = aTbl;
 
-  // PRIMERA A matches + players
+  // PRIMERA A matches + players + apertura detail
   if (ok(aMain)) {
     const m = parseMatches(ok(aMain));
     const p = parsePlayers(ok(aMain));
-    if (m.length > 0) DATA_A.partidos = m;
-    if (p.length > 0) DATA_A.jugadores = p;
+    const det = parseDetailedMatches(ok(aMain));
+    if (m.length > 0)   DATA_A.partidos = m;
+    if (p.length > 0)   DATA_A.jugadores = p;
+    if (det.length > 0) DATA_A.apertura = det;
   }
 
   // PRIMERA B standings (try sim, fallback to header in main)
