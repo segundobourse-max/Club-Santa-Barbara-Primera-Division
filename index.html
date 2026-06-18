@@ -289,6 +289,69 @@
 
     footer { text-align: center; padding: 24px; font-size: 0.72rem; color: var(--gris-texto); border-top: 1px solid var(--gris); margin-top: 40px; }
 
+    /* ── TORNEOS PICKER ── */
+    .torneos-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 700px;
+      margin-top: 8px;
+    }
+    .torneo-card {
+      background: var(--azul-card);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 28px 24px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .torneo-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--dorado), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .torneo-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(245,158,11,0.25); border-color: rgba(245,158,11,0.25); }
+    .torneo-card:hover::before { opacity: 1; }
+    .torneo-card-icon { font-size: 2.2rem; }
+    .torneo-card-name { font-size: 1.05rem; font-weight: 800; color: var(--blanco); }
+    .torneo-card-sub  { font-size: 0.78rem; color: var(--gris-texto); }
+    .torneo-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--gris-texto);
+      background: rgba(255,255,255,0.06);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .torneo-back:hover { color: var(--blanco); background: rgba(255,255,255,0.1); }
+    .torneo-wip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 40vh;
+      gap: 16px;
+      text-align: center;
+    }
+    .torneo-wip-icon { font-size: 3.5rem; }
+    .torneo-wip-title { font-size: 1.3rem; font-weight: 800; color: var(--blanco); }
+    .torneo-wip-sub { font-size: 0.88rem; color: var(--gris-texto); max-width: 300px; line-height: 1.6; }
+
     /* ── RESUMEN LAYOUT ── */
     .resumen-grid {
       display: grid;
@@ -456,16 +519,19 @@
     <div id="resumen-content"></div>
   </div>
 
-  <!-- POSICIONES -->
+  <!-- TORNEOS ACTUALES – picker -->
   <div class="panel" id="tab-posiciones">
-    <div class="section-title" id="pos-title"></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Equipo</th><th>Copas</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DF</th></tr></thead>
-        <tbody id="tabla-body"></tbody>
-      </table>
-    </div>
-    <div id="tabla-leyenda" style="margin-top:12px;font-size:0.72rem;color:var(--gris-texto);display:flex;gap:16px;flex-wrap:wrap"></div>
+    <div id="torneos-picker-content"></div>
+  </div>
+
+  <!-- TORNEO: APERTURA -->
+  <div class="panel" id="tab-torneo-apertura">
+    <div id="torneo-apertura-content"></div>
+  </div>
+
+  <!-- TORNEO: RECOPA -->
+  <div class="panel" id="tab-torneo-recopa">
+    <div id="torneo-recopa-content"></div>
   </div>
 
   <!-- PARTIDOS -->
@@ -601,11 +667,11 @@ const DATA_A = {
       { nombre:'Theo Jurs',          valor:137 },
     ],
     goles: [
-      { nombre:'Felipe Bello',       valor:108 },
-      { nombre:'Tomas Elhaiek',      valor:72  },
-      { nombre:'Ramiro Hermida',     valor:68  },
-      { nombre:'Lorenzo Pellegrino', valor:45  },
-      { nombre:'Bautista Elhaiek',   valor:32  },
+      { nombre:'Felipe Bello',       valor:76 },
+      { nombre:'Tomas Elhaiek',      valor:48 },
+      { nombre:'Ramiro Hermida',     valor:41 },
+      { nombre:'Lorenzo Pellegrino', valor:37 },
+      { nombre:'Justo Gottlieb',     valor:26 },
     ],
     asist: [
       { nombre:'Felipe Bello',       valor:32  },
@@ -780,16 +846,62 @@ function goBack() {
 
 function showTab(name, btn) {
   document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
 
   if (name === 'resumen')    renderResumen();
-  if (name === 'posiciones') renderTabla();
+  if (name === 'posiciones') renderTorneosMenu();
   if (name === 'partidos')   renderPartidos();
   if (name === 'jugadores')  renderJugadores();
   if (name === 'graficos')   renderGraficos();
+}
+
+function renderTorneosMenu() {
+  const isA = currentData === DATA_A;
+  const apertura = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
+  document.getElementById('torneos-picker-content').innerHTML = `
+    <div class="section-title" style="margin-bottom:20px">🏆 Torneos Actuales – ${currentData.nombre}</div>
+    <div class="torneos-picker-grid">
+      <div class="torneo-card" onclick="showTorneo('apertura')">
+        <div class="torneo-card-icon">🥇</div>
+        <div class="torneo-card-name">${apertura}</div>
+        <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2026</div>
+      </div>
+      <div class="torneo-card" onclick="showTorneo('recopa')">
+        <div class="torneo-card-icon">🏅</div>
+        <div class="torneo-card-name">Recopa 2026</div>
+        <div class="torneo-card-sub">Torneo copa · Temporada 2026</div>
+      </div>
+    </div>`;
+}
+
+function showTorneo(key) {
+  const isA = currentData === DATA_A;
+  const names = {
+    apertura: isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026',
+    recopa:   'Recopa 2026',
+  };
+  const icons = { apertura: '🥇', recopa: '🏅' };
+
+  // Keep "Torneos Actuales" nav button highlighted
+  document.querySelectorAll('#main-nav button').forEach((b, i) => {
+    b.classList.toggle('active', i === 1); // second button = Torneos Actuales
+  });
+
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('tab-torneo-' + key);
+  panel.classList.add('active');
+
+  document.getElementById('torneo-' + key + '-content').innerHTML = `
+    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+    <div class="section-title" style="margin-bottom:24px">${icons[key]} ${names[key]}</div>
+    <div class="torneo-wip">
+      <div class="torneo-wip-icon">🚧</div>
+      <div class="torneo-wip-title">${names[key]}</div>
+      <div class="torneo-wip-sub">Información en desarrollo. Próximamente estará disponible el detalle completo de este torneo.</div>
+    </div>`;
 }
 
 // ──────────────────────────────────────────────
@@ -1197,12 +1309,12 @@ function parsePlayers(rows) {
 
 function refreshCurrentView() {
   if (!currentData) return;
-  const map = { 'panel-resumen':renderResumen, 'panel-posiciones':renderPosiciones,
-                'panel-partidos':renderPartidos, 'panel-jugadores':renderJugadores,
-                'panel-graficos':renderGraficos };
+  const map = { 'tab-resumen':renderResumen, 'tab-posiciones':renderTorneosMenu,
+                'tab-partidos':renderPartidos, 'tab-jugadores':renderJugadores,
+                'tab-graficos':renderGraficos };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
-    if (el && el.style.display === 'block') { fn(); break; }
+    if (el && el.classList.contains('active')) { fn(); break; }
   }
 }
 
