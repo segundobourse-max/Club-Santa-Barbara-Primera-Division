@@ -2511,7 +2511,7 @@ function parseDetailedMatches(rows, startInSection = false) {
         asist:    h.findIndex(c => c.includes('asist')),
         rojas:    h.findIndex(c => c.includes('roja')),
         pos:      h.findIndex(c => /posici/i.test(c)),
-        porQuien: h.findIndex(c => /por.*quien|porquien/i.test(c)),
+        porQuien: h.findIndex(c => /por.*qui[eé]n|porquien/i.test(c)),
       };
       continue;
     }
