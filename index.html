@@ -1714,9 +1714,10 @@ const GS = {
   B_SIM:  '1i9akFUzKsgrKB01lrFJdjE0djmImr64IqsnlLuMHsGI',
 };
 
-function csvUrl(id, tab) {
+function csvUrl(id, tab, range) {
   let u = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
-  if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+  if (tab)   u += `&sheet=${encodeURIComponent(tab)}`;
+  if (range) u += `&range=${encodeURIComponent(range)}`;
   return u;
 }
 
@@ -1831,14 +1832,16 @@ function parsePlayers(rows) {
   return [];
 }
 
-function parseDetailedMatches(rows) {
+// startInSection=true when the rows are pre-scoped to the detail range (A22:J524),
+// so we don't need to hunt for the anchor first.
+function parseDetailedMatches(rows, startInSection = false) {
   // Sheet structure (repeats for each match):
   //   | Rival | Fecha | Lugar | Dia | Hora | FormCSB | FormRival | Resultado |
   //   | Jugador/Nombre | Citado | Titular | Entro | Salio | Goles | Asist | Rojas | [Posicion] | [PorQuien] |
   //   ...player rows...
   const matches = [];
   let current = null;
-  let inSection = false;
+  let inSection = startInSection;
   let pCols = null; // dynamic column map, set from player header row
 
   for (const row of rows) {
@@ -1945,8 +1948,8 @@ function refreshCurrentView() {
   }
 }
 
-async function fetchCSV(id, tab) {
-  const r = await fetch(csvUrl(id, tab), { mode: 'cors' });
+async function fetchCSV(id, tab, range) {
+  const r = await fetch(csvUrl(id, tab, range), { mode: 'cors' });
   if (!r.ok) throw new Error(r.status);
   return parseCSV(await r.text());
 }
@@ -1958,11 +1961,14 @@ async function loadLiveData() {
   const statusEl = document.getElementById('refresh-status');
   if (statusEl) { statusEl.textContent = 'Actualizando…'; statusEl.className = 'loading'; }
 
-  const [aSim, aMain, bSim, bMain] = await Promise.allSettled([
+  // Fetch each section as a targeted range so parsers receive exactly the right rows
+  const [aSim, aBasic, aDet, bSim, bBasic, bDet] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
-    fetchCSV(GS.A_MAIN, 'Apertura 2026'),
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:J524'),  // fecha-a-fecha + player stats
     fetchCSV(GS.B_SIM),
-    fetchCSV(GS.B_MAIN),
+    fetchCSV(GS.B_MAIN, null, 'A1:J18'),
+    fetchCSV(GS.B_MAIN, null, 'A22:J524'),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -1971,33 +1977,41 @@ async function loadLiveData() {
   const aTbl = ok(aSim) ? parseSimStandings(ok(aSim), 5) : [];
   if (aTbl.length >= 10) DATA_A.tabla = aTbl;
 
-  // PRIMERA A matches + players + apertura detail
-  if (ok(aMain)) {
-    const m = parseMatches(ok(aMain));
-    const p = parsePlayers(ok(aMain));
-    const det = parseDetailedMatches(ok(aMain));
-    if (m.length > 0)   DATA_A.partidos = m;
-    if (p.length > 0)   DATA_A.jugadores = p;
-    if (det.length > 0) DATA_A.apertura = det;
+  // PRIMERA A basic match list (A1:J18)
+  if (ok(aBasic)) {
+    const m = parseMatches(ok(aBasic));
+    if (m.length > 0) DATA_A.partidos = m;
   }
 
-  // PRIMERA B standings (try sim, fallback to header in main)
+  // PRIMERA A detailed match data + cumulative player stats (A22:J524)
+  if (ok(aDet)) {
+    const p   = parsePlayers(ok(aDet));
+    const det = parseDetailedMatches(ok(aDet), true); // startInSection=true: range already scoped
+    if (p.length > 0)   DATA_A.jugadores = p;
+    if (det.length > 0) DATA_A.apertura  = det;
+  }
+
+  // PRIMERA B standings
   let bTbl = ok(bSim) ? parseSimStandings(ok(bSim), 5) : [];
-  if (bTbl.length < 10 && ok(bMain)) bTbl = parseHeaderStandings(ok(bMain));
+  if (bTbl.length < 10 && ok(bBasic)) bTbl = parseHeaderStandings(ok(bBasic));
   if (bTbl.length >= 5) DATA_B.tabla = bTbl;
 
-  // PRIMERA B matches + players + apertura detail
-  if (ok(bMain)) {
-    const m = parseMatches(ok(bMain));
-    const p = parsePlayers(ok(bMain));
-    const det = parseDetailedMatches(ok(bMain));
-    if (m.length > 0)   DATA_B.partidos = m;
+  // PRIMERA B basic match list (A1:J18)
+  if (ok(bBasic)) {
+    const m = parseMatches(ok(bBasic));
+    if (m.length > 0) DATA_B.partidos = m;
+  }
+
+  // PRIMERA B detailed match data + cumulative player stats (A22:J524)
+  if (ok(bDet)) {
+    const p   = parsePlayers(ok(bDet));
+    const det = parseDetailedMatches(ok(bDet), true);
     if (p.length > 0)   DATA_B.jugadores = p;
-    if (det.length > 0) DATA_B.apertura = det;
+    if (det.length > 0) DATA_B.apertura  = det;
   }
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
-  console.log(`Sheets — A_SIM:${s(aSim)} A_MAIN:${s(aMain)} B_SIM:${s(bSim)} B_MAIN:${s(bMain)}`);
+  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_Basic:${s(bBasic)} B_Det:${s(bDet)}`);
   console.log(`Tabla A:${DATA_A.tabla.length} Part A:${DATA_A.partidos.length} Jug A:${DATA_A.jugadores.length} Det A:${DATA_A.apertura.length} | Tabla B:${DATA_B.tabla.length} Part B:${DATA_B.partidos.length} Jug B:${DATA_B.jugadores.length} Det B:${DATA_B.apertura.length}`);
 
   _refreshing = false;
