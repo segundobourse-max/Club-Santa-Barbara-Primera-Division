@@ -200,6 +200,15 @@
     }
     nav button.active, nav button:hover { color: var(--blanco); border-bottom-color: var(--dorado); }
 
+    #refresh-bar {
+      display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+      padding: 4px 16px; background: var(--azul-dark); border-bottom: 1px solid var(--gris);
+      font-size: 0.72rem; color: var(--gris-texto); min-height: 22px;
+    }
+    #refresh-status { font-style: italic; }
+    #refresh-status.loading { color: var(--dorado); }
+    #refresh-time { opacity: 0.7; }
+
     .panel { display: none; padding: 24px 20px; width: 100%; }
     .panel.active { display: block; }
     @media (min-width: 1200px) { .panel { padding: 28px 40px; } }
@@ -655,6 +664,10 @@
     <button onclick="showTab('partidos', this)">Historial vs Clubes</button>
     <button onclick="showTab('graficos', this)">Torneos Antiguos</button>
   </nav>
+  <div id="refresh-bar">
+    <span id="refresh-status"></span>
+    <span id="refresh-time"></span>
+  </div>
 
   <!-- RESUMEN -->
   <div class="panel active" id="tab-resumen">
@@ -1837,7 +1850,13 @@ async function fetchCSV(id, tab) {
   return parseCSV(await r.text());
 }
 
+let _refreshing = false;
 async function loadLiveData() {
+  if (_refreshing) return;
+  _refreshing = true;
+  const statusEl = document.getElementById('refresh-status');
+  if (statusEl) { statusEl.textContent = 'Actualizando…'; statusEl.className = 'loading'; }
+
   const [aSim, aMain, bSim, bMain] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026'),
@@ -1878,11 +1897,19 @@ async function loadLiveData() {
   console.log(`Sheets — A_SIM:${s(aSim)} A_MAIN:${s(aMain)} B_SIM:${s(bSim)} B_MAIN:${s(bMain)}`);
   console.log(`Tabla A:${DATA_A.tabla.length} Part A:${DATA_A.partidos.length} Jug A:${DATA_A.jugadores.length} | Tabla B:${DATA_B.tabla.length} Part B:${DATA_B.partidos.length} Jug B:${DATA_B.jugadores.length}`);
 
+  _refreshing = false;
+  const now = new Date();
+  const hhmm = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const timeEl = document.getElementById('refresh-time');
+  if (timeEl) timeEl.textContent = `Última actualización: ${hhmm}`;
+  if (statusEl) { statusEl.textContent = ''; statusEl.className = ''; }
   refreshCurrentView();
 }
 
 loadLiveData();
-setInterval(loadLiveData, 5 * 60 * 1000); // auto-refresh every 5 min
+setInterval(loadLiveData, 60 * 1000); // auto-refresh every 60s
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadLiveData(); });
+window.addEventListener('focus', loadLiveData);
 </script>
 </body>
 </html>
