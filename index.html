@@ -1933,37 +1933,6 @@ function parseDetailedMatches(rows) {
   }
   return matches.filter(m => m.jugadores.length > 0 || m.resultado);
 }
-      let gf = null, gc = null;
-      if (/^\d+-\d+$/.test(res)) { const p = res.split('-').map(Number); gf=p[0]; gc=p[1]; }
-      current = {
-        rival: c0, fecha: c1, lugar: c2,
-        dia: (row[3]||'').trim(), hora: (row[4]||'').trim(),
-        formacionCSB: (row[5]||'').trim(), formacionRival: (row[6]||'').trim(),
-        resultado: res || null, gf, gc, jugadores: [],
-      };
-      matches.push(current);
-      continue;
-    }
-
-    if (!current) continue;
-
-    // Player row
-    const citado   = c1 === '1';
-    const titular  = c2 === '1';
-    const entro    = (row[3]||'').trim() === '1';
-    const salio    = (row[4]||'').trim() === '1';
-    const goles    = parseInt(row[5]||'0') || 0;
-    const asist    = parseInt(row[6]||'0') || 0;
-    const rojas    = parseInt(row[7]||'0') || 0;
-    const pos      = (row[8]||'').trim();
-    const porQuien = (row[9]||'').trim(); // "Por quien ingreso" — direct substitution target
-
-    if (citado || titular || entro || pos) {
-      current.jugadores.push({ nombre:c0, citado, titular, entro, salio, goles, asist, rojas, pos, porQuien });
-    }
-  }
-  return matches.filter(m => m.jugadores.length > 0 || m.resultado);
-}
 
 function refreshCurrentView() {
   if (!currentData) return;
