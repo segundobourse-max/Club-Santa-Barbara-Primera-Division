@@ -601,6 +601,11 @@
     .ap-fd-meta-label { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.09em; color:var(--gris-texto); font-weight:700; }
     .ap-fd-meta-val { font-size:0.82rem; color:var(--blanco); font-weight:600; }
     .ap-fd-obs { margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.78rem; color:var(--gris-texto); line-height:1.55; }
+    .ap-fd-ph { color:rgba(255,255,255,0.2); font-style:italic; }
+    .ap-squad-num { font-size:0.65rem; color:var(--gris-texto); min-width:20px; text-align:right; flex-shrink:0; }
+    .ap-squad-empty { color:rgba(255,255,255,0.2); font-style:italic; }
+    .ap-pdot.placeholder { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.25); color:rgba(255,255,255,0.35); font-size:0.7rem; }
+    .ap-pname.ph { color:rgba(255,255,255,0.2); }
     .ap-aling-title { font-size:0.85rem; font-weight:800; color:var(--blanco); margin-bottom:10px; }
     .ap-copa-legend { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); }
     .ap-legend-item { display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--gris-texto); }
@@ -1045,16 +1050,7 @@ function showTorneo(key) {
   if (key === 'apertura') {
     renderTorneoApertura();
   } else {
-    const isA = currentData === DATA_A;
-    const name = 'Recopa 2026';
-    document.getElementById('torneo-recopa-content').innerHTML = `
-      <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
-      <div class="section-title" style="margin-bottom:24px">🏅 ${name}</div>
-      <div class="torneo-wip">
-        <div class="torneo-wip-icon">🚧</div>
-        <div class="torneo-wip-title">${name}</div>
-        <div class="torneo-wip-sub">Información en desarrollo. Próximamente estará disponible el detalle completo de este torneo.</div>
-      </div>`;
+    renderRecopa();
   }
 }
 
@@ -1075,12 +1071,21 @@ function apBand(pos) {
   if (['MI','MCO','MD'].includes(p)) return 3;
   return 4;
 }
+// Placeholder 4-3-3 for when no real lineup is available
+const PITCH_PLACEHOLDER = [
+  { pos:'ARQ', nombre:'1',  _ph:true },
+  { pos:'DFI', nombre:'2',  _ph:true }, { pos:'DFC', nombre:'3',  _ph:true },
+  { pos:'DFC', nombre:'4',  _ph:true }, { pos:'DFD', nombre:'5',  _ph:true },
+  { pos:'MCI', nombre:'6',  _ph:true }, { pos:'MC',  nombre:'8',  _ph:true }, { pos:'MCD', nombre:'7',  _ph:true },
+  { pos:'ATI', nombre:'11', _ph:true }, { pos:'DC',  nombre:'9',  _ph:true }, { pos:'ATD', nombre:'10', _ph:true },
+];
 function buildPitch(titulares) {
+  const players = (titulares && titulares.length > 0) ? titulares : PITCH_PLACEHOLDER;
   // Group by band
   const bands = [[], [], [], [], []];
-  for (const jug of titulares) {
+  for (const jug of players) {
     const b = apBand(jug.pos);
-    bands[b].push({ ...jug, _horder: AP_BAND_OF[jug.pos.toUpperCase()] ?? 1 });
+    bands[b].push({ ...jug, _horder: AP_BAND_OF[(jug.pos||'').toUpperCase()] ?? 1 });
   }
   // Sort each band by horizontal order
   bands.forEach(b => b.sort((a, z) => a._horder - z._horder));
@@ -1093,17 +1098,17 @@ function buildPitch(titulares) {
     const y = AP_BAND_Y[bi];
     group.forEach((jug, i) => {
       const x = n === 1 ? 50 : (100 * (2*i + 1)) / (2*n);
+      const isPlaceholder = !!jug._ph;
       const parts = jug.nombre.replace(/\s*\(c\)/i,'').trim().split(/\s+/);
-      const initials = parts.length > 1
-        ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
-        : parts[0].substring(0,2).toUpperCase();
-      const displayName = parts.length > 1
-        ? parts[0] + ' ' + parts[parts.length-1]
-        : parts[0];
-      const scored = jug.goles > 0;
+      const initials = isPlaceholder ? jug.nombre
+        : (parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+                             : parts[0].substring(0,2).toUpperCase());
+      const displayName = isPlaceholder ? '···'
+        : (parts.length > 1 ? parts[0] + ' ' + parts[parts.length-1] : parts[0]);
+      const scored = !isPlaceholder && jug.goles > 0;
       markers += `<div class="ap-player" style="left:${x.toFixed(1)}%;top:${y}%">
-        <div class="ap-pdot${scored?' scored':''}">${initials}</div>
-        <div class="ap-pname">${displayName}</div>
+        <div class="ap-pdot${isPlaceholder?' placeholder':scored?' scored':''}">${initials}</div>
+        <div class="ap-pname${isPlaceholder?' ph':''}">${displayName}</div>
       </div>`;
     });
   }
@@ -1123,48 +1128,51 @@ function buildPitch(titulares) {
   return `<div class="ap-pitch">${markings}${markers}</div>`;
 }
 
-function renderFechaDetail(basic, detail) {
-  const el = document.getElementById('ap-fecha-detail');
-  if (!basic && !detail) { el.innerHTML = ''; return; }
+function buildFechaDetailHTML(basic, detail) {
+  // Merge: detail overrides basic; "—" shown as placeholder when missing
+  const ph = v => (v === '—' || v === null || v === undefined)
+    ? `<span class="ap-fd-ph">—</span>` : v;
 
-  // Merge: detail fields override basic when available
-  const rival     = (detail && detail.rival)          || (basic && basic.rival)     || 'Dato no disponible';
-  const fecha     = (detail && detail.fecha)          || (basic && basic.fecha)     || '?';
-  const resultado = (detail && detail.resultado)      || (basic && basic.resultado) || null;
-  const gf        = detail ? detail.gf               : (basic ? basic.gf           : null);
-  const gc        = detail ? detail.gc               : (basic ? basic.gc           : null);
-  const local     = (basic && basic.local)            || (detail && detail.lugar)   || null;
-  const dia       = (detail && detail.dia)            || null;
-  const hora      = (detail && detail.hora)           || null;
-  const lugar     = (detail && detail.lugar)          || null;
-  const formCSB   = (detail && detail.formacionCSB)   || null;
-  const formRiv   = (detail && detail.formacionRival) || null;
-  const posCSB    = (basic && basic.posCSB)           || null;
-  const posRival  = (basic && basic.posRival)         || null;
-  const parciales = (basic && basic.parciales)        || null;
+  const rival     = (detail && detail.rival)          || (basic && basic.rival)          || '—';
+  const fecha     = (detail && detail.fecha)          || (basic && basic.fecha)          || '—';
+  const resultado = (detail && detail.resultado)      || (basic && basic.resultado)      || null;
+  const gf        = detail ? detail.gf               : (basic ? basic.gf                : null);
+  const gc        = detail ? detail.gc               : (basic ? basic.gc                : null);
+  const local     = (basic && basic.local)            || '—';
+  const dia       = (detail && detail.dia)            || '—';
+  const hora      = (detail && detail.hora)           || '—';
+  const lugar     = (detail && detail.lugar)          || '—';
+  const formCSB   = (detail && detail.formacionCSB)   || '—';
+  const formRiv   = (detail && detail.formacionRival) || '—';
+  const posCSB    = (basic && basic.posCSB)           || '—';
+  const posRival  = (basic && basic.posRival)         || '—';
+  const parciales = (basic && basic.parciales && basic.parciales !== '\\-') ? basic.parciales : '—';
   const obs       = (basic && basic.obs)              || null;
   const jugadores = (detail && detail.jugadores)      || [];
 
   const played   = resultado !== null;
   const resColor = gf === null ? '' : gf > gc ? 'var(--verde)' : gf < gc ? 'var(--rojo)' : 'var(--dorado)';
 
-  // Meta grid items — only show cells that have data
+  // All meta fields always shown with placeholder when empty
   const metaFields = [
-    { label: 'FECHA',             val: `Fecha ${fecha}` },
-    dia     ? { label: 'DÍA',              val: dia }            : null,
-    hora    ? { label: 'HORA',             val: hora }           : null,
-    local   ? { label: 'LOCAL / VISITA',   val: local }          : null,
-    lugar   ? { label: 'LUGAR',            val: lugar }          : null,
-    formCSB ? { label: 'FORMACIÓN CSB',    val: formCSB }        : null,
-    formRiv ? { label: 'FORMACIÓN RIVAL',  val: formRiv }        : null,
-    parciales && parciales !== '\\-' ? { label: 'PARCIALES', val: parciales } : null,
-    (posCSB || posRival) ? { label: 'POSICIÓN CSB / RIVAL', val: `${posCSB||'–'} / ${posRival||'–'}` } : null,
-  ].filter(Boolean);
+    { label: 'FECHA',            val: fecha !== '—' ? `Fecha ${fecha}` : '—' },
+    { label: 'DÍA',             val: dia },
+    { label: 'HORA',            val: hora },
+    { label: 'LOCAL / VISITA',  val: local },
+    { label: 'LUGAR',           val: lugar },
+    { label: 'FORMACIÓN CSB',   val: formCSB },
+    { label: 'FORMACIÓN RIVAL', val: formRiv },
+    { label: 'RESULTADO PARCIAL', val: parciales },
+    { label: 'POSICIÓN CSB',    val: posCSB },
+    { label: 'POSICIÓN RIVAL',  val: posRival },
+  ];
+
+  const rivalDisplay = rival !== '—' ? rival : `<span class="ap-fd-ph">Rival</span>`;
 
   const summary = `
     <div class="ap-fd-card">
       <div class="ap-fd-header">
-        <div class="ap-fd-title">Santa Bárbara vs ${rival}</div>
+        <div class="ap-fd-title">Santa Bárbara vs ${rivalDisplay}</div>
         ${played
           ? `<div class="ap-fd-score" style="color:${resColor}">${resultado}</div>`
           : `<div class="ap-fd-pending">⏳ Pendiente</div>`}
@@ -1172,71 +1180,87 @@ function renderFechaDetail(basic, detail) {
       <div class="ap-fd-meta">
         ${metaFields.map(f => `<div class="ap-fd-meta-item">
           <div class="ap-fd-meta-label">${f.label}</div>
-          <div class="ap-fd-meta-val">${f.val}</div>
+          <div class="ap-fd-meta-val">${ph(f.val)}</div>
         </div>`).join('')}
       </div>
-      ${obs ? `<div class="ap-fd-obs">Obs: ${obs}</div>` : ''}
+      ${obs ? `<div class="ap-fd-obs">📝 ${obs}</div>` : ''}
     </div>`;
 
   const titulares  = jugadores.filter(j => j.titular);
   const suplentes  = jugadores.filter(j => !j.titular && j.entro);
-  const convocados = jugadores.filter(j => j.citado && !j.titular && !j.entro);
+  const citados    = jugadores.filter(j => j.citado && !j.titular && !j.entro);
 
-  // Build cambios using the "Por quien ingreso" column — direct substitution data from the sheet
+  // Build cambios using "Por quien ingreso" column
   const cambios = suplentes.map(inp => {
     const outName = inp.porQuien || null;
-    const out = outName ? jugadores.find(j => j.nombre.toLowerCase().includes(outName.toLowerCase())
-                                           || outName.toLowerCase().includes(j.nombre.toLowerCase().split(' ').pop())) : null;
+    const out = outName ? jugadores.find(j =>
+      j.nombre.toLowerCase().includes(outName.toLowerCase()) ||
+      outName.toLowerCase().includes(j.nombre.toLowerCase().split(' ').pop())) : null;
     return { inp, outName, out };
   });
 
-  // Incidencias
+  // Once Titular panel — 11 numbered slots or real players
+  const titRows = titulares.length > 0
+    ? titulares.map(j => `<div class="ap-squad-item">
+        <span class="ap-squad-pos">${j.pos}</span>
+        <span style="flex:1">${j.nombre.replace(/\s*\(c\)/i,' <span style="font-size:0.65rem;color:var(--dorado)">©</span>')}</span>
+        ${j.goles > 0 ? `<span class="ap-squad-stat gol">⚽${j.goles > 1 ? j.goles : ''}</span>` : ''}
+        ${j.asist > 0 ? `<span class="ap-squad-stat" style="color:var(--azul-claro)">🎯${j.asist > 1 ? j.asist : ''}</span>` : ''}
+        ${j.rojas > 0 ? `<span class="ap-squad-stat roja">🟥</span>` : ''}
+      </div>`).join('')
+    : Array.from({length:11}, (_, i) => `<div class="ap-squad-item">
+        <span class="ap-squad-num">${i+1}.</span>
+        <span class="ap-squad-empty">—</span>
+      </div>`).join('');
+
+  // Banco de Suplentes panel — real or 4 empty slots
+  const suplRows = suplentes.length > 0
+    ? suplentes.map(j => `<div class="ap-squad-item">
+        <span class="ap-squad-pos">${j.pos||'–'}</span>
+        <span style="flex:1">${j.nombre} <span style="font-size:0.62rem;color:var(--verde)">▲</span></span>
+        ${j.goles > 0 ? `<span class="ap-squad-stat gol">⚽${j.goles > 1 ? j.goles : ''}</span>` : ''}
+        ${j.asist > 0 ? `<span class="ap-squad-stat" style="color:var(--azul-claro)">🎯${j.asist > 1 ? j.asist : ''}</span>` : ''}
+      </div>`).join('')
+    : Array.from({length:4}, () => `<div class="ap-squad-item">
+        <span class="ap-squad-empty">—</span>
+      </div>`).join('');
+
+  // Citados panel — real or 4 empty slots
+  const citRows = citados.length > 0
+    ? citados.map(j => `<div class="ap-squad-item">
+        <span class="ap-squad-pos">${j.pos||'–'}</span>
+        <span style="flex:1">${j.nombre}</span>
+      </div>`).join('')
+    : Array.from({length:4}, () => `<div class="ap-squad-item">
+        <span class="ap-squad-empty">—</span>
+      </div>`).join('');
+
+  // Incidencias — only shown when played and events exist
   const goalScorers = jugadores.filter(j => j.goles > 0);
   const assisters   = jugadores.filter(j => j.asist  > 0);
   const redCards    = jugadores.filter(j => j.rojas  > 0);
   const incidenciasHtml = played && (goalScorers.length || assisters.length || redCards.length) ? `
     <div class="ap-incidencias">
       <div class="ap-card-title" style="margin-bottom:8px">📋 Incidencias del Partido</div>
-      ${goalScorers.length ? `<div class="ap-inc-group">
-        <span class="ap-inc-label">⚽ Goles</span>
-        ${goalScorers.map(j => `<span class="ap-inc-item">${j.nombre}${j.goles > 1 ? ' ×'+j.goles : ''}</span>`).join('')}
-      </div>` : ''}
-      ${assisters.length ? `<div class="ap-inc-group">
-        <span class="ap-inc-label">🎯 Asistencias</span>
-        ${assisters.map(j => `<span class="ap-inc-item">${j.nombre}${j.asist > 1 ? ' ×'+j.asist : ''}</span>`).join('')}
-      </div>` : ''}
-      ${redCards.length ? `<div class="ap-inc-group">
-        <span class="ap-inc-label">🟥 Tarjetas rojas</span>
-        ${redCards.map(j => `<span class="ap-inc-item">${j.nombre}</span>`).join('')}
-      </div>` : ''}
+      ${goalScorers.length ? `<div class="ap-inc-group"><span class="ap-inc-label">⚽ Goles</span>${goalScorers.map(j=>`<span class="ap-inc-item">${j.nombre}${j.goles>1?' ×'+j.goles:''}</span>`).join('')}</div>` : ''}
+      ${assisters.length ? `<div class="ap-inc-group"><span class="ap-inc-label">🎯 Asistencias</span>${assisters.map(j=>`<span class="ap-inc-item">${j.nombre}${j.asist>1?' ×'+j.asist:''}</span>`).join('')}</div>` : ''}
+      ${redCards.length ? `<div class="ap-inc-group"><span class="ap-inc-label">🟥 Tarjetas rojas</span>${redCards.map(j=>`<span class="ap-inc-item">${j.nombre}</span>`).join('')}</div>` : ''}
     </div>` : '';
 
-  const suplCitados = [...suplentes, ...convocados];
-
-  const pitchSection = titulares.length > 0 ? `
+  const pitchSection = `
     <div class="ap-detail-grid">
       <div class="ap-pitch-outer">
-        <div class="ap-pitch-label">Formación · ${formCSB || '?'}</div>
-        ${buildPitch(titulares)}
+        <div class="ap-pitch-label">Formación · ${formCSB !== '—' ? formCSB : '?'}</div>
+        ${buildPitch(titulares.length > 0 ? titulares : null)}
       </div>
       <div class="ap-squad-panel">
         <div class="ap-aling-title">Alineación</div>
-        <div class="ap-squad-sec">Titulares</div>
-        ${titulares.map(j => `<div class="ap-squad-item">
-          <span class="ap-squad-pos">${j.pos}</span>
-          <span style="flex:1">${j.nombre.replace(/\s*\(c\)/i,' <span style="font-size:0.65rem;color:var(--dorado)">©</span>')}</span>
-          ${j.goles > 0 ? `<span class="ap-squad-stat gol">⚽${j.goles > 1 ? j.goles : ''}</span>` : ''}
-          ${j.asist > 0 ? `<span class="ap-squad-stat" style="color:var(--azul-claro)">🎯${j.asist > 1 ? j.asist : ''}</span>` : ''}
-          ${j.rojas > 0 ? `<span class="ap-squad-stat roja">🟥</span>` : ''}
-        </div>`).join('')}
-        ${suplCitados.length ? `
-        <div class="ap-squad-sec" style="margin-top:14px">Suplentes / Citados</div>
-        ${suplCitados.map(j => `<div class="ap-squad-item">
-          <span class="ap-squad-pos">${j.pos||'–'}</span>
-          <span style="flex:1">${j.nombre}${j.entro ? ' <span style="font-size:0.62rem;color:var(--verde)">▲</span>' : ''}</span>
-          ${j.goles > 0 ? `<span class="ap-squad-stat gol">⚽${j.goles > 1 ? j.goles : ''}</span>` : ''}
-          ${j.asist > 0 ? `<span class="ap-squad-stat" style="color:var(--azul-claro)">🎯${j.asist > 1 ? j.asist : ''}</span>` : ''}
-        </div>`).join('')}` : ''}
+        <div class="ap-squad-sec">Once Titular</div>
+        ${titRows}
+        <div class="ap-squad-sec" style="margin-top:14px">Banco de Suplentes</div>
+        ${suplRows}
+        <div class="ap-squad-sec" style="margin-top:14px">Citados</div>
+        ${citRows}
         ${cambios.length ? `
         <div class="ap-squad-sec" style="margin-top:14px">Cambios</div>
         ${cambios.map(c => `<div class="ap-change">
@@ -1246,11 +1270,15 @@ function renderFechaDetail(basic, detail) {
         </div>`).join('')}` : ''}
       </div>
     </div>
-    ${incidenciasHtml}` : (played
-      ? `<div style="color:var(--gris-texto);font-size:0.82rem;padding:12px 0;font-style:italic">Formación no registrada en la planilla para este partido.</div>`
-      : '');
+    ${incidenciasHtml}`;
 
-  el.innerHTML = summary + pitchSection;
+  return summary + pitchSection;
+}
+
+function renderFechaDetail(basic, detail, targetId = 'ap-fecha-detail') {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.innerHTML = buildFechaDetailHTML(basic, detail);
 }
 
 function selectFecha(n) {
@@ -1263,6 +1291,44 @@ function selectFecha(n) {
   renderFechaDetail(basic, detail);
 }
 
+// ──────────────────────────────────────────────
+// RENDER: RECOPA
+// ──────────────────────────────────────────────
+let selectedFechaRecopa = null;
+
+function selectFechaRecopa(n) {
+  selectedFechaRecopa = n;
+  document.querySelectorAll('#torneo-recopa-content .ap-fecha-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.fecha === String(n));
+  });
+  renderFechaDetail(null, null, 'ap-recopa-detail');
+}
+
+function renderRecopa() {
+  const isA = currentData === DATA_A;
+  const name = isA ? 'Recopa AIFA A 2026' : 'Recopa AIFA B 2026';
+  // Placeholder fecha buttons 1-8 (copa format)
+  const totalFechas = 8;
+  const fechaBtns = Array.from({length: totalFechas}, (_, i) => {
+    const n = i + 1;
+    return `<button class="ap-fecha-btn pending" data-fecha="${n}" onclick="selectFechaRecopa(${n})">Fecha ${n}</button>`;
+  }).join('');
+
+  document.getElementById('torneo-recopa-content').innerHTML = `
+    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+    <div class="section-title" style="margin-bottom:20px">🏅 ${name}</div>
+    <div class="ap-fechas-title">📅 Fechas del Torneo</div>
+    <div class="ap-fecha-nav">${fechaBtns}</div>
+    <div id="ap-recopa-detail"></div>`;
+
+  // Auto-select fecha 1
+  selectedFechaRecopa = null;
+  selectFechaRecopa(1);
+}
+
+// ──────────────────────────────────────────────
+// RENDER: APERTURA
+// ──────────────────────────────────────────────
 function renderTorneoApertura() {
   const d = currentData;
   const isA = d === DATA_A;
