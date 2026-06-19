@@ -539,38 +539,53 @@
     .ap-ms-score { font-size:2.4rem; font-weight:900; color:var(--dorado); text-align:center; }
     .ap-ms-meta  { font-size:0.75rem; color:var(--gris-texto); display:flex; flex-direction:column; gap:3px; }
     .ap-detail-grid {
-      display:grid; grid-template-columns:1fr 310px; gap:16px; align-items:start;
+      display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start;
     }
     @media (max-width:900px) { .ap-detail-grid { grid-template-columns:1fr; } }
     .ap-pitch-outer {
       background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
       border-radius:14px; padding:16px;
     }
+    .ap-right-col { display:flex; flex-direction:column; gap:12px; }
     .ap-pitch-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); margin-bottom:10px; font-weight:700; }
     .ap-pitch {
       position:relative;
-      background:linear-gradient(180deg,#15803d 0%,#166534 100%);
-      border-radius:6px; width:100%; aspect-ratio:2/3;
-      overflow:hidden; max-width:420px; margin:0 auto;
+      background:linear-gradient(180deg,#166534 0%,#15803d 45%,#166534 100%);
+      border-radius:6px; width:100%; aspect-ratio:10/14;
+      overflow:hidden; max-width:100%; margin:0 auto;
     }
-    .ap-pitch-line { position:absolute; background:rgba(255,255,255,0.22); }
-    .ap-pitch-circle { position:absolute; border:2px solid rgba(255,255,255,0.22); border-radius:50%; transform:translate(-50%,-50%); }
+    .ap-pitch-line { position:absolute; background:rgba(255,255,255,0.30); }
+    .ap-pitch-circle { position:absolute; border:2px solid rgba(255,255,255,0.30); border-radius:50%; transform:translate(-50%,-50%); }
+    .ap-pitch-arc { position:absolute; border:2px solid rgba(255,255,255,0.30); border-radius:50%; }
     .ap-player {
       position:absolute; transform:translate(-50%,-50%);
-      display:flex; flex-direction:column; align-items:center; gap:3px; z-index:2;
+      display:flex; flex-direction:column; align-items:center; gap:4px; z-index:2;
+    }
+    .ap-player-wrap {
+      position:relative;
+      display:flex; align-items:center; justify-content:center;
     }
     .ap-pdot {
-      width:32px; height:32px; border-radius:50%; background:var(--azul-claro);
-      border:2px solid rgba(255,255,255,0.9);
+      width:36px; height:36px; border-radius:50%; background:#000;
+      border:2.5px solid rgba(255,255,255,0.85);
       display:flex; align-items:center; justify-content:center;
-      font-size:0.58rem; font-weight:900; color:#fff; letter-spacing:-0.02em;
-      box-shadow:0 2px 6px rgba(0,0,0,0.5);
+      font-size:0.6rem; font-weight:900; color:#fff; letter-spacing:-0.02em;
+      box-shadow:0 2px 8px rgba(0,0,0,0.7); position:relative;
     }
-    .ap-pdot.scored { background:var(--verde); }
+    .ap-pdot.hat-trick { border-color:#fbbf24; box-shadow:0 0 10px rgba(251,191,36,0.6); }
+    .ap-pdot-badge {
+      position:absolute; top:-6px; right:-8px;
+      display:flex; gap:1px; align-items:center;
+      font-size:0.55rem; line-height:1; pointer-events:none;
+    }
+    .ap-pdot-roja {
+      position:absolute; bottom:-4px; right:-6px;
+      font-size:0.62rem; line-height:1;
+    }
     .ap-pname {
-      background:rgba(0,0,0,0.78); color:#fff; font-size:0.52rem; font-weight:700;
-      padding:1px 4px; border-radius:3px; white-space:nowrap;
-      max-width:72px; overflow:hidden; text-overflow:ellipsis; text-align:center;
+      background:rgba(0,0,0,0.82); color:#fff; font-size:0.54rem; font-weight:700;
+      padding:2px 5px; border-radius:3px; white-space:nowrap;
+      max-width:80px; overflow:hidden; text-overflow:ellipsis; text-align:center;
     }
     .ap-squad-panel {
       background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
@@ -604,13 +619,13 @@
     .ap-fd-ph { color:rgba(255,255,255,0.2); font-style:italic; }
     .ap-squad-num { font-size:0.65rem; color:var(--gris-texto); min-width:20px; text-align:right; flex-shrink:0; }
     .ap-squad-empty { color:rgba(255,255,255,0.2); font-style:italic; }
-    .ap-pdot.placeholder { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.25); color:rgba(255,255,255,0.35); font-size:0.7rem; }
+    .ap-pdot.placeholder { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.20); color:rgba(255,255,255,0.30); font-size:0.7rem; }
     .ap-pname.ph { color:rgba(255,255,255,0.2); }
     .ap-aling-title { font-size:0.85rem; font-weight:800; color:var(--blanco); margin-bottom:10px; }
     .ap-copa-legend { display:flex; flex-wrap:wrap; gap:10px 18px; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); }
     .ap-legend-item { display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--gris-texto); }
     .ap-legend-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-    .ap-incidencias { margin-top:14px; background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 18px; }
+    .ap-incidencias { background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 18px; }
     .ap-inc-group { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.78rem; }
     .ap-inc-group:last-child { border-bottom:none; }
     .ap-inc-label { font-size:0.68rem; font-weight:700; color:var(--gris-texto); min-width:90px; }
@@ -1669,9 +1684,7 @@ function buildPitch(titulares) {
     const b = apBand(jug.pos);
     bands[b].push({ ...jug, _horder: AP_BAND_OF[(jug.pos||'').toUpperCase()] ?? 1 });
   }
-  // Sort each band by horizontal order
   bands.forEach(b => b.sort((a, z) => a._horder - z._horder));
-  // Build markers HTML
   let markers = '';
   for (let bi = 0; bi < 5; bi++) {
     const group = bands[bi];
@@ -1681,31 +1694,68 @@ function buildPitch(titulares) {
     group.forEach((jug, i) => {
       const x = n === 1 ? 50 : (100 * (2*i + 1)) / (2*n);
       const isPlaceholder = !!jug._ph;
-      const parts = jug.nombre.replace(/\s*\(c\)/i,'').trim().split(/\s+/);
+      const parts = (jug.nombre||'').replace(/\s*\(c\)/i,'').trim().split(/\s+/);
       const initials = isPlaceholder ? jug.nombre
         : (parts.length > 1 ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
                              : parts[0].substring(0,2).toUpperCase());
       const displayName = isPlaceholder ? '···'
         : (parts.length > 1 ? parts[0] + ' ' + parts[parts.length-1] : parts[0]);
-      const scored = !isPlaceholder && jug.goles > 0;
+      const goles  = jug.goles  || 0;
+      const asist  = jug.asist  || 0;
+      const rojas  = jug.rojas  || 0;
+      const isHat  = !isPlaceholder && goles >= 3;
+      // Goal badge: 1-2 balls, hat-trick = golden ball
+      let goalBadge = '';
+      if (!isPlaceholder && goles > 0) {
+        if (isHat) {
+          goalBadge = `<span style="color:#fbbf24">⚽</span>${goles > 3 ? goles : ''}`;
+        } else {
+          goalBadge = '⚽'.repeat(goles);
+        }
+      }
+      // Assist badge
+      const assistBadge = (!isPlaceholder && asist > 0) ? '👟'.repeat(Math.min(asist,2)) : '';
+      const topBadge = goalBadge || assistBadge ? `<div class="ap-pdot-badge">${goalBadge}${assistBadge}</div>` : '';
+      const rojaBadge = (!isPlaceholder && rojas > 0) ? `<div class="ap-pdot-roja">🟥</div>` : '';
       markers += `<div class="ap-player" style="left:${x.toFixed(1)}%;top:${y}%">
-        <div class="ap-pdot${isPlaceholder?' placeholder':scored?' scored':''}">${initials}</div>
+        <div class="ap-player-wrap">
+          <div class="ap-pdot${isPlaceholder?' placeholder':isHat?' hat-trick':''}">${initials}${topBadge}${rojaBadge}</div>
+        </div>
         <div class="ap-pname${isPlaceholder?' ph':''}">${displayName}</div>
       </div>`;
     });
   }
-  // Field markings
+  // Realistic pitch markings (vertical orientation, attacking upward)
   const markings = `
+    <!-- Halfway line -->
     <div class="ap-pitch-line" style="left:0;right:0;top:50%;height:2px"></div>
-    <div class="ap-pitch-circle" style="left:50%;top:50%;width:22%;padding-top:22%;"></div>
-    <div class="ap-pitch-line" style="left:15%;right:15%;top:13%;height:2px"></div>
-    <div class="ap-pitch-line" style="left:15%;top:7%;height:6%;width:2px"></div>
-    <div class="ap-pitch-line" style="right:15%;top:7%;height:6%;width:2px"></div>
-    <div class="ap-pitch-line" style="left:15%;right:15%;top:7%;height:2px"></div>
-    <div class="ap-pitch-line" style="left:15%;right:15%;bottom:13%;height:2px"></div>
-    <div class="ap-pitch-line" style="left:15%;bottom:7%;height:6%;width:2px"></div>
-    <div class="ap-pitch-line" style="right:15%;bottom:7%;height:6%;width:2px"></div>
-    <div class="ap-pitch-line" style="left:15%;right:15%;bottom:7%;height:2px"></div>
+    <!-- Center circle ~18% diameter -->
+    <div class="ap-pitch-circle" style="left:50%;top:50%;width:28%;padding-top:20%;"></div>
+    <!-- Center spot -->
+    <div class="ap-pitch-line" style="left:50%;top:50%;width:5px;height:5px;border-radius:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.5)"></div>
+    <!-- TOP penalty area (16.5m deep ~12%, 40m wide ~55%) -->
+    <div class="ap-pitch-line" style="left:22%;right:22%;top:0;height:12%;pointer-events:none;background:none;border:2px solid rgba(255,255,255,0.30);border-top:none"></div>
+    <!-- TOP goal area (5.5m deep ~4%, 18m wide ~25%) -->
+    <div class="ap-pitch-line" style="left:37%;right:37%;top:0;height:4%;pointer-events:none;background:none;border:2px solid rgba(255,255,255,0.30);border-top:none"></div>
+    <!-- TOP penalty spot -->
+    <div class="ap-pitch-line" style="left:50%;top:9%;width:5px;height:5px;border-radius:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.5)"></div>
+    <!-- TOP penalty arc -->
+    <div class="ap-pitch-arc" style="left:50%;top:12%;width:20%;padding-top:15%;transform:translate(-50%,-50%);clip-path:ellipse(50% 50% at 50% 100%);border-bottom:none;border-color:rgba(255,255,255,0.28)"></div>
+    <!-- BOTTOM penalty area -->
+    <div class="ap-pitch-line" style="left:22%;right:22%;bottom:0;height:12%;pointer-events:none;background:none;border:2px solid rgba(255,255,255,0.30);border-bottom:none"></div>
+    <!-- BOTTOM goal area -->
+    <div class="ap-pitch-line" style="left:37%;right:37%;bottom:0;height:4%;pointer-events:none;background:none;border:2px solid rgba(255,255,255,0.30);border-bottom:none"></div>
+    <!-- BOTTOM penalty spot -->
+    <div class="ap-pitch-line" style="left:50%;top:91%;width:5px;height:5px;border-radius:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.5)"></div>
+    <!-- TOP goal (net) -->
+    <div class="ap-pitch-line" style="left:42%;right:42%;top:0;height:2%;background:rgba(255,255,255,0.45)"></div>
+    <!-- BOTTOM goal (net) -->
+    <div class="ap-pitch-line" style="left:42%;right:42%;bottom:0;height:2%;background:rgba(255,255,255,0.45)"></div>
+    <!-- Corner arcs (approximated with small quarter circles) -->
+    <div class="ap-pitch-arc" style="left:0;top:0;width:5%;padding-top:3.5%;border-radius:0 0 100% 0;border-top:none;border-left:none"></div>
+    <div class="ap-pitch-arc" style="right:0;top:0;width:5%;padding-top:3.5%;border-radius:0 0 0 100%;border-top:none;border-right:none"></div>
+    <div class="ap-pitch-arc" style="left:0;bottom:0;width:5%;padding-top:3.5%;border-radius:0 100% 0 0;border-bottom:none;border-left:none"></div>
+    <div class="ap-pitch-arc" style="right:0;bottom:0;width:5%;padding-top:3.5%;border-radius:100% 0 0 0;border-bottom:none;border-right:none"></div>
   `;
   return `<div class="ap-pitch">${markings}${markers}</div>`;
 }
@@ -1772,13 +1822,17 @@ function buildFechaDetailHTML(basic, detail) {
   const suplentes  = jugadores.filter(j => !j.titular && j.entro);
   const citados    = jugadores.filter(j => j.citado && !j.titular && !j.entro);
 
-  // Build cambios using "Por quien ingreso" column
-  const cambios = suplentes.map(inp => {
-    const outName = inp.porQuien || null;
-    const out = outName ? jugadores.find(j =>
-      j.nombre.toLowerCase().includes(outName.toLowerCase()) ||
-      outName.toLowerCase().includes(j.nombre.toLowerCase().split(' ').pop())) : null;
-    return { inp, outName, out };
+  // Build cambios: match entraron ↔ salieron by order of appearance
+  const salieron  = jugadores.filter(j => j.salio);
+  const cambios   = suplentes.map((inp, idx) => {
+    // First try porQuien field (from live fetch); fallback to positional match
+    let out = null;
+    if (inp.porQuien) {
+      const pq = inp.porQuien.toLowerCase();
+      out = jugadores.find(j => j.nombre.toLowerCase().includes(pq) || pq.includes(j.nombre.toLowerCase().split(' ').pop()));
+    }
+    if (!out) out = salieron[idx] || null;
+    return { inp, out };
   });
 
   // Once Titular panel — 11 numbered slots or real players
@@ -1835,24 +1889,26 @@ function buildFechaDetailHTML(basic, detail) {
         <div class="ap-pitch-label">Formación · ${formCSB !== '—' ? formCSB : '?'}</div>
         ${buildPitch(titulares.length > 0 ? titulares : null)}
       </div>
-      <div class="ap-squad-panel">
-        <div class="ap-aling-title">Alineación</div>
-        <div class="ap-squad-sec">Once Titular</div>
-        ${titRows}
-        <div class="ap-squad-sec" style="margin-top:14px">Banco de Suplentes</div>
-        ${suplRows}
-        <div class="ap-squad-sec" style="margin-top:14px">Citados</div>
-        ${citRows}
-        ${cambios.length ? `
-        <div class="ap-squad-sec" style="margin-top:14px">Cambios</div>
-        ${cambios.map(c => `<div class="ap-change">
-          <span class="cin">▲ ${c.inp.nombre}</span>
-          <span class="cmet">por</span>
-          <span class="cout">▽ ${c.outName || (c.out ? c.out.nombre : '?')}</span>
-        </div>`).join('')}` : ''}
+      <div class="ap-right-col">
+        ${incidenciasHtml}
+        <div class="ap-squad-panel">
+          <div class="ap-aling-title">Alineación</div>
+          <div class="ap-squad-sec">Once Titular</div>
+          ${titRows}
+          <div class="ap-squad-sec" style="margin-top:14px">Banco de Suplentes</div>
+          ${suplRows}
+          <div class="ap-squad-sec" style="margin-top:14px">Citados</div>
+          ${citRows}
+          ${cambios.length ? `
+          <div class="ap-squad-sec" style="margin-top:14px">Cambios</div>
+          ${cambios.map(c => `<div class="ap-change">
+            <span class="cin">▲ ${c.inp.nombre}</span>
+            <span class="cmet">por</span>
+            <span class="cout">▽ ${c.out ? c.out.nombre : '?'}</span>
+          </div>`).join('')}` : ''}
+        </div>
       </div>
-    </div>
-    ${incidenciasHtml}`;
+    </div>`;
 
   return summary + pitchSection;
 }
