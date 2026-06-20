@@ -281,19 +281,59 @@
 
     /* ── HISTORIAL VS CLUBES ── */
     .hist-wrap { max-width: 1100px; }
-    .hist-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
-    @media (max-width: 800px) { .hist-kpis { grid-template-columns: repeat(4,1fr); } }
+    .hist-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 32px; }
     @media (max-width: 560px) { .hist-kpis { grid-template-columns: repeat(2,1fr); } }
+
     .hist-kpi {
-      background: linear-gradient(145deg,#1a2236,#131825);
-      border: 1px solid #1e2a3a; border-radius: 16px;
-      padding: 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
+      position: relative; overflow: hidden;
+      background: rgba(16,22,36,0.7);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 22px 14px 18px;
+      display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center;
       transition: transform .3s ease, box-shadow .3s ease;
     }
-    .hist-kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-    .hist-kpi-icon { font-size: 1.2rem; }
-    .hist-kpi-val { font-size: 2rem; font-weight: 900; color: var(--dorado); line-height: 1; letter-spacing: -.02em; }
-    .hist-kpi-label { font-size: .67rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+    .hist-kpi::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hist-kpi:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(0,0,0,.5); }
+    .hist-kpi-icon { font-size: 1.3rem; opacity: 0.9; }
+    .hist-kpi-val { font-size: 2.1rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -.03em; }
+    .hist-kpi-label { font-size: .64rem; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+
+    /* Semantic color variants */
+    .hist-kpi-win {
+      background: rgba(20,40,28,0.75);
+      border-color: rgba(34,197,94,0.5);
+      box-shadow: 0 0 20px rgba(34,197,94,0.08);
+    }
+    .hist-kpi-win::before { background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.12) 0%, transparent 65%); }
+    .hist-kpi-win:hover { box-shadow: 0 10px 32px rgba(34,197,94,0.2); }
+    .hist-kpi-win .hist-kpi-val { color: #22c55e; }
+    .hist-kpi-win .hist-kpi-label { color: rgba(34,197,94,0.6); }
+
+    .hist-kpi-draw {
+      background: rgba(40,32,10,0.75);
+      border-color: rgba(245,158,11,0.5);
+      box-shadow: 0 0 20px rgba(245,158,11,0.06);
+    }
+    .hist-kpi-draw::before { background: radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.1) 0%, transparent 65%); }
+    .hist-kpi-draw:hover { box-shadow: 0 10px 32px rgba(245,158,11,0.18); }
+    .hist-kpi-draw .hist-kpi-val { color: #f59e0b; }
+    .hist-kpi-draw .hist-kpi-label { color: rgba(245,158,11,0.6); }
+
+    .hist-kpi-loss {
+      background: rgba(40,14,14,0.75);
+      border-color: rgba(239,68,68,0.5);
+      box-shadow: 0 0 20px rgba(239,68,68,0.06);
+    }
+    .hist-kpi-loss::before { background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.1) 0%, transparent 65%); }
+    .hist-kpi-loss:hover { box-shadow: 0 10px 32px rgba(239,68,68,0.18); }
+    .hist-kpi-loss .hist-kpi-val { color: #ef4444; }
+    .hist-kpi-loss .hist-kpi-label { color: rgba(239,68,68,0.6); }
 
     .hist-search-wrap { position: relative; margin-bottom: 20px; }
     .hist-search {
@@ -2628,21 +2668,26 @@ function renderHistorial() {
     return acc;
   }, { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dif:0 });
 
-  function kpi(icon, val, label) {
-    const cls = typeof val === 'number' && val > 0 ? 'color:var(--dorado)' : typeof val === 'number' && val < 0 ? 'color:#ef4444' : 'color:var(--dorado)';
-    return `<div class="hist-kpi"><div class="hist-kpi-icon">${icon}</div><div class="hist-kpi-val" style="${cls}">${val}</div><div class="hist-kpi-label">${label}</div></div>`;
+  function kpi(icon, val, label, variant = '') {
+    const difVal = typeof val === 'number' && label.includes('if') ? (val > 0 ? '+' + val : val) : val;
+    return `<div class="hist-kpi ${variant ? 'hist-kpi-' + variant : ''}">
+      <div class="hist-kpi-icon">${icon}</div>
+      <div class="hist-kpi-val">${difVal}</div>
+      <div class="hist-kpi-label">${label}</div>
+    </div>`;
   }
 
+  const difSign = totales.dif >= 0 ? '+' : '';
   const kpiHtml = `
     <div class="hist-kpis">
-      ${kpi('🏟', data.length, 'Clubes')}
-      ${kpi('📋', totales.pj,  'Partidos jugados')}
-      ${kpi('✅', totales.pg,  'Victorias')}
-      ${kpi('🟡', totales.pe,  'Empates')}
-      ${kpi('❌', totales.pp,  'Derrotas')}
-      ${kpi('⚽', totales.gf,  'Goles a favor')}
-      ${kpi('🥅', totales.gc,  'Goles en contra')}
-      ${kpi('📈', (totales.dif > 0 ? '+' : '') + totales.dif, 'Diferencia')}
+      ${kpi('🏟', data.length,   'Clubes enfrentados')}
+      ${kpi('📋', totales.pj,    'Partidos jugados')}
+      ${kpi('✅', totales.pg,    'Victorias',    'win')}
+      ${kpi('🟡', totales.pe,    'Empates',      'draw')}
+      ${kpi('❌', totales.pp,    'Derrotas',     'loss')}
+      ${kpi('⚽', totales.gf,    'Goles a favor')}
+      ${kpi('🥅', totales.gc,    'Goles en contra')}
+      ${kpi('📈', difSign + totales.dif, 'Diferencia de goles')}
     </div>`;
 
   function difClass(v) { return v > 0 ? 'hist-dif-pos' : v < 0 ? 'hist-dif-neg' : 'hist-dif-neu'; }
