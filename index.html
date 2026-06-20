@@ -494,6 +494,67 @@
     .debut-badge-gol { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
     .debut-badge-asist { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
 
+    /* ── INFERIORES ── */
+    .inf-wrap { max-width: 1100px; }
+    .inf-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 32px; }
+    @media (max-width: 640px) { .inf-kpis { grid-template-columns: repeat(2,1fr); } }
+    .inf-kpi {
+      background: linear-gradient(145deg, #1a2236, #131825);
+      border: 1px solid #1e2a3a; border-radius: 18px;
+      padding: 22px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .inf-kpi:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .inf-kpi-icon { font-size: 1.4rem; }
+    .inf-kpi-val { font-size: 2.2rem; font-weight: 900; color: var(--dorado); line-height: 1; letter-spacing: -0.02em; }
+    .inf-kpi-pct { font-size: 0.85rem; font-weight: 700; color: rgba(245,158,11,0.6); }
+    .inf-kpi-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+
+    .inf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    @media (max-width: 500px) { .inf-grid { grid-template-columns: 1fr; } }
+
+    .inf-card {
+      background: linear-gradient(160deg, #1a2236 0%, #131825 100%);
+      border: 1px solid #1e2a3a; border-radius: 18px; overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .inf-card:hover { border-color: rgba(245,158,11,0.35); box-shadow: 0 8px 28px rgba(0,0,0,0.5); }
+
+    .inf-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; cursor: pointer; gap: 12px;
+      border-bottom: 1px solid transparent; transition: border-color 0.3s;
+    }
+    .inf-card.open .inf-card-header { border-bottom-color: #1e2a3a; }
+    .inf-card-left { display: flex; align-items: center; gap: 14px; }
+    .inf-cat-badge {
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06));
+      border: 1px solid rgba(245,158,11,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; font-weight: 900; color: var(--dorado); letter-spacing: -0.02em;
+    }
+    .inf-cat-label { font-size: 1rem; font-weight: 800; color: #e2e8f0; }
+    .inf-cat-sub { font-size: 0.73rem; color: #475569; margin-top: 2px; }
+    .inf-card-right { display: flex; align-items: center; gap: 10px; }
+    .inf-pill-pj { background: rgba(255,255,255,0.05); border: 1px solid #1e2a3a; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #94a3b8; font-weight: 600; white-space: nowrap; }
+    .inf-pill-goles { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #22c55e; font-weight: 700; white-space: nowrap; }
+    .inf-chevron { color: #334155; font-size: 0.75rem; transition: transform 0.3s ease; flex-shrink: 0; }
+    .inf-card.open .inf-chevron { transform: rotate(180deg); }
+
+    .inf-card-body { display: none; padding: 16px 20px 20px; }
+    .inf-card.open .inf-card-body { display: block; }
+
+    .inf-body-row { display: flex; gap: 6px; margin-bottom: 10px; font-size: 0.78rem; align-items: flex-start; }
+    .inf-body-key { color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.65rem; padding-top: 1px; width: 90px; flex-shrink: 0; }
+    .inf-body-val { color: #94a3b8; line-height: 1.5; }
+    .inf-body-val strong { color: #e2e8f0; font-weight: 600; }
+
+    .inf-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .inf-badge { background: rgba(255,255,255,0.06); border: 1px solid #1e2a3a; border-radius: 8px; padding: 3px 10px; font-size: 0.72rem; color: #94a3b8; font-weight: 500; }
+
+    .inf-obs { background: rgba(245,158,11,0.06); border-left: 2px solid rgba(245,158,11,0.4); border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 0.76rem; color: #94a3b8; font-style: italic; margin-top: 10px; }
+
     /* ── RESUMEN LAYOUT ── */
     .resumen-grid {
       display: grid;
@@ -1840,7 +1901,7 @@ function showJugSub(key) {
   if (key === 'totales')    renderJugadoresTotales();
   if (key === 'anuales')    renderJugAnualesMenu();
   if (key === 'debuts')     renderDebuts();
-  if (key === 'inferiores') renderJugSubWip('inferiores', '🎓 Inferiores Aportes',     'Jugadores surgidos de inferiores y sus aportes. Próximamente.');
+  if (key === 'inferiores') renderInferiores();
 }
 
 function renderTorneosMenu() {
@@ -3314,6 +3375,99 @@ function renderDebuts() {
     btn.classList.add('active');
     const subset = yr === 'all' ? data : data.filter(d => d.year === yr);
     document.getElementById('debuts-timeline').innerHTML = buildTimeline(subset);
+  };
+}
+
+const INFERIORES_DATA = [
+  { cat:'1997', aportes:2, pj:239, debutante:'Juan Guyot', primerGol:'Juan Guyot', obs:'', jugadores:['Mateo Schwartz','Juan Guyot'], goles:5 },
+  { cat:'1998', aportes:2, pj:335, debutante:'Felipe Bello', primerGol:'Felipe Bello', obs:'El primer gol fue Iñaki Elhaiek en la C', jugadores:['Felipe Bello','Gonzalo Falconi'], goles:80 },
+  { cat:'1999', aportes:4, pj:286, debutante:'Juan Moyano', primerGol:'Juan Manuel Vittar', obs:'El primer gol fue Moyano en la B', jugadores:['Juan Moyano','Juan Manuel Vittar','Juan Cruz Queirolo','Bautista Casaretto'], goles:6 },
+  { cat:'2000', aportes:3, pj:137, debutante:'Mauro Pellegrino', primerGol:'Simon Buzzera', obs:'Primero en debutar Toto Torino en la C', jugadores:['Mauro Pellegrino','Simon Buzzera','Segundo Bourse','Toto Torino'], goles:4 },
+  { cat:'2001', aportes:4, pj:173, debutante:'Facundo Llauro', primerGol:'Francisco Moresco', obs:'Primero en debutar Mateo Pellegrino', jugadores:['Facundo Llauro','Francisco Moresco','Mateo García','Carlos Marcelo Cecchi'], goles:5 },
+  { cat:'2002', aportes:5, pj:568, debutante:'Bautista Fossa', primerGol:'Bautista Fossa', obs:'Debut y gol', jugadores:['Bautista Fossa','Marcos Gicovate','Ramiro Hermida','Theo Jurs','Valentin Ruocco'], goles:79 },
+  { cat:'2003', aportes:3, pj:196, debutante:'Bautista Elhaiek', primerGol:'Mateo Samitier', obs:'Sami — Gol en copa vs La Negra', jugadores:['Bautista Elhaiek','Mateo Samitier','Juan Bautista Basavilbaso'], goles:26 },
+  { cat:'2004', aportes:6, pj:284, debutante:'Francisco Vittar', primerGol:'Justo Gottlieb', obs:'Primero en debutar Tomás Córdoba en amistoso', jugadores:['Justo Gottlieb','Francisco Vittar','Juan Vigano','Fermín Garces','Vicente Fiore','Felipe Fossa'], goles:37 },
+  { cat:'2005', aportes:7, pj:174, debutante:'Lorenzo Pellegrino', primerGol:'Lorenzo Pellegrino', obs:'Debut como titular en copa vs La Negra', jugadores:['Lorenzo Pellegrino','Juan Tutaglio','Jaime Cafferata','Santiago Bassi','Tomas Castro','Bautista Baylac','Ivan Daverio'], goles:32 },
+  { cat:'2006', aportes:1, pj:100, debutante:'Iñaki Usandizaga', primerGol:'', obs:'Debut más joven (14 años)', jugadores:['Iñaki Usandizaga'], goles:0 },
+  { cat:'2007', aportes:2, pj:9,   debutante:'Alexis Pereyra', primerGol:'Benito Jasiukiewicz', obs:'Debut con gol de Beni Jaxiu', jugadores:['Alexis Pereyra','Benito Jasiukiewicz'], goles:2 },
+  { cat:'2008', aportes:1, pj:1,   debutante:'Benito Gualco', primerGol:'', obs:'Debut con victoria contra Harrods', jugadores:['Benito Gualco'], goles:0 },
+];
+
+function renderInferiores() {
+  const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:20px">← Estadísticas Jugadores</button>`;
+
+  const kpiHtml = `
+    <div class="inf-kpis">
+      <div class="inf-kpi">
+        <div class="inf-kpi-icon">🎓</div>
+        <div class="inf-kpi-val">40</div>
+        <div class="inf-kpi-label">Jugadores de inferiores en la A</div>
+      </div>
+      <div class="inf-kpi">
+        <div class="inf-kpi-icon">📊</div>
+        <div class="inf-kpi-val">76<span style="font-size:1.2rem">,92%</span></div>
+        <div class="inf-kpi-label">Del plantel surgió de inferiores</div>
+      </div>
+      <div class="inf-kpi">
+        <div class="inf-kpi-icon">⚽</div>
+        <div class="inf-kpi-val">265</div>
+        <div class="inf-kpi-label">Goles aportados por inferiores</div>
+      </div>
+      <div class="inf-kpi">
+        <div class="inf-kpi-icon">🎯</div>
+        <div class="inf-kpi-val">68<span style="font-size:1.2rem">,02%</span></div>
+        <div class="inf-kpi-label">De los goles del club</div>
+      </div>
+    </div>`;
+
+  const cards = INFERIORES_DATA.map((d, i) => {
+    const badges = d.jugadores.map(j => `<span class="inf-badge">${j}</span>`).join('');
+    const obs = d.obs ? `<div class="inf-obs">💬 ${d.obs}</div>` : '';
+    return `
+      <div class="inf-card" id="inf-card-${i}">
+        <div class="inf-card-header" onclick="infToggle(${i})">
+          <div class="inf-card-left">
+            <div class="inf-cat-badge">'${d.cat.slice(2)}</div>
+            <div>
+              <div class="inf-cat-label">Categoría ${d.cat}</div>
+              <div class="inf-cat-sub">${d.aportes} jugador${d.aportes>1?'es':''} · Debut: ${d.debutante}</div>
+            </div>
+          </div>
+          <div class="inf-card-right">
+            <span class="inf-pill-pj">${d.pj} PJ</span>
+            <span class="inf-pill-goles">⚽ ${d.goles}</span>
+            <span class="inf-chevron">▼</span>
+          </div>
+        </div>
+        <div class="inf-card-body">
+          <div class="inf-body-row">
+            <div class="inf-body-key">1er Debut</div>
+            <div class="inf-body-val"><strong>${d.debutante}</strong></div>
+          </div>
+          ${d.primerGol ? `<div class="inf-body-row">
+            <div class="inf-body-key">1er Gol</div>
+            <div class="inf-body-val"><strong>${d.primerGol}</strong></div>
+          </div>` : ''}
+          <div class="inf-body-row">
+            <div class="inf-body-key">Jugadores</div>
+            <div class="inf-body-val"><div class="inf-badges">${badges}</div></div>
+          </div>
+          ${obs}
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('jug-inferiores-content').innerHTML = `
+    <div class="inf-wrap">
+      ${backBtn}
+      <div class="section-title" style="margin-bottom:28px">🎓 Inferiores Aportes – Primera A</div>
+      ${kpiHtml}
+      <div class="inf-grid">${cards}</div>
+    </div>`;
+
+  window.infToggle = function(i) {
+    const card = document.getElementById('inf-card-' + i);
+    card.classList.toggle('open');
   };
 }
 
