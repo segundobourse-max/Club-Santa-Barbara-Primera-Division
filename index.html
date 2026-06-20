@@ -2362,30 +2362,69 @@ function renderJugadoresMenu() {
 }
 
 // ── Estadísticas Totales (historical sheet) ──────────────────────────────────
-let _jugTotalesData = null; // cached rows [{cols}]
-let _jugTotalesCols = [];   // column header names
-let _jugTotalesSort = { col: -1, asc: true };
+let _jugTotalesData = null;
+let _jugTotalesCols = [];
+let _jugTotalesSort = { col: 2, asc: false }; // default: sort by PJ desc
 let _jugTotalesQuery = '';
+let _jugTotalesTab = 'general'; // general | liderazgo | disciplina | participacion | rendimiento
+
+// Column index constants (resolved after data loads)
+const JUG_COL = {
+  pos: 0, nombre: 1, pj: 2, goles: 3, asist: 4,
+  capitan: 5, titulos: 6, ascensos: 7, rojas: 8,
+  promGol: 9, promAsist: 10, titular: 11, suplente: 12,
+  gmas: 13, promGmas: 14
+};
+
+const POS_COLOR = { ARQ:'#a855f7', LI:'#22c55e', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444' };
+const POS_BG    = { ARQ:'rgba(168,85,247,0.18)', LI:'rgba(34,197,94,0.15)', DFC:'rgba(59,130,246,0.18)', LD:'rgba(34,197,94,0.15)', MC:'rgba(245,158,11,0.18)', DEL:'rgba(239,68,68,0.18)' };
+
+const JUG_TABS = [
+  { key:'general',      label:'General',      cols:[JUG_COL.pj, JUG_COL.goles, JUG_COL.asist, JUG_COL.gmas] },
+  { key:'liderazgo',    label:'Liderazgo',    cols:[JUG_COL.pj, JUG_COL.capitan, JUG_COL.titulos, JUG_COL.ascensos] },
+  { key:'disciplina',   label:'Disciplina',   cols:[JUG_COL.pj, JUG_COL.rojas] },
+  { key:'participacion',label:'Participación',cols:[JUG_COL.pj, JUG_COL.titular, JUG_COL.suplente] },
+  { key:'rendimiento',  label:'Rendimiento',  cols:[JUG_COL.pj, JUG_COL.promGol, JUG_COL.promAsist, JUG_COL.promGmas] },
+];
+
+const COL_META = {
+  [JUG_COL.pj]:       { label:'PJ',    icon:'🎮', color:'#94a3b8' },
+  [JUG_COL.goles]:    { label:'Goles', icon:'⚽', color:'#22c55e' },
+  [JUG_COL.asist]:    { label:'Asist', icon:'🎯', color:'#3b82f6' },
+  [JUG_COL.gmas]:     { label:'G+A',   icon:'🔥', color:'#a855f7' },
+  [JUG_COL.capitan]:  { label:'Cap.',  icon:'🧢', color:'#f97316' },
+  [JUG_COL.titulos]:  { label:'Títulos',icon:'🏆',color:'#fbbf24' },
+  [JUG_COL.ascensos]: { label:'Asc.',  icon:'⬆️', color:'#fbbf24' },
+  [JUG_COL.rojas]:    { label:'Rojas', icon:'🟥', color:'#ef4444' },
+  [JUG_COL.titular]:  { label:'Tit.',  icon:'⬛', color:'#94a3b8' },
+  [JUG_COL.suplente]: { label:'Sup.',  icon:'⬜', color:'#64748b' },
+  [JUG_COL.promGol]:  { label:'Prom ⚽',icon:'📈',color:'#22c55e' },
+  [JUG_COL.promAsist]:{ label:'Prom 🎯',icon:'📈',color:'#3b82f6' },
+  [JUG_COL.promGmas]: { label:'Prom G+A',icon:'📈',color:'#a855f7' },
+};
 
 function renderJugadoresTotales() {
   const wrap = document.getElementById('jug-totales-content');
-  const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:16px">← Estadísticas Jugadores</button>`;
-  wrap.innerHTML = backBtn + `<div class="section-title" style="margin-bottom:16px">📊 Estadísticas Totales – Club Santa Bárbara</div>
-    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
-      <input id="jug-search" type="search" placeholder="🔍 Buscar jugador..." style="flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:0.9rem;outline:none" oninput="_jugTotalFilter(this.value)">
-      <span id="jug-count" style="color:var(--gris-texto);font-size:0.82rem;white-space:nowrap"></span>
+  wrap.innerHTML = `
+    <button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:16px">← Estadísticas Jugadores</button>
+    <div class="section-title" style="margin-bottom:16px">📊 Estadísticas Totales – Club Santa Bárbara</div>
+    <div id="jug-kpi-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <input id="jug-search" type="search" placeholder="🔍 Buscar jugador..." oninput="_jugTotalFilter(this.value)"
+        style="flex:1;min-width:160px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:0.88rem;outline:none">
+      <div id="jug-tab-row" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <span id="jug-count" style="color:var(--gris-texto);font-size:0.8rem;white-space:nowrap;margin-left:4px"></span>
     </div>
-    <div class="table-wrap" id="jug-totales-wrap" style="overflow-x:auto">
-      <div style="color:var(--gris-texto);padding:24px;text-align:center">Cargando estadísticas...</div>
+    <div class="table-wrap" id="jug-totales-wrap" style="overflow-x:auto;position:relative">
+      <div style="color:var(--gris-texto);padding:24px;text-align:center">Cargando...</div>
     </div>`;
 
-  if (_jugTotalesData) { _jugTotalBuild(); return; }
+  if (_jugTotalesData) { _jugTotalRender(); return; }
 
-  // Load from seed immediately, then try live update
   _jugTotalesCols = SEED_JUG_ESTADISTICAS[0];
   _jugTotalesData = SEED_JUG_ESTADISTICAS.slice(1);
-  _jugTotalesSort = { col: -1, asc: true };
-  _jugTotalBuild();
+  _jugTotalesSort = { col: JUG_COL.pj, asc: false };
+  _jugTotalRender();
 
   fetchCSV(GS.A_MAIN, 'Jugadores Estadisticas')
     .then(text => {
@@ -2395,9 +2434,9 @@ function renderJugadoresTotales() {
       _jugTotalesData = rows.slice(1)
         .filter(r => r.some(c => c && c.trim() && c.trim() !== '-'))
         .map(r => _jugTotalesCols.map((_, i) => (r[i] || '').trim()));
-      _jugTotalBuild();
+      _jugTotalRender();
     })
-    .catch(() => { /* seed already shown */ });
+    .catch(() => {});
 }
 
 function _jugTotalFilter(q) {
@@ -2409,8 +2448,13 @@ function _jugTotalSort(colIdx) {
   if (_jugTotalesSort.col === colIdx) {
     _jugTotalesSort.asc = !_jugTotalesSort.asc;
   } else {
-    _jugTotalesSort = { col: colIdx, asc: true };
+    _jugTotalesSort = { col: colIdx, asc: false };
   }
+  _jugTotalBuild();
+}
+
+function _jugTotalSetTab(key) {
+  _jugTotalesTab = key;
   _jugTotalBuild();
 }
 
@@ -2419,78 +2463,132 @@ function _jugTotalNumeric(v) {
   return parseFloat(v.replace(',', '.'));
 }
 
-function _jugTotalCell(v) {
-  if (!v || v === '-' || v === '\\-' || v === '#DIV/0!' || v === '') return '<span style="color:var(--gris-texto)">—</span>';
-  const n = _jugTotalNumeric(v);
-  if (n !== null && !isNaN(n)) {
-    if (Number.isInteger(n)) return `<strong>${n}</strong>`;
-    return n.toFixed(2).replace('.', ',');
-  }
-  return v;
+function _jugTotalRender() {
+  _jugTotalKpi();
+  _jugTotalBuild();
+}
+
+function _jugTotalKpi() {
+  const el = document.getElementById('jug-kpi-row');
+  if (!el || !_jugTotalesData) return;
+  const n = v => { const x = _jugTotalNumeric(v); return x !== null && !isNaN(x) ? x : 0; };
+  const totalPJ    = _jugTotalesData.reduce((s,r) => s + n(r[JUG_COL.pj]), 0);
+  const totalGoles = _jugTotalesData.reduce((s,r) => s + n(r[JUG_COL.goles]), 0);
+  const totalAsist = _jugTotalesData.reduce((s,r) => s + n(r[JUG_COL.asist]), 0);
+  const totalGmas  = _jugTotalesData.reduce((s,r) => s + n(r[JUG_COL.gmas]), 0);
+  const maxPJ  = [..._jugTotalesData].sort((a,b) => n(b[JUG_COL.pj]) - n(a[JUG_COL.pj]))[0];
+  const maxGol = [..._jugTotalesData].sort((a,b) => n(b[JUG_COL.goles]) - n(a[JUG_COL.goles]))[0];
+  const kpiCard = (icon, label, val, sub, color) => `
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 16px">
+      <div style="font-size:1.4rem;margin-bottom:4px">${icon}</div>
+      <div style="font-size:1.5rem;font-weight:900;color:${color};line-height:1">${val}</div>
+      <div style="font-size:0.7rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">${label}</div>
+      ${sub ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-top:2px">${sub}</div>` : ''}
+    </div>`;
+  el.innerHTML =
+    kpiCard('👤', 'Jugadores', _jugTotalesData.length, '', '#94a3b8') +
+    kpiCard('⚽', 'Total Goles', totalGoles, '', '#22c55e') +
+    kpiCard('🎯', 'Total Asist.', totalAsist, '', '#3b82f6') +
+    kpiCard('🔥', 'Total G+A', totalGmas, '', '#a855f7') +
+    kpiCard('🥇', 'Goleador', maxGol ? maxGol[JUG_COL.goles] : '—', maxGol ? maxGol[JUG_COL.nombre].split(' ')[0] : '', '#fbbf24') +
+    kpiCard('🎮', 'Más PJ', maxPJ ? maxPJ[JUG_COL.pj] : '—', maxPJ ? maxPJ[JUG_COL.nombre].split(' ')[0] : '', '#f97316');
 }
 
 function _jugTotalBuild() {
   const wrap = document.getElementById('jug-totales-wrap');
+  const tabRow = document.getElementById('jug-tab-row');
   if (!wrap || !_jugTotalesData) return;
 
-  const q = _jugTotalesQuery;
-  // Column index for "Jugador" (name) — usually index 1
-  const nameIdx = _jugTotalesCols.findIndex(c => /jugador/i.test(c));
-
-  let rows = _jugTotalesData;
-  if (q) {
-    rows = rows.filter(r => {
-      const name = nameIdx >= 0 ? r[nameIdx] : r.join(' ');
-      return name.toLowerCase().includes(q);
-    });
+  // Tab pills
+  if (tabRow) {
+    tabRow.innerHTML = JUG_TABS.map(t => `
+      <button onclick="_jugTotalSetTab('${t.key}')" style="padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,${_jugTotalesTab===t.key?'0.3':'0.1'});background:${_jugTotalesTab===t.key?'rgba(255,255,255,0.12)':'transparent'};color:${_jugTotalesTab===t.key?'#fff':'var(--gris-texto)'};font-size:0.78rem;cursor:pointer;white-space:nowrap">${t.label}</button>`).join('');
   }
+
+  const activeCols = JUG_TABS.find(t => t.key === _jugTotalesTab)?.cols || JUG_TABS[0].cols;
+
+  const q = _jugTotalesQuery;
+  let rows = _jugTotalesData;
+  if (q) rows = rows.filter(r => r[JUG_COL.nombre].toLowerCase().includes(q));
 
   const { col, asc } = _jugTotalesSort;
-  if (col >= 0) {
-    rows = [...rows].sort((a, b) => {
-      const na = _jugTotalNumeric(a[col]), nb = _jugTotalNumeric(b[col]);
-      let cmp;
-      if (na !== null && nb !== null && !isNaN(na) && !isNaN(nb)) {
-        cmp = na - nb;
-      } else {
-        cmp = (a[col] || '').localeCompare(b[col] || '', 'es', { numeric: true });
-      }
-      return asc ? cmp : -cmp;
-    });
-  }
+  const sortCol = activeCols.includes(col) ? col : activeCols[0];
+  rows = [...rows].sort((a, b) => {
+    const na = _jugTotalNumeric(a[sortCol]), nb = _jugTotalNumeric(b[sortCol]);
+    const cmp = (na !== null && nb !== null && !isNaN(na) && !isNaN(nb))
+      ? na - nb : (a[sortCol] || '').localeCompare(b[sortCol] || '', 'es', { numeric: true });
+    return asc ? cmp : -cmp;
+  });
+  if (_jugTotalesSort.col !== sortCol) _jugTotalesSort = { col: sortCol, asc: false };
 
   const countEl = document.getElementById('jug-count');
   if (countEl) countEl.textContent = `${rows.length} jugador${rows.length !== 1 ? 'es' : ''}`;
 
-  const ths = _jugTotalesCols.map((c, i) => {
-    const active = col === i;
-    const arrow = active ? (asc ? ' ↑' : ' ↓') : '';
-    return `<th onclick="_jugTotalSort(${i})" style="cursor:pointer;user-select:none;white-space:nowrap${active ? ';color:var(--azul-claro)' : ''}">${c}${arrow}</th>`;
-  }).join('');
+  // Compute max per numeric col for progress bars
+  const maxVals = {};
+  activeCols.forEach(ci => {
+    maxVals[ci] = Math.max(...rows.map(r => _jugTotalNumeric(r[ci]) || 0), 1);
+  });
 
-  // Identify key column indices for special styling
-  const golesIdx = _jugTotalesCols.findIndex(c => /^goles$/i.test(c));
-  const asistIdx = _jugTotalesCols.findIndex(c => /^asist/i.test(c));
-  const rojasIdx = _jugTotalesCols.findIndex(c => /tarjeta|roja/i.test(c));
-  const posIdx   = _jugTotalesCols.findIndex(c => /^posic/i.test(c));
+  // Top 3 sets for medal highlights
+  const rankMap = new Map();
+  rows.forEach((r, i) => rankMap.set(r, i));
 
-  const trs = rows.map(r => {
-    const cells = r.map((v, i) => {
-      if (i === nameIdx) return `<td><strong style="color:var(--blanco)">${v || '—'}</strong></td>`;
-      if (i === posIdx && v) return `<td><span style="font-size:0.7rem;background:rgba(255,255,255,0.08);padding:2px 7px;border-radius:4px">${v}</span></td>`;
+  const medalBg = ['rgba(251,191,36,0.12)', 'rgba(148,163,184,0.1)', 'rgba(180,120,60,0.1)'];
+  const medals  = ['🥇', '🥈', '🥉'];
+
+  const ths = `
+    <th style="position:sticky;left:0;z-index:2;background:#1a2333;min-width:44px;width:44px;text-align:center;padding:10px 8px;font-size:0.7rem;color:var(--gris-texto)">#</th>
+    <th style="position:sticky;left:44px;z-index:2;background:#1a2333;min-width:46px;width:46px;padding:10px 8px;font-size:0.7rem;color:var(--gris-texto)">Pos</th>
+    <th style="position:sticky;left:90px;z-index:2;background:#1a2333;min-width:150px;padding:10px 12px;font-size:0.7rem;color:var(--gris-texto);cursor:pointer" onclick="_jugTotalSort(${JUG_COL.nombre})">Jugador</th>
+    ${activeCols.map(ci => {
+      const m = COL_META[ci] || { label: _jugTotalesCols[ci], icon: '', color: '#94a3b8' };
+      const active = _jugTotalesSort.col === ci;
+      return `<th onclick="_jugTotalSort(${ci})" style="cursor:pointer;user-select:none;min-width:80px;padding:10px 12px;font-size:0.7rem;color:${active ? m.color : 'var(--gris-texto)'};text-align:right;white-space:nowrap">
+        ${m.icon} ${m.label}${active ? (_jugTotalesSort.asc ? ' ↑' : ' ↓') : ''}
+      </th>`;
+    }).join('')}`;
+
+  const trs = rows.map((r, i) => {
+    const rank = i < 3 ? i : -1;
+    const bg = rank >= 0 ? medalBg[rank] : (i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)');
+    const pos = r[JUG_COL.pos] || '';
+    const pc = POS_COLOR[pos] || '#94a3b8';
+    const pb = POS_BG[pos] || 'rgba(255,255,255,0.08)';
+    const nombre = r[JUG_COL.nombre] || '—';
+
+    const dataCells = activeCols.map(ci => {
+      const v = r[ci];
       const n = _jugTotalNumeric(v);
-      if (i === golesIdx && n > 0) return `<td><strong style="color:var(--verde)">${n}</strong></td>`;
-      if (i === asistIdx && n > 0) return `<td><strong style="color:var(--azul-claro)">${n}</strong></td>`;
-      if (i === rojasIdx && n > 0) return `<td><span style="color:var(--rojo)">${n}</span></td>`;
-      return `<td>${_jugTotalCell(v)}</td>`;
+      const m = COL_META[ci] || { color: '#94a3b8' };
+      const pct = (n !== null && !isNaN(n) && maxVals[ci] > 0) ? Math.round(n / maxVals[ci] * 100) : 0;
+      const isNull = n === null || isNaN(n) || n === 0;
+      const isDecimal = n !== null && !isNaN(n) && !Number.isInteger(n);
+      const display = isNull
+        ? `<span style="color:rgba(255,255,255,0.2)">—</span>`
+        : `<span style="color:${m.color};font-weight:700">${isDecimal ? n.toFixed(2).replace('.',',') : n}</span>`;
+      const bar = (!isNull && pct > 0 && [JUG_COL.goles,JUG_COL.asist,JUG_COL.gmas,JUG_COL.pj].includes(ci))
+        ? `<div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.07);margin-top:3px"><div style="height:100%;width:${pct}%;background:${m.color};border-radius:2px;opacity:0.7"></div></div>` : '';
+      return `<td style="text-align:right;padding:10px 12px;vertical-align:middle">${display}${bar}</td>`;
     }).join('');
-    return `<tr>${cells}</tr>`;
+
+    return `<tr style="background:${bg};transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${bg}'">
+      <td style="position:sticky;left:0;z-index:1;background:inherit;text-align:center;padding:10px 8px;font-size:0.85rem">${rank >= 0 ? medals[rank] : `<span style="color:rgba(255,255,255,0.3);font-size:0.75rem">${i+1}</span>`}</td>
+      <td style="position:sticky;left:44px;z-index:1;background:inherit;padding:10px 8px">
+        <span style="display:inline-block;padding:2px 7px;border-radius:5px;font-size:0.68rem;font-weight:800;letter-spacing:.04em;color:${pc};background:${pb}">${pos}</span>
+      </td>
+      <td style="position:sticky;left:90px;z-index:1;background:inherit;padding:10px 12px;min-width:150px">
+        <span style="font-weight:700;color:#fff;font-size:0.88rem">${nombre}</span>
+      </td>
+      ${dataCells}
+    </tr>`;
   }).join('');
 
-  wrap.innerHTML = `<table style="min-width:900px">
-    <thead><tr>${ths}</tr></thead>
-    <tbody>${trs || '<tr><td colspan="' + _jugTotalesCols.length + '" style="text-align:center;color:var(--gris-texto);padding:24px">Sin resultados</td></tr>'}</tbody>
-  </table>`;
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+      <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08)">${ths}</tr></thead>
+      <tbody>${trs || `<tr><td colspan="${3 + activeCols.length}" style="text-align:center;color:var(--gris-texto);padding:32px">Sin resultados</td></tr>`}</tbody>
+    </table>`;
 }
 
 function renderJugSubWip(key, title, desc) {
