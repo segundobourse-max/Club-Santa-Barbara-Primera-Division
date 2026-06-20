@@ -1705,7 +1705,7 @@ function showJugSub(key) {
   target.style.display = 'block';
   target.classList.add('active');
   if (key === 'totales')    renderJugadoresTotales();
-  if (key === 'anuales')    renderJugSubWip('anuales',    '📅 Estadísticas Anuales',   'Estadísticas separadas por temporada. Próximamente.');
+  if (key === 'anuales')    renderJugAnualesMenu();
   if (key === 'debuts')     renderJugSubWip('debuts',     '🌟 Debuts',                 'Registro de debutantes del plantel. Próximamente.');
   if (key === 'inferiores') renderJugSubWip('inferiores', '🎓 Inferiores Aportes',     'Jugadores surgidos de inferiores y sus aportes. Próximamente.');
 }
@@ -2607,6 +2607,303 @@ function _jugTotalBuild() {
       <thead><tr>${ths}</tr></thead>
       <tbody>${trs || `<tr><td colspan="${2 + activeCols.length}" style="text-align:center;color:var(--gris-texto);padding:32px">Sin resultados</td></tr>`}</tbody>
     </table>`;
+}
+
+// ── Estadísticas Anuales ─────────────────────────────────────────────────────
+const SEED_ANUALES = {
+  '2023': {
+    torneos: [
+      { nombre:'Apertura', icon:'🍂', pos:'9°', pts:19, pj:15, g:6, e:1, p:8, gf:35, gc:28, maxGol:'Ramiro Hermida (8)', maxAsist:'Ramiro Hermida (6)', maxPJ:'Bautista Elhaiek, Ramiro Hermida (15)' },
+      { nombre:'Clausura', icon:'🌸', pos:'4°',  pts:25, pj:15, g:7, e:4, p:4, gf:35, gc:20, maxGol:'Felipe Bello (10)',   maxAsist:'Ramiro Hermida (4)',                 maxPJ:'Bautista Elhaiek (15)' },
+      { nombre:'Recopa',   icon:'🏆', pos:'Semifinal', pts:null, pj:3, g:1, e:2, p:0, gf:6, gc:4, maxGol:'', maxAsist:'', maxPJ:'' },
+    ]
+  },
+  '2024': {
+    torneos: [
+      { nombre:'Apertura', icon:'🍂', pos:'7°', pts:23, pj:15, g:6, e:5, p:4, gf:30, gc:19, maxGol:'Lorenzo Pellegrino (8)', maxAsist:'Lorenzo Pellegrino (5)', maxPJ:'Iñaki Usandizaga (15)' },
+      { nombre:'Clausura', icon:'🌸', pos:'8°',  pts:23, pj:15, g:7, e:2, p:6, gf:20, gc:20, maxGol:'Lorenzo Pellegrino (6)', maxAsist:'Bautista Elhaiek (2)',     maxPJ:'Juan Moyano (15)' },
+      { nombre:'Recopa',   icon:'🏆', pos:'Subcampeón', pts:null, pj:4, g:2, e:1, p:1, gf:7, gc:2, maxGol:'', maxAsist:'', maxPJ:'' },
+    ]
+  },
+  '2025': {
+    torneos: [
+      { nombre:'Apertura', icon:'🍂', pos:'4°', pts:30, pj:15, g:9, e:3, p:3, gf:25, gc:10, maxGol:'Felipe Bello (5)',    maxAsist:'Bautista Elhaiek / Santiago Bassi / M. Schwartz (3)', maxPJ:'Theo Jurs, Bautista Elhaiek (15)' },
+      { nombre:'Clausura', icon:'🌸', pos:'5°',  pts:23, pj:15, g:7, e:2, p:6, gf:22, gc:18, maxGol:'Ramiro Hermida (7)', maxAsist:'Hermida / Vittar / Bello (3)',                    maxPJ:'Usandizaga, B. Elhaiek, F. Bello (15)' },
+      { nombre:'Recopa',   icon:'🏆', pos:'Subcampeón', pts:null, pj:4, g:2, e:1, p:1, gf:9, gc:2, maxGol:'', maxAsist:'', maxPJ:'' },
+    ]
+  }
+};
+
+let _anualesYear = null;
+let _anualesPlayers = {}; // { '2023': [...rows], '2024': [...], '2025': [...] }
+let _anualesSortCol = 1; // PJ by default
+let _anualesSortAsc = false;
+let _anualesQuery = '';
+
+function renderJugAnualesMenu() {
+  const back = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:16px">← Estadísticas Jugadores</button>`;
+  document.getElementById('jug-anuales-content').innerHTML = back + `
+    <div style="margin-bottom:18px">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:2px">Club Santa Bárbara</div>
+      <div style="font-size:1.25rem;font-weight:900;color:#fff">📅 Estadísticas Anuales</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;max-width:600px">
+      ${['2023','2024','2025'].map(y => `
+        <div onclick="renderJugAnualesYear('${y}')" style="cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:22px 20px;text-align:center;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,0.09)';this.style.borderColor='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.1)'">
+          <div style="font-size:2rem;margin-bottom:8px">📊</div>
+          <div style="font-size:1.5rem;font-weight:900;color:#fff">${y}</div>
+          <div style="font-size:0.72rem;color:var(--gris-texto);margin-top:4px">Ver temporada →</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderJugAnualesYear(year) {
+  _anualesYear = year;
+  _anualesQuery = '';
+  _anualesSortCol = 1;
+  _anualesSortAsc = false;
+  const seed = SEED_ANUALES[year];
+  if (!seed) return;
+
+  // Totals across all league torneos (exclude Recopa from aggregates)
+  const liga = seed.torneos.filter(t => t.pts !== null);
+  const total = { pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0 };
+  liga.forEach(t => { total.pj += t.pj; total.g += t.g; total.e += t.e; total.p += t.p; total.gf += t.gf; total.gc += t.gc; });
+  const pctG = Math.round(total.g / total.pj * 100);
+  const pctE = Math.round(total.e / total.pj * 100);
+  const pctP = 100 - pctG - pctE;
+
+  const posIcon = p => { const n = parseInt(p); return n <= 4 ? '🟢' : n <= 7 ? '🟡' : '🔴'; };
+  const posStyle = p => { const n = parseInt(p); return n <= 4 ? '#22c55e' : n <= 7 ? '#f59e0b' : '#ef4444'; };
+
+  const backMenu = `<button class="torneo-back" onclick="renderJugAnualesMenu()" style="margin-bottom:16px">← Estadísticas Anuales</button>`;
+
+  document.getElementById('jug-anuales-content').innerHTML = backMenu + `
+    <div style="margin-bottom:16px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto)">Club Santa Bárbara</div>
+      <div style="font-size:1.3rem;font-weight:900;color:#fff">Temporada ${year}</div>
+    </div>
+
+    <!-- BLOQUE 1: Resumen del equipo -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">📊 Resumen del equipo (Liga)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:6px">
+      ${[
+        ['🎮','PJ', total.pj, '#94a3b8'],
+        ['✅','Victorias', total.g, '#22c55e'],
+        ['➡️','Empates', total.e, '#f59e0b'],
+        ['❌','Derrotas', total.p, '#ef4444'],
+        ['⚽','GF', total.gf, '#22c55e'],
+        ['🥅','GC', total.gc, '#94a3b8'],
+        ['📊','Dif.', total.gf - total.gc >= 0 ? '+' + (total.gf - total.gc) : (total.gf - total.gc), total.gf >= total.gc ? '#22c55e' : '#ef4444'],
+      ].map(([icon, label, val, color]) => `
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:9px 10px;display:flex;align-items:center;gap:8px">
+          <div style="font-size:1.1rem">${icon}</div>
+          <div>
+            <div style="font-size:1.1rem;font-weight:900;color:${color};line-height:1">${val}</div>
+            <div style="font-size:0.6rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <!-- Barra V/E/P -->
+    <div style="display:flex;border-radius:6px;overflow:hidden;height:8px;margin-bottom:20px;gap:2px">
+      <div style="flex:${pctG};background:#22c55e;border-radius:4px" title="Victorias ${pctG}%"></div>
+      <div style="flex:${pctE};background:#f59e0b;border-radius:4px" title="Empates ${pctE}%"></div>
+      <div style="flex:${pctP};background:#ef4444;border-radius:4px" title="Derrotas ${pctP}%"></div>
+    </div>
+
+    <!-- BLOQUE 2: Rendimiento por torneo -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">🏟️ Rendimiento por torneo</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:20px">
+      ${seed.torneos.map(t => {
+        const isLeague = t.pts !== null;
+        const pct = isLeague ? Math.round(t.g / t.pj * 100) : null;
+        return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:0.8rem;font-weight:700;color:#fff">${t.icon} ${t.nombre} ${year}</span>
+            <span style="font-size:1rem;font-weight:900;color:${posStyle(t.pos)}">${t.pos}</span>
+          </div>
+          ${isLeague ? `
+          <div style="font-size:0.72rem;color:var(--gris-texto);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+            <span><strong style="color:#fff">${t.pts}</strong> pts</span>
+            <span><strong style="color:#22c55e">${t.g}G</strong> · <strong style="color:#f59e0b">${t.e}E</strong> · <strong style="color:#ef4444">${t.p}P</strong></span>
+            <span style="color:#94a3b8">${t.gf}:${t.gc}</span>
+          </div>
+          <div style="height:4px;border-radius:999px;background:rgba(255,255,255,0.07);overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${posStyle(t.pos)};border-radius:999px"></div>
+          </div>` : `
+          <div style="font-size:0.72rem;color:var(--gris-texto)">${t.pj} partidos · ${t.gf}:${t.gc}</div>`}
+          ${t.maxGol ? `<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:6px">⚽ ${t.maxGol}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- BLOQUE 3: Rankings (cargados desde el sheet) -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">🏅 Rankings de la temporada</div>
+    <div id="jug-anual-rankings" style="margin-bottom:20px">
+      <div style="color:var(--gris-texto);font-size:0.82rem">Cargando estadísticas de jugadores...</div>
+    </div>
+
+    <!-- BLOQUE 4: Base de datos de jugadores -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">👥 Todos los jugadores</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <input id="jug-anual-search" type="search" placeholder="🔍 Buscar jugador..." oninput="_anualesFilter(this.value)"
+        style="flex:1;min-width:150px;padding:7px 11px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:0.85rem;outline:none">
+      <span id="jug-anual-count" style="color:var(--gris-texto);font-size:0.78rem;white-space:nowrap"></span>
+    </div>
+    <div id="jug-anual-table" style="overflow-x:auto">
+      <div style="color:var(--gris-texto);font-size:0.82rem;padding:8px 0">Cargando tabla...</div>
+    </div>`;
+
+  _anualesLoadPlayers(year);
+}
+
+function _anualesLoadPlayers(year) {
+  if (_anualesPlayers[year]) { _anualesBuildAll(year); return; }
+
+  fetchCSV(GS.A_MAIN, year)
+    .then(text => {
+      const rows = parseCSV(text);
+      if (!rows || rows.length < 2) throw new Error('empty');
+      // Header: Jugador, Partidos Jugados, Titular, Entro, Salio, Goles, Asistencias, Rojas, Citado, G+A, Prom gol, Prom asist, Prom G+A
+      _anualesPlayers[year] = rows.slice(1)
+        .filter(r => r[0] && r[0].trim() && r[1] && parseFloat(r[1]) > 0)
+        .map(r => ({
+          nombre: r[0].trim(),
+          pj:     parseFloat(r[1]) || 0,
+          titular:parseFloat(r[2]) || 0,
+          goles:  parseFloat(r[5]) || 0,
+          asist:  parseFloat(r[6]) || 0,
+          rojas:  parseFloat(r[7]) || 0,
+          gmas:   parseFloat(r[9]) || 0,
+          promGmas: parseFloat((r[12]||'').replace(',','.')) || 0,
+        }));
+      _anualesBuildAll(year);
+    })
+    .catch(() => {
+      const rankEl = document.getElementById('jug-anual-rankings');
+      const tabEl  = document.getElementById('jug-anual-table');
+      const msg = '<div style="color:var(--gris-texto);font-size:0.82rem;padding:4px 0">No se pudieron cargar las estadísticas individuales del año.</div>';
+      if (rankEl) rankEl.innerHTML = msg;
+      if (tabEl)  tabEl.innerHTML  = msg;
+    });
+}
+
+function _anualesFilter(q) {
+  _anualesQuery = q.toLowerCase().trim();
+  if (_anualesYear) _anualesBuildTable(_anualesYear);
+}
+
+function _anualesSort(col) {
+  if (_anualesSortCol === col) _anualesSortAsc = !_anualesSortAsc;
+  else { _anualesSortCol = col; _anualesSortAsc = false; }
+  if (_anualesYear) _anualesBuildTable(_anualesYear);
+}
+
+function _anualesBuildAll(year) {
+  _anualesBuildRankings(year);
+  _anualesBuildTable(year);
+}
+
+function _anualesBuildRankings(year) {
+  const el = document.getElementById('jug-anual-rankings');
+  if (!el) return;
+  const players = _anualesPlayers[year] || [];
+  if (!players.length) { el.innerHTML = '<div style="color:var(--gris-texto);font-size:0.82rem">Sin datos de jugadores.</div>'; return; }
+
+  const top = (arr, key, n=5) => [...arr].sort((a,b) => b[key]-a[key]).slice(0,n).filter(p => p[key] > 0);
+  const rankBlock = (title, icon, color, items, key, suffix='') => {
+    if (!items.length) return '';
+    return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gris-texto);margin-bottom:8px">${icon} ${title}</div>
+      ${items.map((p, i) => {
+        const medals = ['🥇','🥈','🥉','4.','5.'];
+        const pct = Math.round(p[key] / items[0][key] * 100);
+        return `<div style="margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+            <span style="font-size:0.8rem;color:#fff">${medals[i]} ${p.nombre}</span>
+            <span style="font-size:0.85rem;font-weight:800;color:${color}">${p[key]}${suffix}</span>
+          </div>
+          <div style="height:3px;border-radius:999px;background:rgba(255,255,255,0.07)">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:999px;box-shadow:0 0 4px ${color}55"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+    ${rankBlock('Goleadores',       '⚽','#22c55e', top(players,'goles'),  'goles')}
+    ${rankBlock('Asistidores',      '🎯','#3b82f6', top(players,'asist'),  'asist')}
+    ${rankBlock('G+A',              '🔥','#a855f7', top(players,'gmas'),   'gmas')}
+    ${rankBlock('Más partidos',     '🎮','#94a3b8', top(players,'pj'),     'pj', ' PJ')}
+  </div>`;
+}
+
+function _anualesBuildTable(year) {
+  const el = document.getElementById('jug-anual-table');
+  const countEl = document.getElementById('jug-anual-count');
+  if (!el) return;
+  const players = _anualesPlayers[year] || [];
+
+  const COLS = [
+    { label:'Jugador',  key:'nombre',  color:'#fff',     isText: true },
+    { label:'PJ',       key:'pj',      color:'#94a3b8' },
+    { label:'Titular',  key:'titular', color:'#94a3b8' },
+    { label:'⚽ Goles', key:'goles',   color:'#22c55e' },
+    { label:'🎯 Asist', key:'asist',   color:'#3b82f6' },
+    { label:'🔥 G+A',  key:'gmas',    color:'#a855f7' },
+    { label:'🟥 Rojas', key:'rojas',   color:'#ef4444' },
+    { label:'Prom G+A', key:'promGmas',color:'#a855f7', isDecimal: true },
+  ];
+
+  let rows = [...players];
+  if (_anualesQuery) rows = rows.filter(p => p.nombre.toLowerCase().includes(_anualesQuery));
+
+  const { key: sk, isText } = COLS[_anualesSortCol] || COLS[1];
+  rows.sort((a,b) => {
+    const cmp = isText ? (a[sk]||'').localeCompare(b[sk]||'','es') : (b[sk]||0) - (a[sk]||0);
+    return _anualesSortAsc ? -cmp : cmp;
+  });
+
+  if (countEl) countEl.textContent = `${rows.length} jugador${rows.length !== 1 ? 'es' : ''}`;
+
+  const maxGoles = Math.max(...rows.map(r => r.goles), 1);
+  const maxAsist = Math.max(...rows.map(r => r.asist), 1);
+  const maxGmas  = Math.max(...rows.map(r => r.gmas),  1);
+  const maxPJ    = Math.max(...rows.map(r => r.pj),    1);
+
+  const ths = COLS.map((c, i) => {
+    const active = _anualesSortCol === i;
+    return `<th onclick="_anualesSort(${i})" style="cursor:pointer;user-select:none;padding:9px 10px;font-size:0.65rem;color:${active ? c.color : 'var(--gris-texto)'};text-align:${i===0?'left':'right'};white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
+      ${c.label}${active ? `<span style="margin-left:2px;font-size:.7em">${_anualesSortAsc?'▲':'▼'}</span>` : ''}
+    </th>`;
+  }).join('');
+
+  const trs = rows.map((p, i) => {
+    const bg = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)';
+    const initials = p.nombre.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const bar = (val, max, color) => `<div style="height:3px;border-radius:999px;background:rgba(255,255,255,0.07);margin-top:3px"><div style="height:100%;width:${Math.round(val/max*100)}%;background:${color};border-radius:999px"></div></div>`;
+    return `<tr style="background:${bg};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${bg}'">
+      <td style="padding:8px 10px;white-space:nowrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:900;color:#94a3b8;flex-shrink:0">${initials}</div>
+          <span style="font-weight:700;color:#fff;font-size:0.85rem">${p.nombre}</span>
+        </div>
+      </td>
+      <td style="text-align:right;padding:8px 10px"><span style="color:#94a3b8;font-weight:700">${p.pj}</span>${bar(p.pj, maxPJ,'#94a3b8')}</td>
+      <td style="text-align:right;padding:8px 10px"><span style="color:#64748b">${p.titular}</span></td>
+      <td style="text-align:right;padding:8px 10px">${p.goles > 0 ? `<span style="color:#22c55e;font-weight:800">${p.goles}</span>${bar(p.goles, maxGoles,'#22c55e')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
+      <td style="text-align:right;padding:8px 10px">${p.asist > 0 ? `<span style="color:#3b82f6;font-weight:800">${p.asist}</span>${bar(p.asist, maxAsist,'#3b82f6')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
+      <td style="text-align:right;padding:8px 10px">${p.gmas  > 0 ? `<span style="color:#a855f7;font-weight:800">${p.gmas}</span>${bar(p.gmas, maxGmas,'#a855f7')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
+      <td style="text-align:right;padding:8px 10px">${p.rojas > 0 ? `<span style="color:#ef4444;font-weight:700">${p.rojas}</span>` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
+      <td style="text-align:right;padding:8px 10px"><span style="color:#a855f7">${p.promGmas > 0 ? p.promGmas.toFixed(2).replace('.',',') : '—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+    <thead><tr>${ths}</tr></thead>
+    <tbody>${trs || `<tr><td colspan="${COLS.length}" style="text-align:center;color:var(--gris-texto);padding:24px">Sin resultados</td></tr>`}</tbody>
+  </table>`;
 }
 
 function renderJugSubWip(key, title, desc) {
