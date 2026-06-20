@@ -361,6 +361,36 @@
     .torneo-wip-title { font-size: 1.3rem; font-weight: 800; color: var(--blanco); }
     .torneo-wip-sub { font-size: 0.88rem; color: var(--gris-texto); max-width: 300px; line-height: 1.6; }
 
+    /* ── DEBUTS ── */
+    .debuts-kpis { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .debuts-kpi { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 120px; }
+    .debuts-kpi-val { font-size: 1.5rem; font-weight: 700; color: var(--acento); }
+    .debuts-kpi-label { font-size: 0.75rem; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.05em; }
+    .debuts-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .debuts-pill { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; color: var(--gris-texto); cursor: pointer; transition: all 0.18s; }
+    .debuts-pill:hover { border-color: var(--acento); color: var(--acento); }
+    .debuts-pill.active { background: var(--acento); border-color: var(--acento); color: #fff; font-weight: 600; }
+    .debut-year-block { margin-bottom: 32px; }
+    .debut-year-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .debut-year-line { flex: 1; height: 1px; background: var(--borde); }
+    .debut-year-label { font-size: 1.1rem; font-weight: 700; color: var(--texto); white-space: nowrap; }
+    .debut-year-count { font-size: 0.78rem; color: var(--gris-texto); background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 2px 10px; white-space: nowrap; }
+    .debut-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .debut-card { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; transition: border-color 0.18s; }
+    .debut-card:hover { border-color: var(--acento); }
+    .debut-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--acento); display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .debut-info { flex: 1; min-width: 0; }
+    .debut-name { font-size: 0.9rem; font-weight: 600; color: var(--texto); margin-bottom: 4px; }
+    .debut-meta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 0.75rem; color: var(--gris-texto); margin-bottom: 6px; align-items: center; }
+    .debut-res { font-weight: 600; font-size: 0.78rem; }
+    .debut-res-w { color: #22c55e; }
+    .debut-res-d { color: #f59e0b; }
+    .debut-res-l { color: #ef4444; }
+    .debut-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .debut-badge { font-size: 0.72rem; border-radius: 8px; padding: 2px 8px; font-weight: 600; }
+    .debut-badge-gol { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .debut-badge-asist { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+
     /* ── RESUMEN LAYOUT ── */
     .resumen-grid {
       display: grid;
@@ -1706,7 +1736,7 @@ function showJugSub(key) {
   target.classList.add('active');
   if (key === 'totales')    renderJugadoresTotales();
   if (key === 'anuales')    renderJugAnualesMenu();
-  if (key === 'debuts')     renderJugSubWip('debuts',     '🌟 Debuts',                 'Registro de debutantes del plantel. Próximamente.');
+  if (key === 'debuts')     renderDebuts();
   if (key === 'inferiores') renderJugSubWip('inferiores', '🎓 Inferiores Aportes',     'Jugadores surgidos de inferiores y sus aportes. Próximamente.');
 }
 
@@ -2609,6 +2639,52 @@ function _jugTotalBuild() {
     </table>`;
 }
 
+// ── Debuts ───────────────────────────────────────────────────────────────────
+const SEED_DEBUTS = [
+  { year:2016, nombre:'Iñaki Elhaiek',           cat:1998, edad:17, rival:'Arquitectura',  resultado:'1-3', gol:false, asist:false },
+  { year:2016, nombre:'Mateo Schwartz',           cat:1997, edad:18, rival:'Banco Ciudad',  resultado:'2-1', gol:false, asist:false },
+  { year:2016, nombre:'Juan Guyot',               cat:1997, edad:18, rival:'Banco Ciudad',  resultado:'2-1', gol:false, asist:false },
+  { year:2016, nombre:'Genaro Falconi',           cat:1998, edad:17, rival:'Campos Sarandi',resultado:'2-2', gol:false, asist:false },
+  { year:2017, nombre:'Juan Moyano',              cat:1999, edad:18, rival:'Libertador',    resultado:'4-0', gol:false, asist:false },
+  { year:2017, nombre:'Felipe Bello',             cat:1998, edad:19, rival:'',              resultado:'',    gol:false, asist:false },
+  { year:2017, nombre:'Bautista Goycochea',       cat:1999, edad:18, rival:'',              resultado:'',    gol:false, asist:false },
+  { year:2018, nombre:'Juan Manuel Vittar',       cat:1999, edad:18, rival:'Cissab',        resultado:'2-0', gol:false, asist:false },
+  { year:2018, nombre:'Bautista Casaretto',       cat:1999, edad:19, rival:'Cissab',        resultado:'2-0', gol:false, asist:false },
+  { year:2019, nombre:'Nicolas Torlaschi',        cat:1999, edad:20, rival:'Arquitectura',  resultado:'0-3', gol:false, asist:false },
+  { year:2019, nombre:'Mauro Pellegrino',         cat:2000, edad:19, rival:'Unlam',         resultado:'1-2', gol:false, asist:false },
+  { year:2019, nombre:'Simon Gazzera',            cat:2000, edad:19, rival:'Unlam',         resultado:'1-2', gol:true,  asist:false },
+  { year:2021, nombre:'Bautista Fossa',           cat:2002, edad:18, rival:'Santa Alicia',  resultado:'1-2', gol:true,  asist:false },
+  { year:2021, nombre:'Ramiro Hermida',           cat:2002, edad:18, rival:'Santa Alicia',  resultado:'1-2', gol:false, asist:false },
+  { year:2021, nombre:'Facundo Llauro',           cat:2001, edad:19, rival:'Santa Alicia',  resultado:'1-2', gol:false, asist:false },
+  { year:2021, nombre:'Theo Jurs',                cat:2002, edad:18, rival:'Santa Alicia',  resultado:'1-2', gol:false, asist:false },
+  { year:2021, nombre:'Iñaki Usandizaga',         cat:2006, edad:14, rival:'Unlam',         resultado:'3-1', gol:false, asist:false },
+  { year:2021, nombre:'Segundo Bourse',           cat:2000, edad:20, rival:'Unlam',         resultado:'3-1', gol:false, asist:false },
+  { year:2021, nombre:'Francisco Moresco',        cat:2001, edad:20, rival:'Trovador',      resultado:'2-3', gol:false, asist:false },
+  { year:2022, nombre:'Valentin Ruocco',          cat:2002, edad:19, rival:'Trovador',      resultado:'2-2', gol:false, asist:false },
+  { year:2022, nombre:'Marcos Gicovate',          cat:2002, edad:19, rival:'Trovador',      resultado:'2-2', gol:false, asist:false },
+  { year:2022, nombre:'Francisco Vittar',         cat:2004, edad:17, rival:'Trovador',      resultado:'2-2', gol:false, asist:false },
+  { year:2022, nombre:'Justo Gottlieb',           cat:2004, edad:18, rival:'Regatas',       resultado:'2-1', gol:false, asist:false },
+  { year:2022, nombre:'Juan Vigano',              cat:2004, edad:17, rival:'Regatas',       resultado:'2-1', gol:false, asist:false },
+  { year:2022, nombre:'Bautista Elhaiek',         cat:2003, edad:19, rival:'Vilo',          resultado:'3-6', gol:false, asist:false },
+  { year:2023, nombre:'Fermin Garces',            cat:2004, edad:18, rival:'Sitas C',       resultado:'3-1', gol:false, asist:false },
+  { year:2023, nombre:'Juan Cruz Queriolo',       cat:1999, edad:23, rival:'Afalp',         resultado:'1-0', gol:false, asist:false },
+  { year:2023, nombre:'Mateo Samitier',           cat:2003, edad:20, rival:'UBA',           resultado:'1-4', gol:false, asist:false },
+  { year:2023, nombre:'Lorenzo Pellegrino',       cat:2005, edad:18, rival:'Cissab',        resultado:'2-1', gol:false, asist:false },
+  { year:2024, nombre:'Juan Bautista Basavilbaso',cat:2003, edad:20, rival:'Mitre',         resultado:'4-0', gol:false, asist:false },
+  { year:2024, nombre:'Juan Tutaglio',            cat:2005, edad:18, rival:'Los Molinos',   resultado:'5-2', gol:false, asist:false },
+  { year:2024, nombre:'Jaime Cafferata',          cat:2005, edad:18, rival:'Arquitectura',  resultado:'2-0', gol:false, asist:false },
+  { year:2024, nombre:'Santiago Bassi',           cat:2005, edad:18, rival:'UBA',           resultado:'1-1', gol:false, asist:false },
+  { year:2024, nombre:'Tomas Castro',             cat:2005, edad:19, rival:'Regatas',       resultado:'2-1', gol:false, asist:false },
+  { year:2024, nombre:'Bautista Baylac',          cat:2005, edad:19, rival:'Macabi',        resultado:'0-1', gol:false, asist:false },
+  { year:2025, nombre:'Vicente Fiore',            cat:2004, edad:20, rival:'Nordelta',      resultado:'1-0', gol:false, asist:false },
+  { year:2025, nombre:'Felipe Fossa',             cat:2004, edad:20, rival:'Macabi',        resultado:'0-1', gol:false, asist:false },
+  { year:2026, nombre:'Ivan Daverio',             cat:2005, edad:20, rival:'El Chasqui',    resultado:'2-1', gol:false, asist:false },
+  { year:2026, nombre:'Carlos Marcelo Cecchi',    cat:2001, edad:24, rival:'El Chasqui',    resultado:'2-1', gol:false, asist:false },
+  { year:2026, nombre:'Alexis Pereyra',           cat:2007, edad:19, rival:'El Chasqui',    resultado:'2-1', gol:false, asist:false },
+  { year:2026, nombre:'Benito Jasiukiewicz',      cat:2007, edad:19, rival:'El Chasqui',    resultado:'2-1', gol:true,  asist:false },
+  { year:2026, nombre:'Benito Gualco',            cat:2008, edad:18, rival:'Harrods',       resultado:'3-0', gol:false, asist:false },
+];
+
 // ── Estadísticas Anuales ─────────────────────────────────────────────────────
 const SEED_ANUALES_PLAYERS = {
   '2023': [
@@ -2977,6 +3053,102 @@ function _anualesBuildTable(year) {
     <thead><tr>${ths}</tr></thead>
     <tbody>${trs || `<tr><td colspan="${COLS.length}" style="text-align:center;color:var(--gris-texto);padding:24px">Sin resultados</td></tr>`}</tbody>
   </table>`;
+}
+
+function renderDebuts() {
+  const data = SEED_DEBUTS;
+  const years = [...new Set(data.map(d => d.year))].sort();
+  const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:20px">← Estadísticas Jugadores</button>`;
+
+  const totalDebutantes = data.length;
+  const conGol   = data.filter(d => d.gol).length;
+  const conAsist = data.filter(d => d.asist).length;
+  const youngest = [...data].filter(d => d.edad).sort((a,b) => a.edad - b.edad)[0];
+
+  function resultClass(r) {
+    if (!r) return 'debut-res-unknown';
+    const [g, gc] = r.split('-').map(Number);
+    if (g > gc) return 'debut-res-w';
+    if (g === gc) return 'debut-res-d';
+    return 'debut-res-l';
+  }
+  function resultLabel(r) {
+    if (!r) return '—';
+    const [g, gc] = r.split('-').map(Number);
+    if (g > gc) return '🟢 ' + r;
+    if (g === gc) return '🟡 ' + r;
+    return '🔴 ' + r;
+  }
+  function initials(n) {
+    return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  }
+
+  // KPI cards
+  const kpiHtml = `
+    <div class="debuts-kpis">
+      <div class="debuts-kpi"><span class="debuts-kpi-val">${totalDebutantes}</span><span class="debuts-kpi-label">Debutantes</span></div>
+      <div class="debuts-kpi"><span class="debuts-kpi-val">${years.length}</span><span class="debuts-kpi-label">Temporadas</span></div>
+      <div class="debuts-kpi"><span class="debuts-kpi-val">${conGol}</span><span class="debuts-kpi-label">Gol en debut</span></div>
+      <div class="debuts-kpi"><span class="debuts-kpi-val" style="font-size:13px">${youngest ? youngest.nombre.split(' ')[0] + ' · ' + youngest.edad + ' años' : '—'}</span><span class="debuts-kpi-label">Debut más joven</span></div>
+    </div>`;
+
+  // Year filter pills
+  const filterHtml = `
+    <div class="debuts-filters" id="debuts-year-filters">
+      <button class="debuts-pill active" onclick="debutsFilter('all', this)">Todos</button>
+      ${years.map(y => `<button class="debuts-pill" onclick="debutsFilter(${y}, this)">${y}</button>`).join('')}
+    </div>`;
+
+  // Timeline
+  function buildTimeline(subset) {
+    const byYear = {};
+    subset.forEach(d => { if (!byYear[d.year]) byYear[d.year] = []; byYear[d.year].push(d); });
+    return Object.keys(byYear).sort((a,b)=>b-a).map(yr => {
+      const players = byYear[yr];
+      const cards = players.map(p => `
+        <div class="debut-card">
+          <div class="debut-avatar">${initials(p.nombre)}</div>
+          <div class="debut-info">
+            <div class="debut-name">${p.nombre}</div>
+            <div class="debut-meta">
+              ${p.rival ? `<span>vs ${p.rival}</span>` : ''}
+              ${p.edad ? `<span>· ${p.edad} años</span>` : ''}
+              ${p.resultado ? `<span class="debut-res ${resultClass(p.resultado)}">${resultLabel(p.resultado)}</span>` : ''}
+            </div>
+            <div class="debut-badges">
+              ${p.gol   ? `<span class="debut-badge debut-badge-gol">⚽ Gol</span>` : ''}
+              ${p.asist ? `<span class="debut-badge debut-badge-asist">🎯 Asistencia</span>` : ''}
+            </div>
+          </div>
+        </div>`).join('');
+      return `
+        <div class="debut-year-block" data-year="${yr}">
+          <div class="debut-year-header">
+            <div class="debut-year-line"></div>
+            <div class="debut-year-label">${yr}</div>
+            <div class="debut-year-count">${players.length} debut${players.length > 1 ? 's' : ''}</div>
+            <div class="debut-year-line"></div>
+          </div>
+          <div class="debut-cards-grid">${cards}</div>
+        </div>`;
+    }).join('');
+  }
+
+  const timelineHtml = `<div id="debuts-timeline">${buildTimeline(data)}</div>`;
+
+  document.getElementById('jug-debuts-content').innerHTML = `
+    ${backBtn}
+    <div class="section-title" style="margin-bottom:20px">🌟 Debuts – ${currentData.nombre}</div>
+    ${kpiHtml}
+    ${filterHtml}
+    ${timelineHtml}`;
+
+  window.debutsFilter = function(yr, btn) {
+    document.querySelectorAll('.debuts-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const subset = yr === 'all' ? data : data.filter(d => d.year === yr);
+    document.getElementById('debuts-timeline').innerHTML = buildTimeline(subset);
+  };
 }
 
 function renderJugSubWip(key, title, desc) {
