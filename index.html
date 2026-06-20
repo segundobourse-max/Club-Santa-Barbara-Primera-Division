@@ -387,6 +387,109 @@
     .hist-rival-arrow { margin-left: 6px; color: #334155; font-size: .7rem; }
     .hist-empty { text-align: center; padding: 40px; color: #475569; font-size: .88rem; }
 
+    /* ── HISTORIAL DETALLE ── */
+    .hd-back { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #1e2a3a; border-radius: 10px; padding: 7px 14px; color: #64748b; font-size: .8rem; cursor: pointer; font-family: inherit; transition: all .2s; margin-bottom: 24px; }
+    .hd-back:hover { border-color: var(--dorado); color: var(--dorado); }
+
+    .hd-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 800px) { .hd-layout { grid-template-columns: 1fr; } }
+
+    .hd-sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
+
+    .hd-club-card {
+      background: linear-gradient(145deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 18px; padding: 22px 18px; text-align: center;
+    }
+    .hd-club-avatar {
+      width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px;
+      background: linear-gradient(135deg, rgba(245,158,11,.2), rgba(245,158,11,.05));
+      border: 2px solid rgba(245,158,11,.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; font-weight: 900; color: var(--dorado);
+    }
+    .hd-club-name { font-size: 1rem; font-weight: 800; color: #e2e8f0; margin-bottom: 4px; }
+    .hd-club-sub { font-size: .72rem; color: #475569; text-transform: uppercase; letter-spacing: .07em; }
+
+    .hd-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .hd-stat {
+      background: rgba(16,22,36,.7); backdrop-filter: blur(8px);
+      border: 1px solid #1e2a3a; border-radius: 12px;
+      padding: 14px 10px; text-align: center;
+    }
+    .hd-stat-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1; }
+    .hd-stat-label { font-size: .62rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin-top: 4px; }
+    .hd-stat-win .hd-stat-val  { color: #22c55e; }
+    .hd-stat-win  { border-color: rgba(34,197,94,.3); background: rgba(20,40,28,.7); }
+    .hd-stat-draw .hd-stat-val { color: #f59e0b; }
+    .hd-stat-draw { border-color: rgba(245,158,11,.3); background: rgba(40,32,10,.7); }
+    .hd-stat-loss .hd-stat-val { color: #ef4444; }
+    .hd-stat-loss { border-color: rgba(239,68,68,.3); background: rgba(40,14,14,.7); }
+
+    .hd-meter-card {
+      background: linear-gradient(145deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 14px; padding: 16px 18px;
+    }
+    .hd-meter-title { font-size: .65rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin-bottom: 12px; }
+    .hd-meter-track { background: rgba(255,255,255,.05); border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 6px; }
+    .hd-meter-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #d97706, #f59e0b); transition: width .6s cubic-bezier(.4,0,.2,1); }
+    .hd-meter-label { display: flex; justify-content: space-between; font-size: .72rem; color: #64748b; }
+    .hd-meter-pct { color: var(--dorado); font-weight: 700; }
+
+    .hd-racha-card {
+      background: linear-gradient(145deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 14px; padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hd-racha-icon { font-size: 1.5rem; }
+    .hd-racha-label { font-size: .65rem; color: #475569; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+    .hd-racha-val { font-size: .88rem; font-weight: 700; margin-top: 2px; }
+
+    .hd-goals-card {
+      background: linear-gradient(145deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 14px; padding: 14px 18px;
+    }
+    .hd-goals-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: .8rem; }
+    .hd-goals-label { color: #64748b; font-weight: 600; }
+    .hd-goals-val { font-weight: 800; font-size: .95rem; }
+
+    .hd-main { display: flex; flex-direction: column; gap: 10px; }
+    .hd-torneo-group { margin-bottom: 6px; }
+    .hd-torneo-header {
+      font-size: .68rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .1em;
+      padding: 6px 0; margin-bottom: 8px;
+      border-bottom: 1px solid #1e2a3a; display: flex; align-items: center; gap: 10px;
+    }
+    .hd-torneo-badge { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.2); border-radius: 8px; padding: 2px 10px; color: var(--dorado); font-size: .68rem; }
+
+    .hd-match {
+      background: linear-gradient(160deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 14px; padding: 14px 16px;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+      transition: all .25s ease;
+    }
+    .hd-match:hover { border-color: rgba(245,158,11,.3); transform: translateX(3px); }
+    .hd-match-res {
+      width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 900; flex-shrink: 0; letter-spacing: -.02em;
+    }
+    .hd-res-w { background: rgba(34,197,94,.12); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+    .hd-res-d { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+    .hd-res-l { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+    .hd-res-p { background: rgba(100,116,139,.1); color: #64748b; border: 1px solid #1e2a3a; font-size: .7rem; }
+    .hd-match-info { min-width: 0; }
+    .hd-match-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 5px; }
+    .hd-tag { background: rgba(255,255,255,.05); border: 1px solid #1e2a3a; border-radius: 6px; padding: 2px 8px; font-size: .65rem; color: #64748b; font-weight: 600; white-space: nowrap; }
+    .hd-tag-local { background: rgba(59,130,246,.08); border-color: rgba(59,130,246,.2); color: #60a5fa; }
+    .hd-tag-visit { background: rgba(168,85,247,.08); border-color: rgba(168,85,247,.2); color: #a78bfa; }
+    .hd-match-rival { font-size: .88rem; font-weight: 700; color: #e2e8f0; }
+    .hd-match-parcial { font-size: .72rem; color: #475569; margin-top: 3px; }
+    .hd-match-obs { font-size: .72rem; color: #64748b; font-style: italic; margin-top: 4px; border-top: 1px solid rgba(255,255,255,.04); padding-top: 4px; line-height: 1.5; }
+    .hd-match-right { text-align: right; flex-shrink: 0; }
+    .hd-match-fecha { font-size: .65rem; color: #475569; margin-bottom: 4px; }
+    .hd-loading { text-align: center; padding: 60px; color: #475569; }
+    .hd-loading-spin { font-size: 2rem; animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .chart-card { background: var(--azul-card); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; }
     .chart-title { font-size: 0.85rem; font-weight: 700; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
 
@@ -2761,8 +2864,7 @@ function renderHistorial() {
     document.getElementById('hist-table-container').innerHTML = buildTable(getSorted(q));
   };
   window.histDrilldown = function(rival) {
-    // Placeholder for future club detail view
-    console.log('Ver historial de:', rival);
+    renderHistorialDetalle(rival);
   };
 
   // Try live fetch from proxy
@@ -2781,6 +2883,192 @@ function renderHistorial() {
       }));
     if (parsed.length >= 5) { data = parsed; renderHistorial(); }
   }).catch(() => {});
+}
+
+// ── Parser for "Partidos por torneos" sheet ──────────────────────────────────
+let _partidosCache = null; // [{torneo, anio, rival, fecha, local, gf, gc, parciales, obs}]
+
+function _parsePartidosPorTorneos(rows) {
+  const matches = [];
+  let anio = '', torneo = '';
+  const HEADER_MARKER = 'rival';
+
+  for (const row of rows) {
+    const cells = row.map(c => String(c ?? '').trim());
+    const nonEmpty = cells.filter(c => c);
+
+    // Year row: single cell with 4-digit year
+    if (nonEmpty.length === 1 && /^20\d{2}$/.test(nonEmpty[0])) {
+      anio = nonEmpty[0]; continue;
+    }
+    // Tournament header: single meaningful cell (not a column header)
+    if (nonEmpty.length <= 2 && cells[0] && cells[0].toLowerCase() !== HEADER_MARKER &&
+        !cells[0].match(/^\d+$/) && cells[0] !== 'LIBRE' && !cells[0].match(/^[A-Z]{2,}$|^Rival$/i) &&
+        (cells[0].toUpperCase().includes('AIFA') || cells[0].toUpperCase().includes('APERTURA') ||
+         cells[0].toUpperCase().includes('CLAUSURA') || cells[0].toUpperCase().includes('COPA') ||
+         cells[0].toUpperCase().includes('RECOPA') || cells[0].toUpperCase().includes('SB EN'))) {
+      torneo = cells[0]; continue;
+    }
+    // Column header row
+    if (cells[0].toLowerCase() === HEADER_MARKER) continue;
+    // Skip empty, LIBRE or rows without rival
+    if (!cells[0] || cells[0] === 'LIBRE' || cells[0] === '-') continue;
+    // Data row: first cell is rival name (not a year, not a tournament name)
+    if (cells[0] && cells[1] && !cells[0].match(/^20\d{2}$/)) {
+      const res = cells[3] || '';
+      const parts = res.split('-').map(Number);
+      const gf = isNaN(parts[0]) ? null : parts[0];
+      const gc = isNaN(parts[1]) ? null : parts[1];
+      matches.push({
+        torneo: torneo || 'Sin torneo',
+        anio,
+        rival: cells[0].toUpperCase().trim(),
+        fecha: cells[1],
+        local: cells[2] || '',
+        resultado: res,
+        gf, gc,
+        parciales: cells[4] || '',
+        posCSB: cells[5] || '',
+        posRival: cells[6] || '',
+        obs: cells[7] || '',
+      });
+    }
+  }
+  return matches;
+}
+
+async function _loadPartidosCache() {
+  if (_partidosCache) return _partidosCache;
+  try {
+    const rows = await fetchProxy('Partidos por torneos');
+    _partidosCache = _parsePartidosPorTorneos(rows);
+  } catch(e) {
+    _partidosCache = [];
+  }
+  return _partidosCache;
+}
+
+function renderHistorialDetalle(rival) {
+  const el = document.getElementById('partidos-grid');
+  el.innerHTML = `<div class="hd-loading"><div class="hd-loading-spin">⚽</div><div style="margin-top:12px;font-size:.85rem">Cargando historial vs ${rival}…</div></div>`;
+  document.getElementById('part-title').textContent = '';
+
+  _loadPartidosCache().then(allMatches => {
+    const matches = allMatches.filter(m => m.rival === rival.toUpperCase());
+
+    // ── Metrics ──────────────────────────────────────────────────────────────
+    const pg = matches.filter(m => m.gf !== null && m.gf > m.gc).length;
+    const pe = matches.filter(m => m.gf !== null && m.gf === m.gc).length;
+    const pp = matches.filter(m => m.gf !== null && m.gf < m.gc).length;
+    const pj = matches.filter(m => m.gf !== null).length;
+    const gf = matches.reduce((s, m) => s + (m.gf ?? 0), 0);
+    const gc = matches.reduce((s, m) => s + (m.gc ?? 0), 0);
+    const efectividad = pj > 0 ? Math.round(((pg * 3 + pe) / (pj * 3)) * 100) : 0;
+
+    // Last played match result
+    const played = [...matches].filter(m => m.gf !== null).reverse();
+    const last = played[0];
+    let rachaIcon = '—', rachaLabel = '—', rachaColor = '#64748b';
+    if (last) {
+      if (last.gf > last.gc) { rachaIcon = '✅'; rachaLabel = `Victoria ${last.resultado}`; rachaColor = '#22c55e'; }
+      else if (last.gf === last.gc) { rachaIcon = '🟡'; rachaLabel = `Empate ${last.resultado}`; rachaColor = '#f59e0b'; }
+      else { rachaIcon = '❌'; rachaLabel = `Derrota ${last.resultado}`; rachaColor = '#ef4444'; }
+    }
+
+    function initials(s) { return s.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+
+    const sidebar = `
+      <div class="hd-sidebar">
+        <div class="hd-club-card">
+          <div class="hd-club-avatar">${initials(rival)}</div>
+          <div class="hd-club-name">${rival}</div>
+          <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} en el historial</div>
+        </div>
+        <div class="hd-stat-grid">
+          <div class="hd-stat"><div class="hd-stat-val">${pj}</div><div class="hd-stat-label">PJ</div></div>
+          <div class="hd-stat hd-stat-win"><div class="hd-stat-val">${pg}</div><div class="hd-stat-label">Victorias</div></div>
+          <div class="hd-stat hd-stat-draw"><div class="hd-stat-val">${pe}</div><div class="hd-stat-label">Empates</div></div>
+          <div class="hd-stat hd-stat-loss"><div class="hd-stat-val">${pp}</div><div class="hd-stat-label">Derrotas</div></div>
+        </div>
+        <div class="hd-meter-card">
+          <div class="hd-meter-title">Efectividad de puntos</div>
+          <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${efectividad}%"></div></div>
+          <div class="hd-meter-label"><span>0%</span><span class="hd-meter-pct">${efectividad}%</span><span>100%</span></div>
+        </div>
+        <div class="hd-racha-card">
+          <div class="hd-racha-icon">${rachaIcon}</div>
+          <div><div class="hd-racha-label">Último resultado</div><div class="hd-racha-val" style="color:${rachaColor}">${rachaLabel}</div></div>
+        </div>
+        <div class="hd-goals-card">
+          <div class="hd-meter-title" style="margin-bottom:10px">Balance de goles</div>
+          <div class="hd-goals-row"><span class="hd-goals-label">⚽ Goles a favor</span><span class="hd-goals-val" style="color:#60a5fa">${gf}</span></div>
+          <div class="hd-goals-row"><span class="hd-goals-label">🥅 Goles en contra</span><span class="hd-goals-val" style="color:#ef4444">${gc}</span></div>
+          <div class="hd-goals-row" style="margin-top:6px;border-top:1px solid #1e2a3a;padding-top:8px">
+            <span class="hd-goals-label">📈 Diferencia</span>
+            <span class="hd-goals-val" style="color:${gf-gc>0?'#22c55e':gf-gc<0?'#ef4444':'#64748b'}">${gf-gc>0?'+':''}${gf-gc}</span>
+          </div>
+        </div>
+      </div>`;
+
+    // ── Match list grouped by torneo ────────────────────────────────────────
+    function resClass(m) {
+      if (m.gf === null) return 'hd-res-p';
+      return m.gf > m.gc ? 'hd-res-w' : m.gf === m.gc ? 'hd-res-d' : 'hd-res-l';
+    }
+
+    // Group by torneo label
+    const grouped = {};
+    const order = [];
+    [...matches].reverse().forEach(m => {
+      const key = `${m.anio} · ${m.torneo}`;
+      if (!grouped[key]) { grouped[key] = []; order.push(key); }
+      grouped[key].push(m);
+    });
+
+    const noData = matches.length === 0
+      ? `<div class="hist-empty">No se encontraron partidos contra ${rival} en la base de datos.</div>`
+      : '';
+
+    const matchGroups = noData || order.map(key => {
+      const grupo = grouped[key];
+      const cards = grupo.map(m => {
+        const localTag = m.local.toUpperCase().includes('LOCAL')
+          ? `<span class="hd-tag hd-tag-local">🏠 Local</span>`
+          : m.local.toUpperCase().includes('VISIT')
+            ? `<span class="hd-tag hd-tag-visit">✈ Visitante</span>` : '';
+        const resLabel = m.resultado || '—';
+        const obsHtml = m.obs ? `<div class="hd-match-obs">💬 ${m.obs}</div>` : '';
+        return `
+          <div class="hd-match">
+            <div class="hd-match-res ${resClass(m)}">${resLabel}</div>
+            <div class="hd-match-info">
+              <div class="hd-match-meta">
+                ${m.fecha ? `<span class="hd-tag">Fecha ${m.fecha}</span>` : ''}
+                ${localTag}
+                ${m.posCSB ? `<span class="hd-tag">Pos. CSB: ${m.posCSB}</span>` : ''}
+              </div>
+              ${m.parciales ? `<div class="hd-match-parcial">Parciales: ${m.parciales}</div>` : ''}
+              ${obsHtml}
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <div class="hd-torneo-group">
+          <div class="hd-torneo-header">
+            <span class="hd-torneo-badge">${key}</span>
+            <span>${grupo.length} partido${grupo.length>1?'s':''}</span>
+          </div>
+          ${cards}
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <button class="hd-back" onclick="renderHistorial()">← Volver al historial</button>
+      <div class="hd-layout">
+        ${sidebar}
+        <div class="hd-main">${matchGroups}</div>
+      </div>`;
+  });
 }
 
 function renderPartidos() {
