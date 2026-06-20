@@ -723,13 +723,7 @@
 
   <!-- JUGADORES: Estadísticas Totales -->
   <div class="panel" id="tab-jug-totales" style="display:none">
-    <div class="section-title" id="jug-title"></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr id="jug-thead"></tr></thead>
-        <tbody id="jug-body"></tbody>
-      </table>
-    </div>
+    <div id="jug-totales-content"></div>
   </div>
 
   <!-- JUGADORES: Estadísticas Anuales -->
@@ -2308,27 +2302,134 @@ function renderJugadoresMenu() {
     </div>`;
 }
 
+// ── Estadísticas Totales (historical sheet) ──────────────────────────────────
+let _jugTotalesData = null; // cached rows [{cols}]
+let _jugTotalesCols = [];   // column header names
+let _jugTotalesSort = { col: -1, asc: true };
+let _jugTotalesQuery = '';
+
 function renderJugadoresTotales() {
-  const d = currentData;
-  const hasPos = d === DATA_A;
-  document.getElementById('jug-title').innerHTML =
-    `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll(\'#main-nav button\')[2])" style="margin-bottom:12px">← Estadísticas Jugadores</button><br>📊 Estadísticas Totales – ${d.nombre}`;
-  document.getElementById('jug-thead').innerHTML = `
-    <th>Jugador</th>
-    ${hasPos ? '<th>Pos</th>' : ''}
-    <th>Conv.</th><th>Tit.</th>
-    <th>⚽ Goles</th><th>🎯 Asist.</th><th>🟥 Rojas</th>`;
-  const sorted = [...d.jugadores].sort((a,b) => b.goles - a.goles || b.asist - a.asist || b.titular - a.titular);
-  document.getElementById('jug-body').innerHTML = sorted.map(j => `
-    <tr>
-      <td><strong style="color:var(--blanco)">${j.nombre}</strong></td>
-      ${hasPos ? `<td><span style="font-size:0.7rem;background:rgba(255,255,255,0.08);padding:2px 7px;border-radius:4px">${j.pos}</span></td>` : ''}
-      <td>${j.citado}</td>
-      <td>${j.titular}</td>
-      <td>${j.goles > 0 ? `<strong style="color:var(--verde)">${j.goles}</strong>` : '–'}</td>
-      <td>${j.asist > 0 ? `<strong style="color:var(--azul-claro)">${j.asist}</strong>` : '–'}</td>
-      <td>${j.rojas > 0 ? `<span style="color:var(--rojo)">${j.rojas}</span>` : '–'}</td>
-    </tr>`).join('');
+  const wrap = document.getElementById('jug-totales-content');
+  const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:16px">← Estadísticas Jugadores</button>`;
+  wrap.innerHTML = backBtn + `<div class="section-title" style="margin-bottom:16px">📊 Estadísticas Totales – Club Santa Bárbara</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <input id="jug-search" type="search" placeholder="🔍 Buscar jugador..." style="flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#fff;font-size:0.9rem;outline:none" oninput="_jugTotalFilter(this.value)">
+      <span id="jug-count" style="color:var(--gris-texto);font-size:0.82rem;white-space:nowrap"></span>
+    </div>
+    <div class="table-wrap" id="jug-totales-wrap" style="overflow-x:auto">
+      <div style="color:var(--gris-texto);padding:24px;text-align:center">Cargando estadísticas...</div>
+    </div>`;
+
+  if (_jugTotalesData) { _jugTotalBuild(); return; }
+
+  fetchCSV(GS.A_MAIN, 'Jugadores Estadísticas-Statistics')
+    .then(text => {
+      const rows = parseCSV(text);
+      if (!rows || rows.length < 2) throw new Error('empty');
+      _jugTotalesCols = rows[0].map(c => c.trim());
+      _jugTotalesData = rows.slice(1)
+        .filter(r => r.some(c => c && c.trim() && c.trim() !== '-'))
+        .map(r => _jugTotalesCols.map((_, i) => (r[i] || '').trim()));
+      _jugTotalesSort = { col: -1, asc: true };
+      _jugTotalBuild();
+    })
+    .catch(() => {
+      document.getElementById('jug-totales-wrap').innerHTML =
+        '<div style="color:var(--rojo);padding:24px;text-align:center">No se pudo cargar la hoja de estadísticas. Verificá que el documento sea público.</div>';
+    });
+}
+
+function _jugTotalFilter(q) {
+  _jugTotalesQuery = q.toLowerCase().trim();
+  _jugTotalBuild();
+}
+
+function _jugTotalSort(colIdx) {
+  if (_jugTotalesSort.col === colIdx) {
+    _jugTotalesSort.asc = !_jugTotalesSort.asc;
+  } else {
+    _jugTotalesSort = { col: colIdx, asc: true };
+  }
+  _jugTotalBuild();
+}
+
+function _jugTotalNumeric(v) {
+  if (!v || v === '-' || v === '\\-' || v === '#DIV/0!' || v === '') return null;
+  return parseFloat(v.replace(',', '.'));
+}
+
+function _jugTotalCell(v) {
+  if (!v || v === '-' || v === '\\-' || v === '#DIV/0!' || v === '') return '<span style="color:var(--gris-texto)">—</span>';
+  const n = _jugTotalNumeric(v);
+  if (n !== null && !isNaN(n)) {
+    if (Number.isInteger(n)) return `<strong>${n}</strong>`;
+    return n.toFixed(2).replace('.', ',');
+  }
+  return v;
+}
+
+function _jugTotalBuild() {
+  const wrap = document.getElementById('jug-totales-wrap');
+  if (!wrap || !_jugTotalesData) return;
+
+  const q = _jugTotalesQuery;
+  // Column index for "Jugador" (name) — usually index 1
+  const nameIdx = _jugTotalesCols.findIndex(c => /jugador/i.test(c));
+
+  let rows = _jugTotalesData;
+  if (q) {
+    rows = rows.filter(r => {
+      const name = nameIdx >= 0 ? r[nameIdx] : r.join(' ');
+      return name.toLowerCase().includes(q);
+    });
+  }
+
+  const { col, asc } = _jugTotalesSort;
+  if (col >= 0) {
+    rows = [...rows].sort((a, b) => {
+      const na = _jugTotalNumeric(a[col]), nb = _jugTotalNumeric(b[col]);
+      let cmp;
+      if (na !== null && nb !== null && !isNaN(na) && !isNaN(nb)) {
+        cmp = na - nb;
+      } else {
+        cmp = (a[col] || '').localeCompare(b[col] || '', 'es', { numeric: true });
+      }
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  const countEl = document.getElementById('jug-count');
+  if (countEl) countEl.textContent = `${rows.length} jugador${rows.length !== 1 ? 'es' : ''}`;
+
+  const ths = _jugTotalesCols.map((c, i) => {
+    const active = col === i;
+    const arrow = active ? (asc ? ' ↑' : ' ↓') : '';
+    return `<th onclick="_jugTotalSort(${i})" style="cursor:pointer;user-select:none;white-space:nowrap${active ? ';color:var(--azul-claro)' : ''}">${c}${arrow}</th>`;
+  }).join('');
+
+  // Identify key column indices for special styling
+  const golesIdx = _jugTotalesCols.findIndex(c => /^goles$/i.test(c));
+  const asistIdx = _jugTotalesCols.findIndex(c => /^asist/i.test(c));
+  const rojasIdx = _jugTotalesCols.findIndex(c => /tarjeta|roja/i.test(c));
+  const posIdx   = _jugTotalesCols.findIndex(c => /^posic/i.test(c));
+
+  const trs = rows.map(r => {
+    const cells = r.map((v, i) => {
+      if (i === nameIdx) return `<td><strong style="color:var(--blanco)">${v || '—'}</strong></td>`;
+      if (i === posIdx && v) return `<td><span style="font-size:0.7rem;background:rgba(255,255,255,0.08);padding:2px 7px;border-radius:4px">${v}</span></td>`;
+      const n = _jugTotalNumeric(v);
+      if (i === golesIdx && n > 0) return `<td><strong style="color:var(--verde)">${n}</strong></td>`;
+      if (i === asistIdx && n > 0) return `<td><strong style="color:var(--azul-claro)">${n}</strong></td>`;
+      if (i === rojasIdx && n > 0) return `<td><span style="color:var(--rojo)">${n}</span></td>`;
+      return `<td>${_jugTotalCell(v)}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table style="min-width:900px">
+    <thead><tr>${ths}</tr></thead>
+    <tbody>${trs || '<tr><td colspan="' + _jugTotalesCols.length + '" style="text-align:center;color:var(--gris-texto);padding:24px">Sin resultados</td></tr>'}</tbody>
+  </table>`;
 }
 
 function renderJugSubWip(key, title, desc) {
