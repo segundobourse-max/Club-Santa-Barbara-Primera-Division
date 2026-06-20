@@ -2322,7 +2322,7 @@ function renderJugadoresTotales() {
 
   if (_jugTotalesData) { _jugTotalBuild(); return; }
 
-  fetchCSV(GS.A_MAIN, 'Jugadores Estadísticas-Statistics')
+  fetchCSV(GS.A_MAIN, 'Jugadores Estadisticas')
     .then(text => {
       const rows = parseCSV(text);
       if (!rows || rows.length < 2) throw new Error('empty');
