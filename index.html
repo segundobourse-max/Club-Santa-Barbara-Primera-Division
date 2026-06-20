@@ -2460,14 +2460,13 @@ function renderJugadoresTotales() {
   _jugTotalesSort = { col: JUG_COL.pj, asc: false };
   _jugTotalRender();
 
-  fetchCSV(GS.A_MAIN, 'Jugadores Estadisticas')
-    .then(text => {
-      const rows = parseCSV(text);
+  fetchProxy('Jugadores Estadisticas')
+    .then(rows => {
       if (!rows || rows.length < 2) return;
-      _jugTotalesCols = rows[0].map(c => c.trim());
+      _jugTotalesCols = rows[0].map(c => String(c).trim());
       _jugTotalesData = rows.slice(1)
-        .filter(r => r.some(c => c && c.trim() && c.trim() !== '-'))
-        .map(r => _jugTotalesCols.map((_, i) => (r[i] || '').trim()));
+        .filter(r => r.some(c => c !== '' && c !== null))
+        .map(r => _jugTotalesCols.map((_, i) => String(r[i] ?? '').trim()));
       _jugTotalRender();
     })
     .catch(() => {});
@@ -2930,9 +2929,27 @@ function renderJugAnualesYear(year) {
 
 function _anualesLoadPlayers(year) {
   if (_anualesPlayers[year]) { _anualesBuildAll(year); return; }
-  // Load from embedded seed immediately
   _anualesPlayers[year] = SEED_ANUALES_PLAYERS[year] || [];
   _anualesBuildAll(year);
+
+  const ranges = { '2023':'I2:O28', '2024':'I2:O33', '2025':'I2:O31' };
+  if (!ranges[year]) return;
+  fetchProxy(String(year), ranges[year]).then(rows => {
+    if (!rows || rows.length < 2) return;
+    const mapped = rows.slice(1).map(r => ({
+      nombre:   String(r[0]||'').trim(),
+      pos:      String(r[1]||'').trim(),
+      goles:    Number(r[2])||0,
+      asist:    Number(r[3])||0,
+      gmas:     Number(r[4])||0,
+      pj:       Number(r[5])||0,
+      promGmas: parseFloat(r[6])||0,
+    })).filter(p => p.nombre);
+    if (mapped.length > 0) {
+      _anualesPlayers[year] = mapped;
+      _anualesBuildAll(year);
+    }
+  }).catch(() => {});
 }
 
 function _anualesFilter(q) {
@@ -3241,11 +3258,29 @@ const GS = {
   B_SIM:  '1i9akFUzKsgrKB01lrFJdjE0djmImr64IqsnlLuMHsGI',
 };
 
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbzDmI2fgAZEONfC7gwuwazmR-GVPd4ISVTQiBBEU7324Sn8Pp6YGxnZwsrwe5J8ghE8/exec';
+
+async function fetchProxy(tab, range) {
+  let url = `${PROXY_URL}?tab=${encodeURIComponent(tab)}`;
+  if (range) url += `&range=${encodeURIComponent(range)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(r.status);
+  const json = await r.json();
+  // Apps Script returns array of arrays; skip empty trailing rows
+  return json.filter(row => row.some(c => c !== '' && c !== null));
+}
+
 function csvUrl(id, tab, range) {
   let u = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
   if (tab)   u += `&sheet=${encodeURIComponent(tab)}`;
   if (range) u += `&range=${encodeURIComponent(range)}`;
   return u;
+}
+
+async function fetchCSVFallback(id, tab, range) {
+  const r = await fetch(csvUrl(id, tab, range), { mode: 'cors' });
+  if (!r.ok) throw new Error(r.status);
+  return parseCSV(await r.text());
 }
 
 function parseCSV(text) {
@@ -3476,9 +3511,11 @@ function refreshCurrentView() {
 }
 
 async function fetchCSV(id, tab, range) {
-  const r = await fetch(csvUrl(id, tab, range), { mode: 'cors' });
-  if (!r.ok) throw new Error(r.status);
-  return parseCSV(await r.text());
+  // Try proxy first (no CORS issues), fall back to GViz
+  if (tab) {
+    try { return await fetchProxy(tab, range); } catch(e) {}
+  }
+  return fetchCSVFallback(id, tab, range);
 }
 
 let _refreshing = false;
