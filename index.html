@@ -716,8 +716,13 @@
     <div class="partidos-grid" id="partidos-grid"></div>
   </div>
 
-  <!-- JUGADORES -->
+  <!-- JUGADORES – picker -->
   <div class="panel" id="tab-jugadores">
+    <div id="jugadores-picker-content"></div>
+  </div>
+
+  <!-- JUGADORES: Estadísticas Totales -->
+  <div class="panel" id="tab-jug-totales" style="display:none">
     <div class="section-title" id="jug-title"></div>
     <div class="table-wrap">
       <table>
@@ -725,6 +730,21 @@
         <tbody id="jug-body"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- JUGADORES: Estadísticas Anuales -->
+  <div class="panel" id="tab-jug-anuales" style="display:none">
+    <div id="jug-anuales-content"></div>
+  </div>
+
+  <!-- JUGADORES: Debuts -->
+  <div class="panel" id="tab-jug-debuts" style="display:none">
+    <div id="jug-debuts-content"></div>
+  </div>
+
+  <!-- JUGADORES: Inferiores Aportes -->
+  <div class="panel" id="tab-jug-inferiores" style="display:none">
+    <div id="jug-inferiores-content"></div>
   </div>
 
   <!-- GRAFICOS -->
@@ -1605,18 +1625,36 @@ function goBack() {
   destroyCharts();
 }
 
+const JUG_SUB_IDS = ['tab-jug-totales','tab-jug-anuales','tab-jug-debuts','tab-jug-inferiores'];
+
 function showTab(name, btn) {
   document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
+  // Hide all panels + jugadores sub-panels
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  JUG_SUB_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   document.getElementById('tab-' + name).classList.add('active');
 
   if (name === 'resumen')    renderResumen();
   if (name === 'posiciones') renderTorneosMenu();
   if (name === 'partidos')   renderPartidos();
-  if (name === 'jugadores')  renderJugadores();
+  if (name === 'jugadores')  renderJugadoresMenu();
   if (name === 'graficos')   renderGraficos();
+}
+
+function showJugSub(key) {
+  // Hide picker, show sub-panel
+  document.getElementById('tab-jugadores').classList.remove('active');
+  JUG_SUB_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  const target = document.getElementById('tab-jug-' + key);
+  if (!target) return;
+  target.style.display = 'block';
+  target.classList.add('active');
+  if (key === 'totales')    renderJugadoresTotales();
+  if (key === 'anuales')    renderJugSubWip('anuales',    '📅 Estadísticas Anuales',   'Estadísticas separadas por temporada. Próximamente.');
+  if (key === 'debuts')     renderJugSubWip('debuts',     '🌟 Debuts',                 'Registro de debutantes del plantel. Próximamente.');
+  if (key === 'inferiores') renderJugSubWip('inferiores', '🎓 Inferiores Aportes',     'Jugadores surgidos de inferiores y sus aportes. Próximamente.');
 }
 
 function renderTorneosMenu() {
@@ -2243,10 +2281,38 @@ function renderPartidos() {
 // ──────────────────────────────────────────────
 // RENDER: JUGADORES
 // ──────────────────────────────────────────────
-function renderJugadores() {
+function renderJugadoresMenu() {
+  document.getElementById('jugadores-picker-content').innerHTML = `
+    <div class="section-title" style="margin-bottom:20px">👟 Estadísticas Jugadores – ${currentData.nombre}</div>
+    <div class="torneos-picker-grid" style="max-width:900px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div class="torneo-card" onclick="showJugSub('totales')">
+        <div class="torneo-card-icon">📊</div>
+        <div class="torneo-card-name">Estadísticas Totales</div>
+        <div class="torneo-card-sub">Estadísticas históricas acumuladas</div>
+      </div>
+      <div class="torneo-card" onclick="showJugSub('anuales')">
+        <div class="torneo-card-icon">📅</div>
+        <div class="torneo-card-name">Estadísticas Anuales</div>
+        <div class="torneo-card-sub">Estadísticas separadas por temporada</div>
+      </div>
+      <div class="torneo-card" onclick="showJugSub('debuts')">
+        <div class="torneo-card-icon">🌟</div>
+        <div class="torneo-card-name">Debuts</div>
+        <div class="torneo-card-sub">Registro de debutantes del plantel</div>
+      </div>
+      <div class="torneo-card" onclick="showJugSub('inferiores')">
+        <div class="torneo-card-icon">🎓</div>
+        <div class="torneo-card-name">Inferiores Aportes</div>
+        <div class="torneo-card-sub">Jugadores surgidos de inferiores</div>
+      </div>
+    </div>`;
+}
+
+function renderJugadoresTotales() {
   const d = currentData;
   const hasPos = d === DATA_A;
-  document.getElementById('jug-title').textContent = '👟 Jugadores – ' + d.nombre;
+  document.getElementById('jug-title').innerHTML =
+    `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll(\'#main-nav button\')[2])" style="margin-bottom:12px">← Estadísticas Jugadores</button><br>📊 Estadísticas Totales – ${d.nombre}`;
   document.getElementById('jug-thead').innerHTML = `
     <th>Jugador</th>
     ${hasPos ? '<th>Pos</th>' : ''}
@@ -2263,6 +2329,18 @@ function renderJugadores() {
       <td>${j.asist > 0 ? `<strong style="color:var(--azul-claro)">${j.asist}</strong>` : '–'}</td>
       <td>${j.rojas > 0 ? `<span style="color:var(--rojo)">${j.rojas}</span>` : '–'}</td>
     </tr>`).join('');
+}
+
+function renderJugSubWip(key, title, desc) {
+  const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:20px">← Estadísticas Jugadores</button>`;
+  document.getElementById('jug-' + key + '-content').innerHTML = `
+    ${backBtn}
+    <div class="section-title" style="margin-bottom:24px">${title} – ${currentData.nombre}</div>
+    <div class="torneo-wip">
+      <div class="torneo-wip-icon">🚧</div>
+      <div class="torneo-wip-title">Contenido en desarrollo</div>
+      <div class="torneo-wip-sub">${desc}</div>
+    </div>`;
 }
 
 // ──────────────────────────────────────────────
