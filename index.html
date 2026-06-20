@@ -279,6 +279,74 @@
     .partido-card.draw { border-left: 3px solid var(--dorado); }
     .partido-card.loss { border-left: 3px solid var(--rojo); }
 
+    /* ── HISTORIAL VS CLUBES ── */
+    .hist-wrap { max-width: 1100px; }
+    .hist-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 800px) { .hist-kpis { grid-template-columns: repeat(4,1fr); } }
+    @media (max-width: 560px) { .hist-kpis { grid-template-columns: repeat(2,1fr); } }
+    .hist-kpi {
+      background: linear-gradient(145deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 16px;
+      padding: 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .hist-kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .hist-kpi-icon { font-size: 1.2rem; }
+    .hist-kpi-val { font-size: 2rem; font-weight: 900; color: var(--dorado); line-height: 1; letter-spacing: -.02em; }
+    .hist-kpi-label { font-size: .67rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+
+    .hist-search-wrap { position: relative; margin-bottom: 20px; }
+    .hist-search {
+      width: 100%; background: #161B26; border: 1px solid #1e2a3a; border-radius: 12px;
+      padding: 11px 16px 11px 42px; color: #e2e8f0; font-size: .88rem;
+      font-family: inherit; outline: none; transition: border-color .2s;
+    }
+    .hist-search:focus { border-color: var(--dorado); }
+    .hist-search::placeholder { color: #475569; }
+    .hist-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #475569; font-size: 1rem; pointer-events: none; }
+
+    .hist-sort-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .hist-sort-btn { background: transparent; border: 1px solid #1e2a3a; border-radius: 20px; padding: 4px 13px; font-size: .75rem; color: #475569; cursor: pointer; transition: all .2s; font-family: inherit; }
+    .hist-sort-btn:hover { border-color: var(--dorado); color: var(--dorado); }
+    .hist-sort-btn.active { background: var(--dorado); border-color: var(--dorado); color: #0B0E14; font-weight: 700; }
+
+    .hist-table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid #1e2a3a; }
+    .hist-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .hist-table thead tr { background: #131825; }
+    .hist-table thead th {
+      padding: 12px 14px; text-align: center; font-size: .65rem; font-weight: 700;
+      color: #475569; text-transform: uppercase; letter-spacing: .08em;
+      cursor: pointer; user-select: none; white-space: nowrap;
+      transition: color .2s; border-bottom: 1px solid #1e2a3a;
+    }
+    .hist-table thead th:first-child { text-align: left; padding-left: 18px; }
+    .hist-table thead th:hover { color: var(--dorado); }
+    .hist-table thead th.sorted { color: var(--dorado); }
+    .hist-sort-arrow { margin-left: 4px; opacity: .7; }
+    .hist-table tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      cursor: pointer; transition: background .2s;
+    }
+    .hist-table tbody tr:last-child { border-bottom: none; }
+    .hist-table tbody tr:hover { background: rgba(245,158,11,.05); }
+    .hist-table tbody tr:nth-child(even) { background: rgba(255,255,255,.015); }
+    .hist-table tbody tr:nth-child(even):hover { background: rgba(245,158,11,.05); }
+    .hist-table td { padding: 11px 14px; text-align: center; color: #94a3b8; vertical-align: middle; white-space: nowrap; }
+    .hist-table td:first-child { text-align: left; padding-left: 18px; font-weight: 700; color: #e2e8f0; }
+    .hist-td-pj { color: #e2e8f0 !important; font-weight: 600; }
+    .hist-td-win  { color: #22c55e !important; font-weight: 700; }
+    .hist-td-draw { color: #f59e0b !important; font-weight: 600; }
+    .hist-td-loss { color: #ef4444 !important; font-weight: 600; }
+    .hist-td-gf   { color: #60a5fa !important; font-weight: 600; }
+    .hist-dif-pos { background: rgba(34,197,94,.1); color: #22c55e !important; font-weight: 700; border-radius: 6px; padding: 2px 8px; }
+    .hist-dif-neg { background: rgba(239,68,68,.1); color: #ef4444 !important; font-weight: 700; border-radius: 6px; padding: 2px 8px; }
+    .hist-dif-neu { color: #64748b !important; font-weight: 600; }
+    .hist-bal-pos { color: #22c55e !important; font-weight: 700; }
+    .hist-bal-neg { color: #ef4444 !important; font-weight: 600; }
+    .hist-bal-neu { color: #64748b !important; }
+    .hist-rival-arrow { margin-left: 6px; color: #334155; font-size: .7rem; }
+    .hist-empty { text-align: center; padding: 40px; color: #475569; font-size: .88rem; }
+
     .chart-card { background: var(--azul-card); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; }
     .chart-title { font-size: 0.85rem; font-weight: 700; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
 
@@ -876,7 +944,7 @@
     <button class="active" onclick="showTab('resumen', this)">Resumen</button>
     <button onclick="showTab('posiciones', this)">Torneos Actuales</button>
     <button onclick="showTab('jugadores', this)">Estadísticas Jugadores</button>
-    <button onclick="showTab('partidos', this)">Historial vs Clubes</button>
+    <button onclick="showTab('historial', this)">Historial vs Clubes</button>
     <button onclick="showTab('graficos', this)">Torneos Antiguos</button>
   </nav>
   <div id="refresh-bar">
@@ -905,9 +973,9 @@
   </div>
 
   <!-- PARTIDOS -->
-  <div class="panel" id="tab-partidos">
+  <div class="panel" id="tab-historial">
     <div class="section-title" id="part-title"></div>
-    <div class="partidos-grid" id="partidos-grid"></div>
+    <div id="partidos-grid"></div>
   </div>
 
   <!-- JUGADORES – picker -->
@@ -1885,6 +1953,7 @@ function showTab(name, btn) {
 
   if (name === 'resumen')    renderResumen();
   if (name === 'posiciones') renderTorneosMenu();
+  if (name === 'historial')  renderHistorial();
   if (name === 'partidos')   renderPartidos();
   if (name === 'jugadores')  renderJugadoresMenu();
   if (name === 'graficos')   renderGraficos();
@@ -2499,6 +2568,176 @@ function renderTabla() {
 // ──────────────────────────────────────────────
 // RENDER: PARTIDOS
 // ──────────────────────────────────────────────
+// ── HISTORIAL VS CLUBES ──────────────────────────────────────────────────────
+const SEED_HISTORIAL = [
+  { rival:'AFALP',                   pj:17, pg:7,  pe:4, pp:6,  dh:1,  gf:20, gc:18, dif:2   },
+  { rival:'ARQUITECTURA',            pj:8,  pg:5,  pe:1, pp:2,  dh:3,  gf:12, gc:9,  dif:3   },
+  { rival:'ASTURIANO',               pj:7,  pg:4,  pe:2, pp:1,  dh:3,  gf:15, gc:10, dif:5   },
+  { rival:'BANCO CIUDAD',            pj:5,  pg:3,  pe:2, pp:0,  dh:3,  gf:10, gc:5,  dif:5   },
+  { rival:'BANCO PROVINCIA',         pj:3,  pg:1,  pe:1, pp:1,  dh:0,  gf:6,  gc:7,  dif:-1  },
+  { rival:'CAMPOS SARANDI',          pj:3,  pg:1,  pe:1, pp:1,  dh:0,  gf:6,  gc:7,  dif:-1  },
+  { rival:'CISSAB',                  pj:16, pg:10, pe:2, pp:4,  dh:6,  gf:35, gc:18, dif:17  },
+  { rival:'D10',                     pj:1,  pg:1,  pe:0, pp:0,  dh:1,  gf:5,  gc:0,  dif:5   },
+  { rival:'DEFENSORES DE HURLINGHAM',pj:4,  pg:1,  pe:1, pp:2,  dh:-1, gf:7,  gc:8,  dif:-1  },
+  { rival:'EL CHASQUI',              pj:3,  pg:2,  pe:1, pp:0,  dh:2,  gf:12, gc:3,  dif:9   },
+  { rival:'EL RETIRO',               pj:2,  pg:0,  pe:1, pp:1,  dh:-1, gf:2,  gc:3,  dif:-1  },
+  { rival:'GALICIA',                 pj:7,  pg:5,  pe:0, pp:2,  dh:3,  gf:18, gc:13, dif:5   },
+  { rival:'GEBA',                    pj:13, pg:3,  pe:2, pp:8,  dh:-5, gf:13, gc:19, dif:-6  },
+  { rival:'GEBA AZUL',               pj:1,  pg:0,  pe:1, pp:0,  dh:0,  gf:0,  gc:0,  dif:0   },
+  { rival:'HARRODS',                 pj:13, pg:7,  pe:1, pp:5,  dh:2,  gf:25, gc:18, dif:7   },
+  { rival:'ITALIANO',                pj:12, pg:8,  pe:1, pp:3,  dh:5,  gf:18, gc:9,  dif:9   },
+  { rival:'ITALIANO B',              pj:1,  pg:1,  pe:0, pp:0,  dh:1,  gf:2,  gc:0,  dif:2   },
+  { rival:'LA NEGRA',                pj:7,  pg:2,  pe:2, pp:3,  dh:-1, gf:7,  gc:9,  dif:-2  },
+  { rival:'LAMROTH HACKOL',          pj:1,  pg:1,  pe:0, pp:0,  dh:1,  gf:4,  gc:0,  dif:4   },
+  { rival:'LASALLE',                 pj:3,  pg:2,  pe:1, pp:0,  dh:2,  gf:4,  gc:2,  dif:2   },
+  { rival:'LIBERTADOR',              pj:3,  pg:3,  pe:0, pp:0,  dh:3,  gf:12, gc:3,  dif:9   },
+  { rival:'LOS MOLINOS',             pj:2,  pg:2,  pe:0, pp:0,  dh:2,  gf:7,  gc:3,  dif:4   },
+  { rival:'MACABI',                  pj:11, pg:2,  pe:1, pp:8,  dh:-6, gf:15, gc:17, dif:-2  },
+  { rival:'MELMAC',                  pj:10, pg:4,  pe:4, pp:2,  dh:2,  gf:20, gc:16, dif:4   },
+  { rival:'MITRE',                   pj:4,  pg:1,  pe:1, pp:2,  dh:-1, gf:7,  gc:5,  dif:2   },
+  { rival:'NORDELTA',                pj:11, pg:5,  pe:2, pp:4,  dh:1,  gf:18, gc:18, dif:0   },
+  { rival:'NORDELTA SUB. 21',        pj:1,  pg:0,  pe:1, pp:0,  dh:0,  gf:1,  gc:1,  dif:0   },
+  { rival:'ONCE CORAZONES',          pj:1,  pg:1,  pe:0, pp:0,  dh:1,  gf:5,  gc:1,  dif:4   },
+  { rival:'PAC',                     pj:2,  pg:1,  pe:1, pp:0,  dh:1,  gf:3,  gc:2,  dif:1   },
+  { rival:'REGATAS',                 pj:11, pg:3,  pe:4, pp:4,  dh:-1, gf:19, gc:19, dif:0   },
+  { rival:'REPUBLICA DEL OESTE',     pj:4,  pg:3,  pe:1, pp:0,  dh:3,  gf:13, gc:6,  dif:7   },
+  { rival:'RHINO',                   pj:2,  pg:1,  pe:1, pp:0,  dh:1,  gf:4,  gc:2,  dif:2   },
+  { rival:'SAN ANDRES',              pj:1,  pg:1,  pe:0, pp:0,  dh:1,  gf:2,  gc:1,  dif:1   },
+  { rival:'SANTA ALICIA',            pj:5,  pg:2,  pe:1, pp:2,  dh:0,  gf:7,  gc:7,  dif:0   },
+  { rival:'SHOLEM',                  pj:1,  pg:1,  pe:0, pp:0,  dh:1,  gf:8,  gc:2,  dif:6   },
+  { rival:'SITAS',                   pj:11, pg:4,  pe:3, pp:4,  dh:0,  gf:25, gc:19, dif:6   },
+  { rival:'SITAS B',                 pj:5,  pg:1,  pe:0, pp:4,  dh:-3, gf:7,  gc:13, dif:-6  },
+  { rival:'SITAS C',                 pj:6,  pg:3,  pe:1, pp:2,  dh:1,  gf:16, gc:8,  dif:8   },
+  { rival:'TOCALLI',                 pj:2,  pg:2,  pe:0, pp:0,  dh:2,  gf:5,  gc:2,  dif:3   },
+  { rival:'TROVADOR',                pj:8,  pg:2,  pe:3, pp:3,  dh:-1, gf:15, gc:12, dif:3   },
+  { rival:'UBA',                     pj:11, pg:4,  pe:2, pp:5,  dh:-1, gf:17, gc:19, dif:-2  },
+  { rival:'UNIVERSIDAD DE LA PLATA', pj:9,  pg:3,  pe:2, pp:4,  dh:-1, gf:9,  gc:10, dif:-1  },
+  { rival:'UNIVERSIDAD DE LA MATANZA',pj:8, pg:4,  pe:1, pp:3,  dh:1,  gf:15, gc:9,  dif:6   },
+  { rival:'VILO',                    pj:11, pg:5,  pe:4, pp:2,  dh:3,  gf:22, gc:18, dif:4   },
+];
+
+let _histSort = { col:'rival', asc: true };
+
+function renderHistorial() {
+  let data = [...SEED_HISTORIAL];
+
+  const totales = data.reduce((acc, r) => {
+    acc.pj  += r.pj;  acc.pg += r.pg; acc.pe += r.pe;
+    acc.pp  += r.pp;  acc.gf += r.gf; acc.gc += r.gc;
+    acc.dif += r.dif;
+    return acc;
+  }, { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dif:0 });
+
+  function kpi(icon, val, label) {
+    const cls = typeof val === 'number' && val > 0 ? 'color:var(--dorado)' : typeof val === 'number' && val < 0 ? 'color:#ef4444' : 'color:var(--dorado)';
+    return `<div class="hist-kpi"><div class="hist-kpi-icon">${icon}</div><div class="hist-kpi-val" style="${cls}">${val}</div><div class="hist-kpi-label">${label}</div></div>`;
+  }
+
+  const kpiHtml = `
+    <div class="hist-kpis">
+      ${kpi('🏟', data.length, 'Clubes')}
+      ${kpi('📋', totales.pj,  'Partidos jugados')}
+      ${kpi('✅', totales.pg,  'Victorias')}
+      ${kpi('🟡', totales.pe,  'Empates')}
+      ${kpi('❌', totales.pp,  'Derrotas')}
+      ${kpi('⚽', totales.gf,  'Goles a favor')}
+      ${kpi('🥅', totales.gc,  'Goles en contra')}
+      ${kpi('📈', (totales.dif > 0 ? '+' : '') + totales.dif, 'Diferencia')}
+    </div>`;
+
+  function difClass(v) { return v > 0 ? 'hist-dif-pos' : v < 0 ? 'hist-dif-neg' : 'hist-dif-neu'; }
+  function balClass(v) { return v > 0 ? 'hist-bal-pos' : v < 0 ? 'hist-bal-neg' : 'hist-bal-neu'; }
+  function sign(v) { return v > 0 ? '+' + v : v; }
+
+  function buildTable(rows) {
+    if (!rows.length) return `<div class="hist-empty">No se encontraron clubes.</div>`;
+    const cols = [
+      { key:'rival', label:'Rival',        arrow: true  },
+      { key:'pj',    label:'PJ'            },
+      { key:'pg',    label:'PG'            },
+      { key:'pe',    label:'PE'            },
+      { key:'pp',    label:'PP'            },
+      { key:'dh',    label:'Bal. Hist.'    },
+      { key:'gf',    label:'GF'            },
+      { key:'gc',    label:'GC'            },
+      { key:'dif',   label:'Dif. Goles'   },
+    ];
+    const thead = cols.map(c => {
+      const sorted = _histSort.col === c.key;
+      const arrow = sorted ? (  _histSort.asc ? ' ▲' : ' ▼') : '';
+      return `<th onclick="histSort('${c.key}')" class="${sorted ? 'sorted' : ''}">${c.label}<span class="hist-sort-arrow">${arrow}</span></th>`;
+    }).join('');
+
+    const tbody = rows.map(r => `
+      <tr onclick="histDrilldown('${r.rival.replace(/'/g,"\\'")}')">
+        <td>${r.rival}<span class="hist-rival-arrow">›</span></td>
+        <td class="hist-td-pj">${r.pj}</td>
+        <td class="hist-td-win">${r.pg}</td>
+        <td class="hist-td-draw">${r.pe}</td>
+        <td class="hist-td-loss">${r.pp}</td>
+        <td><span class="${difClass(r.dh)}">${sign(r.dh)}</span></td>
+        <td class="hist-td-gf">${r.gf}</td>
+        <td>${r.gc}</td>
+        <td class="${balClass(r.dif)}">${sign(r.dif)}</td>
+      </tr>`).join('');
+
+    return `<div class="hist-table-wrap"><table class="hist-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+  }
+
+  function getSorted(q) {
+    let rows = q ? data.filter(r => r.rival.toLowerCase().includes(q.toLowerCase())) : [...data];
+    rows.sort((a, b) => {
+      const av = a[_histSort.col], bv = b[_histSort.col];
+      if (typeof av === 'string') return _histSort.asc ? av.localeCompare(bv) : bv.localeCompare(av);
+      return _histSort.asc ? av - bv : bv - av;
+    });
+    return rows;
+  }
+
+  document.getElementById('partidos-grid').innerHTML = `
+    <div class="hist-wrap">
+      ${kpiHtml}
+      <div class="hist-search-wrap">
+        <span class="hist-search-icon">🔍</span>
+        <input class="hist-search" id="hist-search-input" placeholder="Buscar club..." oninput="histFilter(this.value)">
+      </div>
+      <div id="hist-table-container">${buildTable(getSorted(''))}</div>
+    </div>`;
+
+  document.getElementById('part-title').textContent = '';
+
+  window.histFilter = function(q) {
+    document.getElementById('hist-table-container').innerHTML = buildTable(getSorted(q));
+  };
+  window.histSort = function(col) {
+    if (_histSort.col === col) _histSort.asc = !_histSort.asc;
+    else { _histSort.col = col; _histSort.asc = col === 'rival'; }
+    const q = document.getElementById('hist-search-input')?.value || '';
+    document.getElementById('hist-table-container').innerHTML = buildTable(getSorted(q));
+  };
+  window.histDrilldown = function(rival) {
+    // Placeholder for future club detail view
+    console.log('Ver historial de:', rival);
+  };
+
+  // Try live fetch from proxy
+  fetchProxy('Historial vs Clubes').then(rows => {
+    if (!rows || rows.length < 2) return;
+    const header = rows[0].map(c => String(c).toLowerCase().trim());
+    const iCol = k => header.findIndex(h => h.includes(k));
+    const ci = { rival: iCol('rival'), pj: iCol('pj'), pg: iCol('pg'), pe: iCol('pe'), pp: iCol('pp'), dh: iCol('bal'), gf: iCol('gf'), gc: iCol('gc'), dif: iCol('dif') };
+    const parsed = rows.slice(1)
+      .filter(r => r[ci.rival] && String(r[ci.rival]).trim())
+      .map(r => ({
+        rival: String(r[ci.rival]).trim().toUpperCase(),
+        pj: Number(r[ci.pj])||0, pg: Number(r[ci.pg])||0, pe: Number(r[ci.pe])||0,
+        pp: Number(r[ci.pp])||0, dh: Number(r[ci.dh])||0,
+        gf: Number(r[ci.gf])||0, gc: Number(r[ci.gc])||0, dif: Number(r[ci.dif])||0,
+      }));
+    if (parsed.length >= 5) { data = parsed; renderHistorial(); }
+  }).catch(() => {});
+}
+
 function renderPartidos() {
   const d = currentData;
   document.getElementById('part-title').textContent = '🗓 Resultados – ' + d.nombre;
@@ -3805,7 +4044,7 @@ function parseDetailedMatches(rows, startInSection = false) {
 function refreshCurrentView() {
   if (!currentData) return;
   const map = { 'tab-resumen':renderResumen, 'tab-posiciones':renderTorneosMenu,
-                'tab-partidos':renderPartidos, 'tab-jugadores':renderJugadores,
+                'tab-historial':renderHistorial, 'tab-jugadores':renderJugadores,
                 'tab-graficos':renderGraficos };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
