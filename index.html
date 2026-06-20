@@ -2610,6 +2610,101 @@ function _jugTotalBuild() {
 }
 
 // ── Estadísticas Anuales ─────────────────────────────────────────────────────
+const SEED_ANUALES_PLAYERS = {
+  '2023': [
+    {nombre:'Iñaki Usandizaga',  pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:11, promGmas:0},
+    {nombre:'Santiago Carabajal',pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:16, promGmas:0},
+    {nombre:'Juan Cruz Queirolo',pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:6,  promGmas:0},
+    {nombre:'Theo Jurs',         pos:'DEF', goles:1,  asist:1,  gmas:2,  pj:26, promGmas:0.08},
+    {nombre:'Genaro Falconi',    pos:'DEF', goles:1,  asist:1,  gmas:2,  pj:11, promGmas:0.18},
+    {nombre:'Mateo Samitier',    pos:'DEF', goles:2,  asist:0,  gmas:2,  pj:17, promGmas:0.12},
+    {nombre:'Mauro Pellegrino',  pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:20, promGmas:0.05},
+    {nombre:'Juan Moyano',       pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:29, promGmas:0.03},
+    {nombre:'Mateo Schwartz',    pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:19, promGmas:0.05},
+    {nombre:'Valentin Ruocco',   pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:26, promGmas:0.04},
+    {nombre:'Fermin Garces',     pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:22, promGmas:0},
+    {nombre:'Mateo Garcia',      pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:2,  promGmas:0},
+    {nombre:'Matias Guidoni',    pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:4,  promGmas:0},
+    {nombre:'Bautista Elhaiek',  pos:'MC',  goles:9,  asist:2,  gmas:11, pj:33, promGmas:0.33},
+    {nombre:'Tomas Elhaiek',     pos:'MC',  goles:5,  asist:3,  gmas:8,  pj:25, promGmas:0.32},
+    {nombre:'Francisco Vittar',  pos:'MC',  goles:3,  asist:3,  gmas:6,  pj:29, promGmas:0.21},
+    {nombre:'Bautista Fossa',    pos:'MC',  goles:1,  asist:3,  gmas:4,  pj:17, promGmas:0.24},
+    {nombre:'Eduardo Seeber',    pos:'MC',  goles:1,  asist:1,  gmas:2,  pj:16, promGmas:0.13},
+    {nombre:'Facundo Llauro',    pos:'MC',  goles:0,  asist:0,  gmas:0,  pj:20, promGmas:0},
+    {nombre:'Ramiro Hermida',    pos:'DEL', goles:14, asist:10, gmas:24, pj:29, promGmas:0.83},
+    {nombre:'Felipe Bello',      pos:'DEL', goles:17, asist:5,  gmas:22, pj:30, promGmas:0.73},
+    {nombre:'Marcos Gicovate',   pos:'DEL', goles:4,  asist:5,  gmas:9,  pj:23, promGmas:0.39},
+    {nombre:'Justo Gottlieb',    pos:'DEL', goles:7,  asist:0,  gmas:7,  pj:22, promGmas:0.32},
+    {nombre:'Fernando Cobian',   pos:'DEL', goles:4,  asist:2,  gmas:6,  pj:23, promGmas:0.26},
+    {nombre:'Lorenzo Pellegrino',pos:'DEL', goles:3,  asist:2,  gmas:5,  pj:14, promGmas:0.36},
+    {nombre:'Francisco Moresco', pos:'DEL', goles:1,  asist:0,  gmas:1,  pj:12, promGmas:0.08},
+  ],
+  '2024': [
+    {nombre:'Matias Vera',              pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:0,  promGmas:0},
+    {nombre:'Iñaki Usandizaga',         pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:31, promGmas:0},
+    {nombre:'Jaime Cafferata',          pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:4,  promGmas:0},
+    {nombre:'Theo Jurs',                pos:'DEF', goles:2,  asist:1,  gmas:3,  pj:25, promGmas:0.12},
+    {nombre:'Juan Moyano',              pos:'DEF', goles:1,  asist:1,  gmas:2,  pj:31, promGmas:0.06},
+    {nombre:'Valentin Ruocco',          pos:'DEF', goles:1,  asist:0,  gmas:1,  pj:30, promGmas:0.03},
+    {nombre:'Juan Manuel Vittar',       pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:8,  promGmas:0.13},
+    {nombre:'Mateo Samitier',           pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:9,  promGmas:0.11},
+    {nombre:'Mateo Schwartz',           pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:18, promGmas:0.06},
+    {nombre:'Juan Bautista Basavilbaso',pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:20, promGmas:0.05},
+    {nombre:'Matias Guidoni',           pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:0,  promGmas:0},
+    {nombre:'Fermin Garces',            pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:27, promGmas:0},
+    {nombre:'Genaro Falconi',           pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:4,  promGmas:0},
+    {nombre:'Mauro Pellegrino',         pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:10, promGmas:0},
+    {nombre:'Santiago Bassi',           pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:13, promGmas:0},
+    {nombre:'Bautista Elhaiek',         pos:'MC',  goles:10, asist:3,  gmas:13, pj:30, promGmas:0.43},
+    {nombre:'Bautista Fossa',           pos:'MC',  goles:2,  asist:1,  gmas:3,  pj:17, promGmas:0.18},
+    {nombre:'Eduardo Seeber',           pos:'MC',  goles:1,  asist:1,  gmas:2,  pj:5,  promGmas:0.40},
+    {nombre:'Tomas Elhaiek',            pos:'MC',  goles:2,  asist:0,  gmas:2,  pj:29, promGmas:0.07},
+    {nombre:'Tomas Castro',             pos:'MC',  goles:0,  asist:1,  gmas:1,  pj:9,  promGmas:0.11},
+    {nombre:'Francisco Vittar',         pos:'MC',  goles:1,  asist:0,  gmas:1,  pj:25, promGmas:0.04},
+    {nombre:'Facundo Llauro',           pos:'MC',  goles:0,  asist:1,  gmas:1,  pj:26, promGmas:0.04},
+    {nombre:'Juan Tutaglio',            pos:'MC',  goles:0,  asist:0,  gmas:0,  pj:6,  promGmas:0},
+    {nombre:'Bautista Baylac',          pos:'MC',  goles:0,  asist:0,  gmas:0,  pj:2,  promGmas:0},
+    {nombre:'Lorenzo Pellegrino',       pos:'DEL', goles:16, asist:5,  gmas:21, pj:30, promGmas:0.70},
+    {nombre:'Felipe Bello',             pos:'DEL', goles:7,  asist:5,  gmas:12, pj:22, promGmas:0.55},
+    {nombre:'Ramiro Hermida',           pos:'DEL', goles:6,  asist:5,  gmas:11, pj:28, promGmas:0.39},
+    {nombre:'Justo Gottlieb',           pos:'DEL', goles:4,  asist:1,  gmas:5,  pj:18, promGmas:0.28},
+    {nombre:'Marcos Gicovate',          pos:'DEL', goles:2,  asist:3,  gmas:5,  pj:29, promGmas:0.17},
+    {nombre:'Fernando Cobian',          pos:'DEL', goles:0,  asist:2,  gmas:2,  pj:22, promGmas:0.09},
+    {nombre:'Francisco Moresco',        pos:'DEL', goles:1,  asist:0,  gmas:1,  pj:11, promGmas:0.09},
+  ],
+  '2025': [
+    {nombre:'Iñaki Usandizaga',         pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:33, promGmas:0},
+    {nombre:'Jaime Cafferata',          pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:1,  promGmas:0},
+    {nombre:'Matias Vera',              pos:'ARQ', goles:0,  asist:0,  gmas:0,  pj:1,  promGmas:0},
+    {nombre:'Santiago Bassi',           pos:'DEF', goles:0,  asist:5,  gmas:5,  pj:18, promGmas:0.28},
+    {nombre:'Mateo Schwartz',           pos:'DEF', goles:0,  asist:3,  gmas:3,  pj:14, promGmas:0.21},
+    {nombre:'Juan Bautista Basavilbaso',pos:'DEF', goles:0,  asist:3,  gmas:3,  pj:26, promGmas:0.12},
+    {nombre:'Theo Jurs',                pos:'DEF', goles:2,  asist:0,  gmas:2,  pj:32, promGmas:0.06},
+    {nombre:'Valentin Ruocco',          pos:'DEF', goles:0,  asist:1,  gmas:1,  pj:28, promGmas:0.04},
+    {nombre:'Mateo Garcia',             pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:1,  promGmas:0},
+    {nombre:'Fermin Garces',            pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:12, promGmas:0},
+    {nombre:'Genaro Falconi',           pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:9,  promGmas:0},
+    {nombre:'Felipe Fossa',             pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:13, promGmas:0},
+    {nombre:'Juan Moyano',              pos:'DEF', goles:0,  asist:0,  gmas:0,  pj:20, promGmas:0},
+    {nombre:'Francisco Vittar',         pos:'MC',  goles:6,  asist:3,  gmas:9,  pj:29, promGmas:0.31},
+    {nombre:'Bautista Elhaiek',         pos:'MC',  goles:4,  asist:4,  gmas:8,  pj:34, promGmas:0.24},
+    {nombre:'Tomas Castro',             pos:'MC',  goles:2,  asist:3,  gmas:5,  pj:20, promGmas:0.25},
+    {nombre:'Segundo Bourse',           pos:'MC',  goles:1,  asist:3,  gmas:4,  pj:19, promGmas:0.21},
+    {nombre:'Tomas Elhaiek',            pos:'MC',  goles:3,  asist:0,  gmas:3,  pj:29, promGmas:0.10},
+    {nombre:'Bautista Fossa',           pos:'MC',  goles:1,  asist:1,  gmas:2,  pj:12, promGmas:0.17},
+    {nombre:'Facundo Llauro',           pos:'MC',  goles:0,  asist:0,  gmas:0,  pj:11, promGmas:0},
+    {nombre:'Ramiro Hermida',           pos:'DEL', goles:10, asist:5,  gmas:15, pj:30, promGmas:0.50},
+    {nombre:'Felipe Bello',             pos:'DEL', goles:10, asist:3,  gmas:13, pj:29, promGmas:0.45},
+    {nombre:'Lorenzo Pellegrino',       pos:'DEL', goles:8,  asist:0,  gmas:8,  pj:25, promGmas:0.32},
+    {nombre:'Marcos Gicovate',          pos:'DEL', goles:2,  asist:3,  gmas:5,  pj:22, promGmas:0.23},
+    {nombre:'Fernando Cobian',          pos:'DEL', goles:2,  asist:1,  gmas:3,  pj:26, promGmas:0.12},
+    {nombre:'Justo Gottlieb',           pos:'DEL', goles:2,  asist:0,  gmas:2,  pj:7,  promGmas:0.29},
+    {nombre:'Francisco Moresco',        pos:'DEL', goles:1,  asist:0,  gmas:1,  pj:9,  promGmas:0.11},
+    {nombre:'Patricio Garre',           pos:'DEL', goles:1,  asist:0,  gmas:1,  pj:17, promGmas:0.06},
+    {nombre:'Vicente Fiore',            pos:'DEL', goles:0,  asist:0,  gmas:0,  pj:9,  promGmas:0},
+  ],
+};
+
 const SEED_ANUALES = {
   '2023': {
     torneos: [
@@ -2757,51 +2852,11 @@ function renderJugAnualesYear(year) {
   _anualesLoadPlayers(year);
 }
 
-// Ranges in each annual tab where player data lives (row 1 = header)
-const ANUALES_RANGES = { '2023':'I1:O28', '2024':'I1:O33', '2025':'I1:O31' };
-
 function _anualesLoadPlayers(year) {
   if (_anualesPlayers[year]) { _anualesBuildAll(year); return; }
-
-  const range = ANUALES_RANGES[year];
-  fetchCSV(GS.A_MAIN, year, range)
-    .then(text => {
-      const rows = parseCSV(text);
-      if (!rows || rows.length < 2) throw new Error('empty');
-      // Detect columns from header row dynamically
-      const hdr = rows[0].map(c => c.trim().toLowerCase());
-      const ci = key => hdr.findIndex(h => h.includes(key));
-      const iNombre  = ci('jugador') >= 0 ? ci('jugador') : 0;
-      const iPJ      = ci('partido') >= 0 ? ci('partido') : ci('pj') >= 0 ? ci('pj') : 1;
-      const iTitular = ci('titular') >= 0 ? ci('titular') : 2;
-      const iGoles   = ci('gol')     >= 0 ? ci('gol')     : 3;
-      const iAsist   = ci('asist')   >= 0 ? ci('asist')   : 4;
-      const iRojas   = ci('roja')    >= 0 ? ci('roja')    : -1;
-      const iGmas    = ci('g+a')     >= 0 ? ci('g+a')     : 5;
-      const iPromGmas= hdr.lastIndexOf(hdr.find((h,i) => i > iGmas && (h.includes('prom') || h.includes('promedio')))) >= 0
-                       ? hdr.lastIndexOf(hdr.find((h,i) => i > iGmas && (h.includes('prom') || h.includes('promedio')))) : 6;
-      const get = (r, i) => i >= 0 ? (parseFloat((r[i]||'').replace(',','.')) || 0) : 0;
-      _anualesPlayers[year] = rows.slice(1)
-        .filter(r => r[iNombre] && r[iNombre].trim() && get(r, iPJ) > 0)
-        .map(r => ({
-          nombre:   r[iNombre].trim(),
-          pj:       get(r, iPJ),
-          titular:  get(r, iTitular),
-          goles:    get(r, iGoles),
-          asist:    get(r, iAsist),
-          rojas:    get(r, iRojas),
-          gmas:     get(r, iGmas),
-          promGmas: get(r, iPromGmas),
-        }));
-      _anualesBuildAll(year);
-    })
-    .catch(() => {
-      const rankEl = document.getElementById('jug-anual-rankings');
-      const tabEl  = document.getElementById('jug-anual-table');
-      const msg = '<div style="color:var(--gris-texto);font-size:0.82rem;padding:4px 0">No se pudieron cargar las estadísticas individuales del año.</div>';
-      if (rankEl) rankEl.innerHTML = msg;
-      if (tabEl)  tabEl.innerHTML  = msg;
-    });
+  // Load from embedded seed immediately
+  _anualesPlayers[year] = SEED_ANUALES_PLAYERS[year] || [];
+  _anualesBuildAll(year);
 }
 
 function _anualesFilter(q) {
@@ -2864,11 +2919,9 @@ function _anualesBuildTable(year) {
   const COLS = [
     { label:'Jugador',  key:'nombre',  color:'#fff',     isText: true },
     { label:'PJ',       key:'pj',      color:'#94a3b8' },
-    { label:'Titular',  key:'titular', color:'#94a3b8' },
     { label:'⚽ Goles', key:'goles',   color:'#22c55e' },
     { label:'🎯 Asist', key:'asist',   color:'#3b82f6' },
     { label:'🔥 G+A',  key:'gmas',    color:'#a855f7' },
-    { label:'🟥 Rojas', key:'rojas',   color:'#ef4444' },
     { label:'Prom G+A', key:'promGmas',color:'#a855f7', isDecimal: true },
   ];
 
@@ -2898,20 +2951,24 @@ function _anualesBuildTable(year) {
   const trs = rows.map((p, i) => {
     const bg = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)';
     const initials = p.nombre.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const pos = p.pos || '';
+    const pc = POS_COLOR[pos] || '#94a3b8';
+    const pb = POS_BG[pos]   || 'rgba(255,255,255,0.08)';
     const bar = (val, max, color) => `<div style="height:3px;border-radius:999px;background:rgba(255,255,255,0.07);margin-top:3px"><div style="height:100%;width:${Math.round(val/max*100)}%;background:${color};border-radius:999px"></div></div>`;
     return `<tr style="background:${bg};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${bg}'">
       <td style="padding:8px 10px;white-space:nowrap">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:900;color:#94a3b8;flex-shrink:0">${initials}</div>
-          <span style="font-weight:700;color:#fff;font-size:0.85rem">${p.nombre}</span>
+          <div style="width:30px;height:30px;border-radius:50%;background:${pb};border:1.5px solid ${pc}44;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:900;color:${pc};flex-shrink:0">${initials}</div>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:0.85rem;line-height:1.1">${p.nombre}</div>
+            <span style="font-size:0.6rem;font-weight:800;color:${pc};background:${pb};padding:1px 5px;border-radius:3px">${pos}</span>
+          </div>
         </div>
       </td>
       <td style="text-align:right;padding:8px 10px"><span style="color:#94a3b8;font-weight:700">${p.pj}</span>${bar(p.pj, maxPJ,'#94a3b8')}</td>
-      <td style="text-align:right;padding:8px 10px"><span style="color:#64748b">${p.titular}</span></td>
       <td style="text-align:right;padding:8px 10px">${p.goles > 0 ? `<span style="color:#22c55e;font-weight:800">${p.goles}</span>${bar(p.goles, maxGoles,'#22c55e')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
       <td style="text-align:right;padding:8px 10px">${p.asist > 0 ? `<span style="color:#3b82f6;font-weight:800">${p.asist}</span>${bar(p.asist, maxAsist,'#3b82f6')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
       <td style="text-align:right;padding:8px 10px">${p.gmas  > 0 ? `<span style="color:#a855f7;font-weight:800">${p.gmas}</span>${bar(p.gmas, maxGmas,'#a855f7')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
-      <td style="text-align:right;padding:8px 10px">${p.rojas > 0 ? `<span style="color:#ef4444;font-weight:700">${p.rojas}</span>` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
       <td style="text-align:right;padding:8px 10px"><span style="color:#a855f7">${p.promGmas > 0 ? p.promGmas.toFixed(2).replace('.',',') : '—'}</span></td>
     </tr>`;
   }).join('');
