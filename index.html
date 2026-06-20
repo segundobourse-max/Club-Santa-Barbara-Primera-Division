@@ -2757,25 +2757,41 @@ function renderJugAnualesYear(year) {
   _anualesLoadPlayers(year);
 }
 
+// Ranges in each annual tab where player data lives (row 1 = header)
+const ANUALES_RANGES = { '2023':'I1:O28', '2024':'I1:O33', '2025':'I1:O31' };
+
 function _anualesLoadPlayers(year) {
   if (_anualesPlayers[year]) { _anualesBuildAll(year); return; }
 
-  fetchCSV(GS.A_MAIN, year)
+  const range = ANUALES_RANGES[year];
+  fetchCSV(GS.A_MAIN, year, range)
     .then(text => {
       const rows = parseCSV(text);
       if (!rows || rows.length < 2) throw new Error('empty');
-      // Header: Jugador, Partidos Jugados, Titular, Entro, Salio, Goles, Asistencias, Rojas, Citado, G+A, Prom gol, Prom asist, Prom G+A
+      // Detect columns from header row dynamically
+      const hdr = rows[0].map(c => c.trim().toLowerCase());
+      const ci = key => hdr.findIndex(h => h.includes(key));
+      const iNombre  = ci('jugador') >= 0 ? ci('jugador') : 0;
+      const iPJ      = ci('partido') >= 0 ? ci('partido') : ci('pj') >= 0 ? ci('pj') : 1;
+      const iTitular = ci('titular') >= 0 ? ci('titular') : 2;
+      const iGoles   = ci('gol')     >= 0 ? ci('gol')     : 3;
+      const iAsist   = ci('asist')   >= 0 ? ci('asist')   : 4;
+      const iRojas   = ci('roja')    >= 0 ? ci('roja')    : -1;
+      const iGmas    = ci('g+a')     >= 0 ? ci('g+a')     : 5;
+      const iPromGmas= hdr.lastIndexOf(hdr.find((h,i) => i > iGmas && (h.includes('prom') || h.includes('promedio')))) >= 0
+                       ? hdr.lastIndexOf(hdr.find((h,i) => i > iGmas && (h.includes('prom') || h.includes('promedio')))) : 6;
+      const get = (r, i) => i >= 0 ? (parseFloat((r[i]||'').replace(',','.')) || 0) : 0;
       _anualesPlayers[year] = rows.slice(1)
-        .filter(r => r[0] && r[0].trim() && r[1] && parseFloat(r[1]) > 0)
+        .filter(r => r[iNombre] && r[iNombre].trim() && get(r, iPJ) > 0)
         .map(r => ({
-          nombre: r[0].trim(),
-          pj:     parseFloat(r[1]) || 0,
-          titular:parseFloat(r[2]) || 0,
-          goles:  parseFloat(r[5]) || 0,
-          asist:  parseFloat(r[6]) || 0,
-          rojas:  parseFloat(r[7]) || 0,
-          gmas:   parseFloat(r[9]) || 0,
-          promGmas: parseFloat((r[12]||'').replace(',','.')) || 0,
+          nombre:   r[iNombre].trim(),
+          pj:       get(r, iPJ),
+          titular:  get(r, iTitular),
+          goles:    get(r, iGoles),
+          asist:    get(r, iAsist),
+          rojas:    get(r, iRojas),
+          gmas:     get(r, iGmas),
+          promGmas: get(r, iPromGmas),
         }));
       _anualesBuildAll(year);
     })
