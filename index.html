@@ -362,32 +362,53 @@
     .torneo-wip-sub { font-size: 0.88rem; color: var(--gris-texto); max-width: 300px; line-height: 1.6; }
 
     /* ── DEBUTS ── */
-    .debuts-kpis { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
-    .debuts-kpi { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 120px; }
-    .debuts-kpi-val { font-size: 1.5rem; font-weight: 700; color: var(--acento); }
-    .debuts-kpi-label { font-size: 0.75rem; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.05em; }
+    .debuts-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 600px) { .debuts-kpis { grid-template-columns: repeat(2, 1fr); } }
+    .debuts-kpi { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 14px; padding: 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+    .debuts-kpi-icon { font-size: 1.4rem; }
+    .debuts-kpi-val { font-size: 2rem; font-weight: 800; color: var(--acento); line-height: 1; }
+    .debuts-kpi-label { font-size: 0.72rem; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.06em; }
+    .debuts-kpi-sub { font-size: 0.78rem; color: var(--texto); font-weight: 600; }
+
     .debuts-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
-    .debuts-pill { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; color: var(--gris-texto); cursor: pointer; transition: all 0.18s; }
+    .debuts-pill { background: transparent; border: 1px solid var(--borde); border-radius: 20px; padding: 5px 14px; font-size: 0.8rem; color: var(--gris-texto); cursor: pointer; transition: all 0.15s; }
     .debuts-pill:hover { border-color: var(--acento); color: var(--acento); }
-    .debuts-pill.active { background: var(--acento); border-color: var(--acento); color: #fff; font-weight: 600; }
-    .debut-year-block { margin-bottom: 32px; }
-    .debut-year-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .debut-year-line { flex: 1; height: 1px; background: var(--borde); }
-    .debut-year-label { font-size: 1.1rem; font-weight: 700; color: var(--texto); white-space: nowrap; }
-    .debut-year-count { font-size: 0.78rem; color: var(--gris-texto); background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 2px 10px; white-space: nowrap; }
-    .debut-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-    .debut-card { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; transition: border-color 0.18s; }
-    .debut-card:hover { border-color: var(--acento); }
-    .debut-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--acento); display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .debut-info { flex: 1; min-width: 0; }
-    .debut-name { font-size: 0.9rem; font-weight: 600; color: var(--texto); margin-bottom: 4px; }
-    .debut-meta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 0.75rem; color: var(--gris-texto); margin-bottom: 6px; align-items: center; }
-    .debut-res { font-weight: 600; font-size: 0.78rem; }
-    .debut-res-w { color: #22c55e; }
-    .debut-res-d { color: #f59e0b; }
-    .debut-res-l { color: #ef4444; }
-    .debut-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-    .debut-badge { font-size: 0.72rem; border-radius: 8px; padding: 2px 8px; font-weight: 600; }
+    .debuts-pill.active { background: var(--acento); border-color: var(--acento); color: #fff; font-weight: 700; }
+
+    .debuts-stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 640px) { .debuts-stats-row { grid-template-columns: 1fr; } }
+    .debuts-stat-card { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 12px; padding: 14px 16px; }
+    .debuts-stat-title { font-size: 0.72rem; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .debuts-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.78rem; }
+    .debuts-bar-label { width: 36px; color: var(--gris-texto); text-align: right; flex-shrink: 0; }
+    .debuts-bar-track { flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px; overflow: hidden; }
+    .debuts-bar-fill { height: 100%; background: var(--acento); border-radius: 4px; transition: width 0.4s; }
+    .debuts-bar-count { width: 20px; color: var(--texto); font-weight: 600; font-size: 0.75rem; }
+    .debuts-rival-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.8rem; }
+    .debuts-rival-name { color: var(--texto); }
+    .debuts-rival-count { color: var(--acento); font-weight: 700; }
+
+    .debut-timeline { position: relative; }
+    .debut-year-block { margin-bottom: 36px; position: relative; }
+    .debut-year-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .debut-year-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 8px var(--acento); flex-shrink: 0; }
+    .debut-year-label { font-size: 1.15rem; font-weight: 800; color: var(--texto); }
+    .debut-year-count { font-size: 0.75rem; color: var(--gris-texto); background: rgba(255,255,255,0.05); border: 1px solid var(--borde); border-radius: 10px; padding: 2px 10px; }
+    .debut-year-vline { position: absolute; left: 6px; top: 30px; bottom: -36px; width: 2px; background: linear-gradient(to bottom, var(--acento), transparent); opacity: 0.25; }
+
+    .debut-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding-left: 28px; }
+    .debut-card { background: var(--card-bg); border: 1px solid var(--borde); border-radius: 14px; padding: 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; transition: all 0.18s; cursor: default; }
+    .debut-card:hover { border-color: var(--acento); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    .debut-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--acento), #6366f1); display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .debut-name { font-size: 0.85rem; font-weight: 700; color: var(--texto); line-height: 1.3; }
+    .debut-detail { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+    .debut-detail-row { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.75rem; color: var(--gris-texto); }
+    .debut-res-pill { font-size: 0.72rem; font-weight: 700; padding: 2px 10px; border-radius: 20px; }
+    .debut-res-w { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .debut-res-d { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .debut-res-l { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .debut-badges { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+    .debut-badge { font-size: 0.7rem; border-radius: 8px; padding: 3px 8px; font-weight: 700; }
     .debut-badge-gol { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
     .debut-badge-asist { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
 
@@ -3077,88 +3098,131 @@ function renderDebuts() {
   const years = [...new Set(data.map(d => d.year))].sort();
   const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:20px">← Estadísticas Jugadores</button>`;
 
-  const totalDebutantes = data.length;
-  const conGol   = data.filter(d => d.gol).length;
-  const conAsist = data.filter(d => d.asist).length;
+  // ── helpers ──────────────────────────────────────────────────────────────
+  function resClass(r) {
+    if (!r) return '';
+    const [g, gc] = r.split('-').map(Number);
+    return g > gc ? 'debut-res-w' : g === gc ? 'debut-res-d' : 'debut-res-l';
+  }
+  function resLabel(r) {
+    if (!r) return null;
+    const [g, gc] = r.split('-').map(Number);
+    const emoji = g > gc ? '🟢 Victoria' : g === gc ? '🟡 Empate' : '🔴 Derrota';
+    return `${emoji} ${r}`;
+  }
+  function initials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+
+  // ── KPIs ─────────────────────────────────────────────────────────────────
   const youngest = [...data].filter(d => d.edad).sort((a,b) => a.edad - b.edad)[0];
+  const conGol   = data.filter(d => d.gol).length;
+  const temporadas = years.length;
 
-  function resultClass(r) {
-    if (!r) return 'debut-res-unknown';
-    const [g, gc] = r.split('-').map(Number);
-    if (g > gc) return 'debut-res-w';
-    if (g === gc) return 'debut-res-d';
-    return 'debut-res-l';
-  }
-  function resultLabel(r) {
-    if (!r) return '—';
-    const [g, gc] = r.split('-').map(Number);
-    if (g > gc) return '🟢 ' + r;
-    if (g === gc) return '🟡 ' + r;
-    return '🔴 ' + r;
-  }
-  function initials(n) {
-    return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-  }
-
-  // KPI cards
   const kpiHtml = `
     <div class="debuts-kpis">
-      <div class="debuts-kpi"><span class="debuts-kpi-val">${totalDebutantes}</span><span class="debuts-kpi-label">Debutantes</span></div>
-      <div class="debuts-kpi"><span class="debuts-kpi-val">${years.length}</span><span class="debuts-kpi-label">Temporadas</span></div>
-      <div class="debuts-kpi"><span class="debuts-kpi-val">${conGol}</span><span class="debuts-kpi-label">Gol en debut</span></div>
-      <div class="debuts-kpi"><span class="debuts-kpi-val" style="font-size:13px">${youngest ? youngest.nombre.split(' ')[0] + ' · ' + youngest.edad + ' años' : '—'}</span><span class="debuts-kpi-label">Debut más joven</span></div>
+      <div class="debuts-kpi">
+        <div class="debuts-kpi-icon">🌟</div>
+        <div class="debuts-kpi-val">${data.length}</div>
+        <div class="debuts-kpi-label">Debutantes</div>
+      </div>
+      <div class="debuts-kpi">
+        <div class="debuts-kpi-icon">📅</div>
+        <div class="debuts-kpi-val">${temporadas}</div>
+        <div class="debuts-kpi-label">Temporadas</div>
+      </div>
+      <div class="debuts-kpi">
+        <div class="debuts-kpi-icon">⚽</div>
+        <div class="debuts-kpi-val">${conGol}</div>
+        <div class="debuts-kpi-label">Gol en debut</div>
+      </div>
+      <div class="debuts-kpi">
+        <div class="debuts-kpi-icon">👶</div>
+        <div class="debuts-kpi-val" style="font-size:1.3rem">${youngest ? youngest.edad + ' años' : '—'}</div>
+        <div class="debuts-kpi-label">Debut más joven</div>
+        ${youngest ? `<div class="debuts-kpi-sub">${youngest.nombre.split(' ')[0]} ${youngest.nombre.split(' ').slice(-1)[0]}</div>` : ''}
+      </div>
     </div>`;
 
-  // Year filter pills
+  // ── Stats: debuts por año + rival más frecuente ───────────────────────
+  const byYear = {};
+  data.forEach(d => { byYear[d.year] = (byYear[d.year]||0) + 1; });
+  const maxByYear = Math.max(...Object.values(byYear));
+  const barsHtml = years.map(y => `
+    <div class="debuts-bar-row">
+      <div class="debuts-bar-label">${y}</div>
+      <div class="debuts-bar-track"><div class="debuts-bar-fill" style="width:${Math.round((byYear[y]/maxByYear)*100)}%"></div></div>
+      <div class="debuts-bar-count">${byYear[y]}</div>
+    </div>`).join('');
+
+  const rivalCount = {};
+  data.filter(d=>d.rival).forEach(d => { rivalCount[d.rival] = (rivalCount[d.rival]||0) + 1; });
+  const topRivals = Object.entries(rivalCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const rivalesHtml = topRivals.map(([r,c]) => `
+    <div class="debuts-rival-row">
+      <span class="debuts-rival-name">⚔️ ${r}</span>
+      <span class="debuts-rival-count">${c}</span>
+    </div>`).join('');
+
+  const statsRowHtml = `
+    <div class="debuts-stats-row">
+      <div class="debuts-stat-card">
+        <div class="debuts-stat-title">Debuts por temporada</div>
+        ${barsHtml}
+      </div>
+      <div class="debuts-stat-card">
+        <div class="debuts-stat-title">Rivals más frecuentes</div>
+        ${rivalesHtml}
+      </div>
+    </div>`;
+
+  // ── Filter pills ──────────────────────────────────────────────────────────
   const filterHtml = `
     <div class="debuts-filters" id="debuts-year-filters">
       <button class="debuts-pill active" onclick="debutsFilter('all', this)">Todos</button>
-      ${years.map(y => `<button class="debuts-pill" onclick="debutsFilter(${y}, this)">${y}</button>`).join('')}
+      ${[...years].reverse().map(y => `<button class="debuts-pill" onclick="debutsFilter(${y}, this)">${y}</button>`).join('')}
     </div>`;
 
-  // Timeline
+  // ── Timeline builder ──────────────────────────────────────────────────────
   function buildTimeline(subset) {
-    const byYear = {};
-    subset.forEach(d => { if (!byYear[d.year]) byYear[d.year] = []; byYear[d.year].push(d); });
-    return Object.keys(byYear).sort((a,b)=>b-a).map(yr => {
-      const players = byYear[yr];
+    const grouped = {};
+    subset.forEach(d => { if (!grouped[d.year]) grouped[d.year] = []; grouped[d.year].push(d); });
+    const sortedYears = Object.keys(grouped).sort((a,b)=>b-a);
+    return sortedYears.map((yr, idx) => {
+      const players = grouped[yr];
+      const isLast = idx === sortedYears.length - 1;
       const cards = players.map(p => `
         <div class="debut-card">
           <div class="debut-avatar">${initials(p.nombre)}</div>
-          <div class="debut-info">
-            <div class="debut-name">${p.nombre}</div>
-            <div class="debut-meta">
-              ${p.rival ? `<span>vs ${p.rival}</span>` : ''}
-              ${p.edad ? `<span>· ${p.edad} años</span>` : ''}
-              ${p.resultado ? `<span class="debut-res ${resultClass(p.resultado)}">${resultLabel(p.resultado)}</span>` : ''}
-            </div>
-            <div class="debut-badges">
-              ${p.gol   ? `<span class="debut-badge debut-badge-gol">⚽ Gol</span>` : ''}
-              ${p.asist ? `<span class="debut-badge debut-badge-asist">🎯 Asistencia</span>` : ''}
-            </div>
+          <div class="debut-name">${p.nombre}</div>
+          <div class="debut-detail">
+            ${p.edad ? `<div class="debut-detail-row">🎂 <span>${p.edad} años</span></div>` : ''}
+            ${p.rival ? `<div class="debut-detail-row">⚔️ <span>vs ${p.rival}</span></div>` : ''}
+            ${p.resultado ? `<div class="debut-detail-row"><span class="debut-res-pill ${resClass(p.resultado)}">${resLabel(p.resultado)}</span></div>` : ''}
           </div>
+          ${(p.gol || p.asist) ? `<div class="debut-badges">
+            ${p.gol   ? `<span class="debut-badge debut-badge-gol">⚽ Gol</span>` : ''}
+            ${p.asist ? `<span class="debut-badge debut-badge-asist">🎯 Asist.</span>` : ''}
+          </div>` : ''}
         </div>`).join('');
       return `
         <div class="debut-year-block" data-year="${yr}">
+          ${!isLast ? '<div class="debut-year-vline"></div>' : ''}
           <div class="debut-year-header">
-            <div class="debut-year-line"></div>
+            <div class="debut-year-dot"></div>
             <div class="debut-year-label">${yr}</div>
             <div class="debut-year-count">${players.length} debut${players.length > 1 ? 's' : ''}</div>
-            <div class="debut-year-line"></div>
           </div>
           <div class="debut-cards-grid">${cards}</div>
         </div>`;
     }).join('');
   }
 
-  const timelineHtml = `<div id="debuts-timeline">${buildTimeline(data)}</div>`;
-
   document.getElementById('jug-debuts-content').innerHTML = `
     ${backBtn}
-    <div class="section-title" style="margin-bottom:20px">🌟 Debuts – ${currentData.nombre}</div>
+    <div class="section-title" style="margin-bottom:20px">🌟 Debuts – Historia del Club</div>
     ${kpiHtml}
+    ${statsRowHtml}
     ${filterHtml}
-    ${timelineHtml}`;
+    <div class="debut-timeline" id="debuts-timeline">${buildTimeline(data)}</div>`;
 
   window.debutsFilter = function(yr, btn) {
     document.querySelectorAll('.debuts-pill').forEach(b => b.classList.remove('active'));
