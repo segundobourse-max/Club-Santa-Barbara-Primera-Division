@@ -2836,9 +2836,35 @@ function renderTorneoApertura() {
     { color:'var(--azul-claro)',label:'Copa de Honor' },
     { color:'var(--rojo)',       label:'Descenso' },
   ];
+  const aifaUrl = isA
+    ? 'https://www.aifa.ar/torneo/division-a-apertura-2026/posiciones'
+    : 'https://www.aifa.ar/torneo/division-b-apertura-2026/posiciones';
+
+  const aifaSlug = isA ? 'division-a-apertura-2026' : 'division-b-apertura-2026';
+
+  function renderTablaRows(rows) {
+    return rows.map(t => {
+      const cc = copaColor(t.copas);
+      return `<tr class="${t.csb ? 'csb-row' : ''}">
+        <td>${t.pos}</td>
+        <td style="font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
+        <td style="text-align:left;font-size:0.7rem;${cc}">${t.copas || ''}</td>
+        <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
+        <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
+        <td><strong>${t.pts}</strong></td><td>${t.df??'–'}</td>
+      </tr>`;
+    }).join('');
+  }
+
   const tablaHtml = tabla.length ? `
     <div class="ap-standings-card">
-      <div class="ap-card-title">📊 Tabla de Posiciones</div>
+      <div class="ap-card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>📊 Tabla de Posiciones</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="aifa-live-badge" style="font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(100,116,139,.15);color:#64748b;border:1px solid rgba(100,116,139,.2)">⏳ actualizando…</span>
+          <a href="${aifaUrl}" target="_blank" rel="noopener" style="font-size:0.65rem;font-weight:700;color:#60a5fa;text-decoration:none;display:flex;align-items:center;gap:4px;padding:3px 9px;border:1px solid rgba(96,165,250,.25);border-radius:20px;background:rgba(96,165,250,.08);transition:all .2s" onmouseover="this.style.background='rgba(96,165,250,.18)'" onmouseout="this.style.background='rgba(96,165,250,.08)'">Ver en AIFA ↗</a>
+        </div>
+      </div>
       <div style="overflow-x:auto">
         <table class="ap-table">
           <thead><tr>
@@ -2847,17 +2873,7 @@ function renderTorneoApertura() {
             <th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
             <th>GF</th><th>GC</th><th>PTS</th><th>DF</th>
           </tr></thead>
-          <tbody>${tabla.map(t => {
-            const cc = copaColor(t.copas);
-            return `<tr class="${t.csb ? 'csb-row' : ''}">
-              <td>${t.pos}</td>
-              <td style="font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
-              <td style="text-align:left;font-size:0.7rem;${cc}">${t.copas || ''}</td>
-              <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
-              <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
-              <td><strong>${t.pts}</strong></td><td>${t.df??'–'}</td>
-            </tr>`;
-          }).join('')}</tbody>
+          <tbody id="aifa-tabla-body">${renderTablaRows(tabla)}</tbody>
         </table>
       </div>
       <div class="ap-copa-legend">
@@ -2905,6 +2921,65 @@ function renderTorneoApertura() {
     document.querySelectorAll('.ap-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'ap-tab-' + tab));
     if (tab === 'fechas' && autoFecha !== null) selectFecha(autoFecha);
   };
+
+  // Live AIFA standings fetch (background, overwrites seed data)
+  if (tabla.length) {
+    fetchAifaTabla(aifaSlug, isA, copaLegendItems, renderTablaRows);
+  }
+}
+
+async function fetchAifaTabla(slug, isA, copaLegendItems, renderTablaRows) {
+  const badge = document.getElementById('aifa-live-badge');
+  const tbody = document.getElementById('aifa-tabla-body');
+  if (!badge || !tbody) return;
+
+  try {
+    const url = `${PROXY_URL}?action=aifa&slug=${encodeURIComponent(slug)}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    const positions = await r.json();
+    if (!Array.isArray(positions) || !positions.length) throw new Error('empty');
+
+    // Map AIFA fields → our format; preserve copas from seed by team name match
+    const seedData = isA ? DATA_A.tabla : DATA_B.tabla;
+    const seedMap = {};
+    (seedData || []).forEach(t => { seedMap[t.equipo.toUpperCase()] = t; });
+
+    const liveRows = positions
+      .sort((a, b) => a.position - b.position)
+      .map(p => {
+        const name = (p.team_name || '').toUpperCase();
+        const seed = seedMap[name] || {};
+        const isCSB = /santa.?barbara/i.test(p.team_name || '');
+        return {
+          pos:    p.position + '°',
+          equipo: p.team_name || name,
+          copas:  seed.copas || '',
+          pts:    p.points,
+          pj:     p.matches_played,
+          pg:     p.matches_won,
+          pe:     p.matches_drawn,
+          pp:     p.matches_lost,
+          gf:     p.goals_for,
+          gc:     p.goals_against,
+          df:     p.goal_difference,
+          csb:    isCSB || seed.csb || false,
+        };
+      });
+
+    tbody.innerHTML = renderTablaRows(liveRows);
+
+    const now = new Date().toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+    badge.textContent = `🟢 En vivo · ${now}`;
+    badge.style.background = 'rgba(34,197,94,.12)';
+    badge.style.color = '#22c55e';
+    badge.style.borderColor = 'rgba(34,197,94,.25)';
+  } catch(e) {
+    badge.textContent = '📋 Datos locales';
+    badge.style.background = 'rgba(245,158,11,.08)';
+    badge.style.color = '#f59e0b';
+    badge.style.borderColor = 'rgba(245,158,11,.2)';
+  }
 }
 
 // ──────────────────────────────────────────────
