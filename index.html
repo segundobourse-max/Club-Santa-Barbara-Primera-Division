@@ -1092,40 +1092,51 @@
     @keyframes apFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
 
     /* ── Plantel tab ── */
-    .ap-plantel-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-bottom:20px; }
+    .ap-plantel-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+    @media (max-width:700px) { .ap-plantel-kpis { grid-template-columns:repeat(2,1fr); } }
     .ap-plantel-kpi {
       background:linear-gradient(160deg,#1a2236,#131825);
       border:1px solid #1e2a3a; border-radius:14px; padding:16px 18px;
       display:flex; flex-direction:column; gap:4px; transition:border-color 0.2s;
+      border-top:2px solid transparent;
     }
-    .ap-plantel-kpi:hover { border-color:rgba(245,158,11,0.3); }
+    .ap-plantel-kpi:nth-child(1) { border-top-color:rgba(34,197,94,.5); }
+    .ap-plantel-kpi:nth-child(2) { border-top-color:rgba(56,189,248,.5); }
+    .ap-plantel-kpi:nth-child(3) { border-top-color:rgba(245,158,11,.5); }
+    .ap-plantel-kpi:nth-child(4) { border-top-color:rgba(167,139,250,.5); }
+    .ap-plantel-kpi:hover { border-color:rgba(255,255,255,0.15); }
     .ap-plantel-kpi-icon { font-size:1.3rem; margin-bottom:2px; }
-    .ap-plantel-kpi-val { font-size:1.25rem; font-weight:800; color:var(--dorado); }
-    .ap-plantel-kpi-name { font-size:0.75rem; font-weight:700; color:#e2e8f0; }
-    .ap-plantel-kpi-label { font-size:0.68rem; color:var(--gris-texto); }
+    .ap-plantel-kpi-val { font-size:1.5rem; font-weight:900; color:var(--dorado); line-height:1; }
+    .ap-plantel-kpi-name { font-size:0.8rem; font-weight:700; color:#e2e8f0; }
+    .ap-plantel-kpi-label { font-size:0.7rem; color:#94a3b8; font-weight:500; }
     .ap-plantel-table-wrap { overflow-x:auto; border-radius:14px; border:1px solid #1e2a3a; }
     .ap-plantel-table { width:100%; border-collapse:collapse; font-size:0.78rem; }
     .ap-plantel-table thead th {
-      background:#0f1520; color:var(--gris-texto); font-size:0.68rem; font-weight:700;
-      text-transform:uppercase; letter-spacing:.04em; padding:10px 12px; text-align:center;
+      background:#0d1219; color:#94a3b8; font-size:0.68rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.04em; padding:11px 12px; text-align:center;
       border-bottom:1px solid #1e2a3a; white-space:nowrap; transition:color .15s;
     }
     .ap-plantel-table thead th:first-child { text-align:left; }
-    .ap-plantel-table thead th:hover { color:#94a3b8; }
+    .ap-plantel-table thead th:hover { color:#cbd5e1; }
     .ap-plantel-table thead th.ap-sort-active { color:var(--dorado); }
     .ap-sort-arrow { display:inline-block; width:10px; margin-left:2px; font-size:0.7rem; }
+    /* Zebra striping */
+    .ap-plantel-table tbody tr:nth-child(even) { background:rgba(255,255,255,.025); }
     .ap-plantel-table tbody tr { border-bottom:1px solid rgba(255,255,255,.04); transition:background .15s; }
     .ap-plantel-table tbody tr:last-child { border-bottom:none; }
-    .ap-plantel-table tbody tr:hover { background:rgba(255,255,255,.03); }
+    .ap-plantel-table tbody tr:hover { background:rgba(245,158,11,.06) !important; }
     .ap-plantel-table td { padding:10px 12px; text-align:center; color:#e2e8f0; }
-    .ap-plantel-table td:first-child { text-align:left; font-weight:600; white-space:nowrap; }
-    .ap-plantel-table td.num-goles { color:#22c55e; font-weight:700; }
-    .ap-plantel-table td.num-asist { color:#38bdf8; font-weight:700; }
-    .ap-plantel-table td.num-ga    { color:var(--dorado); font-weight:700; }
-    .ap-plantel-table td.num-rojas { color:#ef4444; font-weight:700; }
+    .ap-plantel-table td:first-child { text-align:left; font-weight:600; white-space:nowrap; color:#f1f5f9; }
+    .ap-plantel-table td.num-goles { color:#22c55e; font-weight:800; }
+    .ap-plantel-table td.num-asist { color:#38bdf8; font-weight:800; }
+    .ap-plantel-table td.num-ga    { color:#f59e0b; font-weight:800; }
+    .ap-plantel-table td.num-rojas { color:#ef4444; font-weight:800; }
+    .ap-plantel-table td.num-ta    { color:#f59e0b; font-weight:800; }
+    .ap-plantel-table td.num-zero  { color:rgba(255,255,255,.2); font-weight:400; font-size:0.72rem; }
     .ap-plantel-table .pos-badge {
-      display:inline-block; font-size:0.62rem; font-weight:800; border-radius:5px;
-      padding:2px 6px; background:rgba(59,130,246,.15); color:#60a5fa; border:1px solid rgba(59,130,246,.25);
+      display:inline-block; font-size:0.58rem; font-weight:800; border-radius:8px;
+      padding:2px 7px; background:rgba(59,130,246,.15); color:#93c5fd; border:1px solid rgba(59,130,246,.2);
+      letter-spacing:.03em;
     }
     .ap-plantel-badge { font-size:0.65rem; font-weight:700; border-radius:6px; padding:2px 7px; }
     .ap-plantel-gol  { background:rgba(34,197,94,.12);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }
@@ -2706,6 +2717,8 @@ function renderTorneoApertura() {
       return { j, g, a, ta, tr, tit, cit, idx };
     });
 
+    const z = v => v > 0 ? v : `<span class="num-zero" style="color:rgba(255,255,255,.2);font-size:.72rem">0</span>`;
+
     function renderRows(arr) {
       return arr.map(({ j, g, a, ta, tr, tit, cit }) => `<tr
           data-nombre="${j.nombre.toLowerCase()}"
@@ -2714,14 +2727,14 @@ function renderTorneoApertura() {
           data-goles="${g}" data-asist="${a}" data-ga="${g+a}"
           data-ta="${ta}" data-tr="${tr}">
         <td>${j.nombre}</td>
-        ${hasPos     ? `<td><span class="pos-badge">${j.pos || '—'}</span></td>` : ''}
-        ${hasTitular ? `<td>${tit || '—'}</td>` : ''}
-        ${hasCitado  ? `<td>${cit || '—'}</td>` : ''}
-        <td class="${g  > 0 ? 'num-goles' : ''}">${g  || '—'}</td>
-        <td class="${a  > 0 ? 'num-asist' : ''}">${a  || '—'}</td>
-        <td class="${(g+a) > 0 ? 'num-ga' : ''}">${(g+a) || '—'}</td>
-        ${hasTA ? `<td style="${ta > 0 ? 'color:#f59e0b;font-weight:700' : ''}">${ta || '—'}</td>` : ''}
-        <td class="${tr > 0 ? 'num-rojas' : ''}">${tr || '—'}</td>
+        ${hasPos     ? `<td><span class="pos-badge">${j.pos || '?'}</span></td>` : ''}
+        ${hasTitular ? `<td class="${tit > 0 ? '' : 'num-zero'}">${z(tit)}</td>` : ''}
+        ${hasCitado  ? `<td class="${cit > 0 ? '' : 'num-zero'}">${z(cit)}</td>` : ''}
+        <td class="${g   > 0 ? 'num-goles' : 'num-zero'}">${z(g)}</td>
+        <td class="${a   > 0 ? 'num-asist' : 'num-zero'}">${z(a)}</td>
+        <td class="${(g+a) > 0 ? 'num-ga'  : 'num-zero'}">${z(g+a)}</td>
+        ${hasTA ? `<td class="${ta > 0 ? 'num-ta' : 'num-zero'}">${z(ta)}</td>` : ''}
+        <td class="${tr  > 0 ? 'num-rojas' : 'num-zero'}">${z(tr)}</td>
       </tr>`).join('');
     }
 
@@ -2729,15 +2742,15 @@ function renderTorneoApertura() {
     const defaultSorted = [...rows].sort((a,b) => posRank(a.j.pos) - posRank(b.j.pos));
 
     const colDefs = [
-      { key:'nombre', label:'Jugador',   title:'Ordenar por nombre',            numeric:false },
-      ...(hasPos     ? [{ key:'pos',    label:'POS', title:'Ordenar por posición',       numeric:true }] : []),
-      ...(hasTitular ? [{ key:'tit',    label:'TIT', title:'Partidos como titular',       numeric:true }] : []),
-      ...(hasCitado  ? [{ key:'cit',    label:'CIT', title:'Veces convocado',             numeric:true }] : []),
-      { key:'goles', label:'GOL',        title:'Goles',                          numeric:true },
-      { key:'asist', label:'AST',        title:'Asistencias',                    numeric:true },
-      { key:'ga',    label:'G+A',        title:'Goles + Asistencias',            numeric:true },
-      ...(hasTA      ? [{ key:'ta',     label:'TA',  title:'Tarjetas amarillas',          numeric:true }] : []),
-      { key:'tr',    label:'TR',         title:'Tarjetas rojas',                 numeric:true },
+      { key:'nombre', label:'Jugador',        title:'Ordenar por nombre',        numeric:false },
+      ...(hasPos     ? [{ key:'pos',    label:'🏃 POS', title:'Posición',              numeric:true }] : []),
+      ...(hasTitular ? [{ key:'tit',    label:'👕 TIT', title:'Partidos como titular', numeric:true }] : []),
+      ...(hasCitado  ? [{ key:'cit',    label:'📋 CIT', title:'Veces convocado',       numeric:true }] : []),
+      { key:'goles', label:'⚽ GOL',         title:'Goles',                      numeric:true },
+      { key:'asist', label:'👟 AST',         title:'Asistencias',                numeric:true },
+      { key:'ga',    label:'🔥 G+A',         title:'Goles + Asistencias',        numeric:true },
+      ...(hasTA      ? [{ key:'ta',     label:'🟨 TA',  title:'Tarjetas amarillas',    numeric:true }] : []),
+      { key:'tr',    label:'🟥 TR',          title:'Tarjetas rojas',             numeric:true },
     ];
 
     const thead = `<thead><tr>${colDefs.map((c,i) =>
