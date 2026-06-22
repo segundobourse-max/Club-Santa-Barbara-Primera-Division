@@ -791,21 +791,28 @@
     }
     .stats-hist-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
+    @media (max-width: 700px) { .stats-hist-grid { grid-template-columns: repeat(2, 1fr); } }
     .sh-item {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
-      padding: 14px 12px;
+      padding: 16px 10px 12px;
       text-align: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      gap: 6px;
       transition: border-color 0.2s;
+      min-height: 100px;
     }
-    .sh-item:hover { border-color: rgba(245,158,11,0.25); }
-    .sh-value { font-size: 1.9rem; font-weight: 900; color: var(--blanco); line-height: 1; }
-    .sh-pct   { font-size: 0.7rem; color: #64748b; font-weight: 600; margin-top: 4px; }
-    .sh-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: #475569; margin-top: 3px; line-height: 1.3; }
+    .sh-item:hover { border-color: rgba(245,158,11,0.3); }
+    .sh-label {
+      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #94a3b8; font-weight: 600; line-height: 1.3;
+    }
+    .sh-value { font-size: 2rem; font-weight: 900; color: var(--blanco); line-height: 1; }
+    .sh-pct   { font-size: 0.72rem; color: #94a3b8; font-weight: 600; }
     .sh-divider { width: 1px; background: rgba(255,255,255,0.06); align-self: stretch; }
 
     .resumen-right-col { display: flex; flex-direction: column; gap: 14px; }
@@ -895,66 +902,58 @@
     }
     .top10-row:last-child { border-bottom: none; }
     .top10-row:hover { background: rgba(255,255,255,0.03); }
-    .top10-row.rank-1-row {
-      background: rgba(245,158,11,0.05);
-      border-left: 3px solid #FFD700;
-    }
+    /* Podium row backgrounds */
+    .top10-row.rank-1-row { background: rgba(255,215,0,0.06);  border-left: 3px solid #FFD700; }
+    .top10-row.rank-2-row { background: rgba(192,192,192,0.05); border-left: 3px solid #C0C0C0; }
+    .top10-row.rank-3-row { background: rgba(205,127,50,0.05);  border-left: 3px solid #CD7F32; }
     .top10-row.rank-1-row .top10-name strong { font-size: 0.9rem; font-weight: 800; color: #f1f5f9; }
-    .top10-rank {
-      width: 22px;
-      text-align: center;
-      font-size: 0.85rem;
-      font-weight: 800;
-      flex-shrink: 0;
-    }
+    .top10-rank { width:22px; text-align:center; font-size:0.85rem; font-weight:800; flex-shrink:0; }
     .rank-1 { color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
     .rank-2 { color: #C0C0C0; text-shadow: 0 0 6px rgba(192,192,192,0.4); }
     .rank-3 { color: #CD7F32; text-shadow: 0 0 6px rgba(205,127,50,0.4); }
-    .rank-n { color: #334155; font-size: 0.72rem; font-weight: 600; }
+    .rank-n { color: #475569; font-size: 0.72rem; font-weight: 600; }
     .top10-name { flex: 1; font-size: 0.82rem; color: var(--texto); }
     .top10-name strong { color: var(--blanco); font-weight: 600; }
     .top10-pos { font-size: 0.68rem; background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 4px; color: var(--gris-texto); }
-    .top10-val { font-size: 1rem; font-weight: 900; color: var(--dorado); min-width: 24px; text-align: right; }
+    /* Val colors per rank */
+    .top10-val          { font-size: 1rem; font-weight: 900; min-width: 28px; text-align: right; color: #ffffff; }
+    .top10-val.val-1    { color: #FFD700; }
+    .top10-val.val-2    { color: #C0C0C0; }
+    .top10-val.val-3    { color: #CD7F32; }
 
-    /* Próximos partidos rediseño */
-    .proximos-grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); margin-bottom:20px; }
-    .proximo-card {
+    /* Últimos partidos */
+    .ultimos-grid { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+    .ultimo-card {
       background: linear-gradient(160deg,#1a2236,#131825);
       border: 1px solid #1e2a3a;
-      border-radius: 16px;
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.15s;
     }
-    .proximo-card:hover { border-color: rgba(59,130,246,0.4); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
-    .proximo-top { display:flex; justify-content:space-between; align-items:center; }
-    .proximo-badge-fecha {
-      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
-      background: rgba(59,130,246,0.12); color: #60a5fa;
-      border: 1px solid rgba(59,130,246,0.25); border-radius: 20px; padding: 3px 10px;
+    .ultimo-card:hover { border-color: rgba(255,255,255,0.1); }
+    .ultimo-card.win  { border-left: 3px solid #22c55e; }
+    .ultimo-card.draw { border-left: 3px solid #f59e0b; }
+    .ultimo-card.loss { border-left: 3px solid #ef4444; }
+    .ultimo-fecha {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      color: #475569; white-space: nowrap;
     }
-    .proximo-local-badge {
-      font-size: 0.65rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .05em;
+    .ultimo-rival { font-size: 0.88rem; font-weight: 700; color: #e2e8f0; }
+    .ultimo-local { font-size: 0.65rem; color: #475569; font-weight: 500; }
+    .ultimo-resultado {
+      font-size: 1.15rem; font-weight: 900; letter-spacing: .04em; white-space: nowrap; text-align: right;
     }
-    .proximo-matchup {
-      display: flex; align-items: center; gap: 14px;
-    }
-    .proximo-escudo {
-      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.5rem; color: #334155;
-    }
-    .proximo-escudo img { width: 36px; height: 36px; object-fit: contain; }
-    .proximo-vs { font-size: 0.65rem; font-weight: 800; color: #334155; }
-    .proximo-rival-name { font-size: 1.05rem; font-weight: 800; color: #e2e8f0; }
-    .proximo-meta { font-size: 0.72rem; color: #475569; }
-    .proximo-pending {
-      font-size: 0.78rem; font-weight: 700; color: #3b82f6;
-      border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;
-      letter-spacing: .04em;
+    .ultimo-resultado.win  { color: #22c55e; }
+    .ultimo-resultado.draw { color: #f59e0b; }
+    .ultimo-resultado.loss { color: #ef4444; }
+    .ultimo-pos {
+      font-size: 0.68rem; font-weight: 700; color: #94a3b8;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px; padding: 3px 8px; white-space: nowrap; text-align: center; min-width: 38px;
     }
 
     /* ── APERTURA TORNEO PAGE ── */
@@ -2904,11 +2903,12 @@ function renderResumen() {
   const { partidos: byPartidos, goles: byGoles, asist: byAsist } = d.topHist;
 
   function top10Row(jug, i) {
-    const isFirst = i === 0;
-    return `<div class="top10-row${isFirst ? ' rank-1-row' : ''}">
+    const rowClass = i === 0 ? 'rank-1-row' : i === 1 ? 'rank-2-row' : i === 2 ? 'rank-3-row' : '';
+    const valClass = i === 0 ? 'val-1' : i === 1 ? 'val-2' : i === 2 ? 'val-3' : '';
+    return `<div class="top10-row${rowClass ? ' ' + rowClass : ''}">
       <span class="top10-rank ${rankClass(i)}">${rankLabel(i)}</span>
       <span class="top10-name"><strong>${jug.nombre}</strong></span>
-      <span class="top10-val">${jug.valor}</span>
+      <span class="top10-val${valClass ? ' ' + valClass : ''}">${jug.valor}</span>
     </div>`;
   }
 
@@ -2922,42 +2922,44 @@ function renderResumen() {
         <div class="stats-hist-title">📊 Estadísticas Históricas</div>
         <div class="stats-hist-grid">
           <div class="sh-item">
-            <div class="sh-value">${h.pj}</div>
             <div class="sh-label">Partidos Jugados</div>
+            <div class="sh-value">${h.pj}</div>
+            <div class="sh-pct">Desde 2016</div>
           </div>
           <div class="sh-item">
+            <div class="sh-label">Victorias</div>
             <div class="sh-value" style="color:#22c55e">${h.pg}</div>
             <div class="sh-pct">${pct(h.pg)} ganados</div>
-            <div class="sh-label">Victorias</div>
           </div>
           <div class="sh-item">
-            <div class="sh-value" style="color:#f59e0b">${h.pe}</div>
-            <div class="sh-pct">${pct(h.pe)} empatados</div>
             <div class="sh-label">Empates</div>
+            <div class="sh-value" style="color:#f59e0b">${h.pe}</div>
+            <div class="sh-pct">${pct(h.pe)} de los PJ</div>
           </div>
           <div class="sh-item">
+            <div class="sh-label">Derrotas</div>
             <div class="sh-value" style="color:#ef4444">${h.pp}</div>
             <div class="sh-pct">${pct(h.pp)} perdidos</div>
-            <div class="sh-label">Derrotas</div>
           </div>
           <div class="sh-item">
-            <div class="sh-value" style="color:#38bdf8">${h.gf}</div>
-            <div class="sh-pct">${(h.gf/h.pj).toFixed(1)}/partido</div>
             <div class="sh-label">Goles a Favor</div>
+            <div class="sh-value" style="color:#38bdf8">${h.gf}</div>
+            <div class="sh-pct">${(h.gf/h.pj).toFixed(1)} por partido</div>
           </div>
           <div class="sh-item">
-            <div class="sh-value" style="color:#ef4444">${h.gc}</div>
-            <div class="sh-pct">${(h.gc/h.pj).toFixed(1)}/partido</div>
             <div class="sh-label">Goles en Contra</div>
+            <div class="sh-value" style="color:#f87171">${h.gc}</div>
+            <div class="sh-pct">${(h.gc/h.pj).toFixed(1)} por partido</div>
           </div>
           <div class="sh-item">
-            <div class="sh-value">${h.vi}</div>
-            <div class="sh-pct">${pct(h.vi)} de PJ</div>
             <div class="sh-label">Vallas Invictas</div>
+            <div class="sh-value">${h.vi}</div>
+            <div class="sh-pct">${pct(h.vi)} de los PJ</div>
           </div>
           <div class="sh-item">
-            <div class="sh-value" style="color:${(h.gf-h.gc)>=0?'#22c55e':'#ef4444'}">${h.gf-h.gc>=0?'+':''}${h.gf-h.gc}</div>
             <div class="sh-label">Diferencia de Goles</div>
+            <div class="sh-value" style="color:${(h.gf-h.gc)>=0?'#22c55e':'#ef4444'}">${h.gf-h.gc>=0?'+':''}${h.gf-h.gc}</div>
+            <div class="sh-pct">GF − GC</div>
           </div>
         </div>
       </div>
@@ -2978,8 +2980,8 @@ function renderResumen() {
             <div class="record-val"><span>9 – 1</span> vs Nordelta (2019)</div>
           </div>
           <div class="record-item">
-            <div class="record-label">Valla invicta más larga</div>
-            <div class="record-val"><span>6 partidos</span> seguidos (Apertura 2025)</div>
+            <div class="record-label">Racha invicta más larga</div>
+            <div class="record-val"><span>15 partidos</span> (Apertura 2026)</div>
           </div>
         </div>
       </div>
@@ -3001,24 +3003,28 @@ function renderResumen() {
       </div>
     </div>
 
-    <!-- Próximos -->
-    <div class="section-title" style="margin-bottom:14px">🗓 Próximos Partidos</div>
-    <div class="proximos-grid">
-      ${d.proximos.map(p => `
-        <div class="proximo-card">
-          <div class="proximo-top">
-            <span class="proximo-badge-fecha">${p.fecha}</span>
-            <span class="proximo-local-badge">${p.local}</span>
-          </div>
-          <div class="proximo-matchup">
-            <div class="proximo-escudo">🆚</div>
+    <!-- Últimos 5 partidos -->
+    <div class="section-title" style="margin-bottom:14px">🕐 Últimos 5 Partidos</div>
+    <div class="ultimos-grid">
+      ${(() => {
+        const jugados = (d.partidos || []).filter(p => p.resultado !== null && p.gf !== null);
+        const ultimos = jugados.slice(-5).reverse();
+        return ultimos.map(p => {
+          const res = p.gf > p.gc ? 'win' : p.gf < p.gc ? 'loss' : 'draw';
+          const resLabel = p.gf > p.gc ? 'Victoria' : p.gf < p.gc ? 'Derrota' : 'Empate';
+          const esCopa = isNaN(parseInt(p.fecha));
+          const fechaLabel = esCopa ? p.fecha : `Fecha ${p.fecha}`;
+          return `<div class="ultimo-card ${res}">
+            <div class="ultimo-fecha">${fechaLabel}</div>
             <div>
-              <div class="proximo-rival-name">${p.rival}</div>
-              ${p.rivalPos ? `<div class="proximo-meta">Rival: ${p.rivalPos} en la tabla</div>` : ''}
+              <div class="ultimo-rival">vs ${p.rival}</div>
+              <div class="ultimo-local">${p.local || ''}</div>
             </div>
-          </div>
-          <div class="proximo-pending">⏳ Partido pendiente</div>
-        </div>`).join('')}
+            <div class="ultimo-resultado ${res}">${p.resultado}</div>
+            <div class="ultimo-pos">${p.posCSB || resLabel}</div>
+          </div>`;
+        }).join('') || '<div style="color:#475569;padding:20px;text-align:center;font-size:0.82rem">Sin partidos jugados aún</div>';
+      })()}
     </div>`;
 }
 
