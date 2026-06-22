@@ -3192,8 +3192,11 @@ function renderJugadoresTotales() {
 
   if (_jugTotalesData) { _jugTotalRender(); return; }
 
+  const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
+  const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL.nombre] ?? '').toLowerCase().trim());
+
   _jugTotalesCols = SEED_JUG_ESTADISTICAS[0];
-  _jugTotalesData = SEED_JUG_ESTADISTICAS.slice(1);
+  _jugTotalesData = SEED_JUG_ESTADISTICAS.slice(1).filter(r => !esExcluido(r));
   _jugTotalesSort = { col: JUG_COL.pj, asc: false };
   _jugTotalRender();
 
@@ -3203,7 +3206,8 @@ function renderJugadoresTotales() {
       _jugTotalesCols = rows[0].map(c => String(c).trim());
       _jugTotalesData = rows.slice(1)
         .filter(r => r.some(c => c !== '' && c !== null))
-        .map(r => _jugTotalesCols.map((_, i) => String(r[i] ?? '').trim()));
+        .map(r => _jugTotalesCols.map((_, i) => String(r[i] ?? '').trim()))
+        .filter(r => !EXCLUIR.includes(r[JUG_COL.nombre].toLowerCase().trim()));
       _jugTotalRender();
     })
     .catch(() => {});
