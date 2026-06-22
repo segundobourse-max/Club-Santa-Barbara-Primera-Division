@@ -2836,9 +2836,16 @@ function renderTorneoApertura() {
     { color:'var(--azul-claro)',label:'Copa de Honor' },
     { color:'var(--rojo)',       label:'Descenso' },
   ];
+  const aifaUrl = isA
+    ? 'https://www.aifa.ar/torneo/division-a-apertura-2026/posiciones'
+    : 'https://www.aifa.ar/torneo/division-b-apertura-2026/posiciones';
+
   const tablaHtml = tabla.length ? `
     <div class="ap-standings-card">
-      <div class="ap-card-title">📊 Tabla de Posiciones</div>
+      <div class="ap-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📊 Tabla de Posiciones</span>
+        <a href="${aifaUrl}" target="_blank" rel="noopener" style="font-size:0.65rem;font-weight:700;color:#60a5fa;text-decoration:none;display:flex;align-items:center;gap:4px;padding:3px 9px;border:1px solid rgba(96,165,250,.25);border-radius:20px;background:rgba(96,165,250,.08);transition:all .2s" onmouseover="this.style.background='rgba(96,165,250,.18)'" onmouseout="this.style.background='rgba(96,165,250,.08)'">Ver en AIFA ↗</a>
+      </div>
       <div style="overflow-x:auto">
         <table class="ap-table">
           <thead><tr>
