@@ -936,6 +936,64 @@
     .ap-fecha-btn.played { border-color:rgba(34,197,94,0.35); }
     .ap-fecha-btn.pending { color:var(--dorado); border-color:rgba(245,158,11,0.25); }
 
+    /* ── Torneos Antiguos timeline ── */
+    .hist-timeline { display:grid; grid-template-columns:56px 1fr; gap:0 20px; }
+    .hist-year-col { display:flex; flex-direction:column; align-items:center; padding-top:6px; }
+    .hist-year-badge {
+      background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.06));
+      border:1px solid rgba(245,158,11,.3); color:var(--dorado);
+      font-size:0.78rem; font-weight:800; border-radius:10px; padding:6px 8px;
+      text-align:center; writing-mode:vertical-rl; letter-spacing:.05em;
+      white-space:nowrap; line-height:1;
+    }
+    .hist-year-line { flex:1; width:2px; background:linear-gradient(to bottom,rgba(245,158,11,.25),transparent); margin-top:8px; min-height:20px; }
+    .hist-year-group { padding-bottom:28px; }
+    .hist-year-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+    .hist-torneo-card {
+      background:linear-gradient(160deg,#1a2236,#131825);
+      border:1px solid #1e2a3a; border-radius:14px; padding:16px 18px;
+      cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
+    }
+    .hist-torneo-card:hover { border-color:rgba(245,158,11,.35); transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.35); }
+    .hist-torneo-card.campeon { border-color:rgba(245,158,11,.5); }
+    .hist-torneo-card.campeon::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,transparent,var(--dorado),transparent);
+    }
+    .hist-tc-name { font-size:0.82rem; font-weight:700; color:#e2e8f0; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+    .hist-tc-crown { font-size:1rem; }
+    .hist-tc-pos {
+      font-size:1.4rem; font-weight:900; color:var(--dorado); margin-bottom:8px; line-height:1;
+    }
+    .hist-tc-pos.campeon-txt { background:linear-gradient(90deg,#f59e0b,#fbbf24); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hist-tc-pos.subcampeon-txt { background:linear-gradient(90deg,#94a3b8,#cbd5e1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hist-tc-record { display:flex; gap:6px; margin-bottom:8px; }
+    .hist-tc-badge { font-size:0.66rem; font-weight:700; border-radius:6px; padding:3px 7px; }
+    .hist-tc-v { background:rgba(34,197,94,.12);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+    .hist-tc-e { background:rgba(245,158,11,.12); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }
+    .hist-tc-d { background:rgba(239,68,68,.12);  color:#ef4444; border:1px solid rgba(239,68,68,.25); }
+    .hist-tc-meta { font-size:0.7rem; color:var(--gris-texto); display:flex; gap:10px; flex-wrap:wrap; }
+    .hist-tc-arrow { position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#334155; font-size:1.1rem; transition:all .2s; }
+    .hist-torneo-card:hover .hist-tc-arrow { color:var(--dorado); transform:translateY(-50%) translateX(2px); }
+    .graf-section-title {
+      font-size:1.05rem; font-weight:800; color:#e2e8f0; margin-bottom:18px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .graf-section-title::after { content:''; flex:1; height:1px; background:linear-gradient(to right,#1e2a3a,transparent); }
+    /* Detail view */
+    .graf-detail-back { margin-bottom:16px; }
+    .graf-detail-header { margin-bottom:20px; }
+    .graf-detail-name { font-size:1.3rem; font-weight:900; color:#e2e8f0; margin-bottom:4px; }
+    .graf-detail-year { font-size:0.82rem; color:var(--gris-texto); }
+    .graf-detail-kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:20px; }
+    .graf-detail-kpi {
+      background:linear-gradient(160deg,#1a2236,#131825);
+      border:1px solid #1e2a3a; border-radius:12px; padding:14px 16px; text-align:center;
+    }
+    .graf-detail-kpi-val { font-size:1.4rem; font-weight:900; color:var(--dorado); }
+    .graf-detail-kpi-label { font-size:0.68rem; color:var(--gris-texto); margin-top:3px; text-transform:uppercase; letter-spacing:.04em; }
+    .graf-coming-soon { color:var(--gris-texto); font-size:0.82rem; text-align:center; padding:40px 0; }
+
     /* ── Apertura tab nav ── */
     .ap-tab-nav { display:flex; gap:0; border-bottom:1px solid #1e2a3a; margin-bottom:24px; }
     .ap-tab-btn {
@@ -1208,25 +1266,7 @@
 
   <!-- GRAFICOS -->
   <div class="panel" id="tab-graficos">
-    <div class="section-title" id="graf-title"></div>
-    <div class="cards cards-3" style="gap:16px">
-      <div class="chart-card">
-        <div class="chart-title">Goleadores</div>
-        <div style="height:240px"><canvas id="chart-goles"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Evolución en la tabla</div>
-        <div style="height:240px"><canvas id="chart-pos"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">G / E / D</div>
-        <div style="height:240px"><canvas id="chart-res"></canvas></div>
-      </div>
-    </div>
-    <div style="margin-top:16px" class="chart-card" id="chart-gfgc-wrap">
-      <div class="chart-title">Goles por partido</div>
-      <div style="height:220px"><canvas id="chart-gfgc"></canvas></div>
-    </div>
+    <div id="graf-content"></div>
   </div>
 
   <!-- EL NIDO -->
@@ -4276,63 +4316,145 @@ const CHART_DEFAULTS = {
   grid: 'rgba(255,255,255,0.06)',
 };
 
+// ──────────────────────────────────────────────
+// SEED: HISTORIAL DE TORNEOS
+// ──────────────────────────────────────────────
+const SEED_GRAFICOS = [
+  // 2025
+  { competencia:'Apertura AIFA A', anio:2025, pj:15, pg:9,  pe:3, pp:3,  gf:25, gc:10, vi:8, pts:30,  pos:'4°' },
+  { competencia:'Clausura AIFA A', anio:2025, pj:15, pg:7,  pe:2, pp:6,  gf:22, gc:18, vi:4, pts:23,  pos:'5°' },
+  { competencia:'Recopa',          anio:2025, pj:4,  pg:2,  pe:1, pp:1,  gf:9,  gc:2,  vi:2, pts:null, pos:'Subcampeón' },
+  // 2024
+  { competencia:'Apertura AIFA A', anio:2024, pj:15, pg:6,  pe:5, pp:4,  gf:30, gc:19, vi:3, pts:23,  pos:'7°' },
+  { competencia:'Clausura AIFA A', anio:2024, pj:15, pg:7,  pe:2, pp:6,  gf:20, gc:20, vi:4, pts:23,  pos:'8°' },
+  { competencia:'Recopa',          anio:2024, pj:4,  pg:2,  pe:1, pp:1,  gf:7,  gc:2,  vi:2, pts:null, pos:'Subcampeón' },
+  // 2023
+  { competencia:'Apertura AIFA A', anio:2023, pj:15, pg:6,  pe:1, pp:8,  gf:35, gc:28, vi:2, pts:19,  pos:'9°' },
+  { competencia:'Clausura AIFA A', anio:2023, pj:15, pg:7,  pe:4, pp:4,  gf:35, gc:20, vi:3, pts:25,  pos:'4°' },
+  { competencia:'Recopa',          anio:2023, pj:3,  pg:1,  pe:2, pp:0,  gf:6,  gc:4,  vi:0, pts:null, pos:'Semifinal' },
+  // 2022
+  { competencia:'Apertura AIFA A', anio:2022, pj:15, pg:6,  pe:3, pp:6,  gf:25, gc:23, vi:3, pts:23,  pos:'6°' },
+  { competencia:'Clausura AIFA A', anio:2022, pj:15, pg:6,  pe:5, pp:4,  gf:22, gc:23, vi:3, pts:22,  pos:'5°' },
+  // 2021
+  { competencia:'Supercopa',       anio:2021, pj:1,  pg:0,  pe:0, pp:1,  gf:0,  gc:3,  vi:0, pts:null, pos:'Octavos de Final' },
+  { competencia:'Apertura AIFA A', anio:2021, pj:12, pg:2,  pe:0, pp:10, gf:12, gc:22, vi:0, pts:6,   pos:'13°' },
+  // 2020
+  { competencia:'Copa Maradona Luefi', anio:2020, pj:5, pg:4, pe:1, pp:0, gf:23, gc:4, vi:1, pts:13,  pos:'Campeón' },
+  // 2019
+  { competencia:'Apertura AIFA B', anio:2019, pj:13, pg:11, pe:1, pp:1,  gf:41, gc:14, vi:6, pts:34,  pos:'Campeón' },
+  { competencia:'Clausura AIFA A', anio:2019, pj:13, pg:4,  pe:4, pp:5,  gf:22, gc:23, vi:1, pts:17,  pos:'7°' },
+  // 2018
+  { competencia:'Apertura AIFA B', anio:2018, pj:13, pg:6,  pe:3, pp:4,  gf:21, gc:19, vi:1, pts:21,  pos:'5°' },
+  { competencia:'Clausura AIFA B', anio:2018, pj:13, pg:2,  pe:5, pp:6,  gf:15, gc:22, vi:3, pts:11,  pos:'10°' },
+  // 2017
+  { competencia:'Apertura AIFA C', anio:2017, pj:12, pg:8,  pe:2, pp:2,  gf:29, gc:15, vi:2, pts:26,  pos:'2°' },
+  { competencia:'Clausura AIFA B', anio:2017, pj:13, pg:5,  pe:3, pp:5,  gf:22, gc:20, vi:1, pts:18,  pos:'?' },
+  // 2016
+  { competencia:'Apertura AIFA C', anio:2016, pj:12, pg:5,  pe:3, pp:4,  gf:22, gc:19, vi:1, pts:18,  pos:'?' },
+  { competencia:'Clausura AIFA C', anio:2016, pj:13, pg:6,  pe:2, pp:5,  gf:27, gc:24, vi:1, pts:18,  pos:'?' },
+];
+
 function renderGraficos() {
-  destroyCharts();
-  const d = currentData;
-  document.getElementById('graf-title').textContent = '📈 Gráficos – ' + d.nombre;
+  const container = document.getElementById('graf-content');
+  container.innerHTML = '';
 
-  Chart.defaults.color = CHART_DEFAULTS.color;
+  // Group by year (already sorted newest first in SEED_GRAFICOS)
+  const byYear = [];
+  SEED_GRAFICOS.forEach(t => {
+    const last = byYear[byYear.length - 1];
+    if (last && last.anio === t.anio) { last.torneos.push(t); }
+    else { byYear.push({ anio: t.anio, torneos: [t] }); }
+  });
 
-  // Goleadores
-  const gols = d.jugadores.filter(j => j.goles > 0).sort((a,b) => b.goles - a.goles);
-  activeCharts.push(new Chart(document.getElementById('chart-goles'), {
-    type: 'bar',
-    data: {
-      labels: gols.map(j => j.nombre.split(' ')[0]),
-      datasets: [
-        { label: 'Goles', data: gols.map(j => j.goles), backgroundColor: '#f59e0b', borderRadius: 6 },
-        { label: 'Asist.', data: gols.map(j => j.asist), backgroundColor: '#3b82f6', borderRadius: 6 },
-      ]
-    },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#94a3b8'} } }, scales:{ x:{ticks:{color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}}, y:{beginAtZero:true, ticks:{stepSize:1,color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}} } }
-  }));
+  const isCampeon   = pos => /campe[oó]n/i.test(pos);
+  const isSubcampeon = pos => /subcampe[oó]n/i.test(pos);
 
-  // Evolución posición
-  const tp = d.partidos.filter(p => !isNaN(parseInt(p.fecha)));
-  activeCharts.push(new Chart(document.getElementById('chart-pos'), {
-    type: 'line',
-    data: {
-      labels: tp.map(p => 'F' + p.fecha),
-      datasets: [{ label: 'Posición', data: tp.map(p => parseInt(p.posCSB) || null), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', tension: 0.3, fill: true, pointBackgroundColor: '#f59e0b', pointRadius: 5, spanGaps: false }]
-    },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ticks:{color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}}, y:{reverse:true, min:1, max:16, ticks:{stepSize:3,color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}} } }
-  }));
+  function posLabel(pos) {
+    if (isCampeon(pos))   return '🏆 Campeón';
+    if (isSubcampeon(pos)) return '🥈 Subcampeón';
+    if (!pos || pos === '?') return '—';
+    return pos;
+  }
 
-  // Donut GED
-  const csb = d.tabla.find(t => t.csb);
-  activeCharts.push(new Chart(document.getElementById('chart-res'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Victorias', 'Empates', 'Derrotas'],
-      datasets: [{ data: [csb.pg, csb.pe, csb.pp], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderColor: '#1a2744', borderWidth: 3 }]
-    },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#94a3b8'} } } }
-  }));
+  function cardIcon(t) {
+    if (isCampeon(t.pos)) return '🏆';
+    if (isSubcampeon(t.pos)) return '🥈';
+    if (/recopa|copa/i.test(t.competencia)) return '🏅';
+    return '📋';
+  }
 
-  // GF/GC por partido
-  const jugados = d.partidos.filter(p => !isNaN(parseInt(p.fecha)) && p.gf !== null);
-  document.getElementById('chart-gfgc-wrap').style.display = '';
-  activeCharts.push(new Chart(document.getElementById('chart-gfgc'), {
-    type: 'bar',
-    data: {
-      labels: jugados.map(p => 'F' + p.fecha),
-      datasets: [
-        { label: 'A favor', data: jugados.map(p => p.gf), backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 4 },
-        { label: 'En contra', data: jugados.map(p => p.gc), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 },
-      ]
-    },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#94a3b8'} } }, scales:{ x:{ticks:{color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}}, y:{beginAtZero:true, ticks:{stepSize:1,color:'#94a3b8'}, grid:{color:CHART_DEFAULTS.grid}} } }
-  }));
+  function buildTimeline() {
+    const rows = byYear.map(({ anio, torneos }) => {
+      const cards = torneos.map(t => {
+        const esCamp = isCampeon(t.pos);
+        const esSubc = isSubcampeon(t.pos);
+        const posClass = esCamp ? 'campeon-txt' : esSubc ? 'subcampeon-txt' : '';
+        const ef = t.gf - t.gc;
+        return `<div class="hist-torneo-card${esCamp ? ' campeon' : ''}" onclick="grafDetalle(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+          <div class="hist-tc-name">${cardIcon(t)} ${t.competencia}</div>
+          <div class="hist-tc-pos ${posClass}">${posLabel(t.pos)}</div>
+          <div class="hist-tc-record">
+            <span class="hist-tc-badge hist-tc-v">✅ ${t.pg}V</span>
+            <span class="hist-tc-badge hist-tc-e">🟡 ${t.pe}E</span>
+            <span class="hist-tc-badge hist-tc-d">❌ ${t.pp}D</span>
+          </div>
+          <div class="hist-tc-meta">
+            <span>PJ ${t.pj}</span>
+            <span>${t.gf}GF · ${t.gc}GC · ${ef >= 0 ? '+' : ''}${ef}</span>
+            ${t.vi ? `<span>🔒 ${t.vi} VI</span>` : ''}
+            ${t.pts != null ? `<span>⭐ ${t.pts} pts</span>` : ''}
+          </div>
+          <div class="hist-tc-arrow">›</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="hist-timeline">
+        <div class="hist-year-col">
+          <div class="hist-year-badge">${anio}</div>
+          <div class="hist-year-line"></div>
+        </div>
+        <div class="hist-year-group">
+          <div class="hist-year-cards">${cards}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="graf-section-title">📅 Historial de Torneos</div>
+      ${rows}`;
+  }
+
+  function grafDetalle(t) {
+    const esCamp = isCampeon(t.pos);
+    const esSubc = isSubcampeon(t.pos);
+    const ef = t.gf - t.gc;
+    const pct = v => t.pj ? ((v / t.pj) * 100).toFixed(0) + '%' : '—';
+    container.innerHTML = `
+      <div class="graf-detail-back">
+        <button class="torneo-back" onclick="renderGraficos()">← Historial de Torneos</button>
+      </div>
+      <div class="graf-detail-header">
+        <div class="graf-detail-name">${cardIcon(t)} ${t.competencia} ${t.anio}</div>
+        <div class="graf-detail-year">Temporada ${t.anio}</div>
+      </div>
+      <div class="hist-tc-pos ${esCamp ? 'campeon-txt' : esSubc ? 'subcampeon-txt' : ''}" style="font-size:2rem;font-weight:900;margin-bottom:16px">${posLabel(t.pos)}</div>
+      <div class="graf-detail-kpis">
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val">${t.pj}</div><div class="graf-detail-kpi-label">PJ</div></div>
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val" style="color:#22c55e">${t.pg}</div><div class="graf-detail-kpi-label">Victorias</div></div>
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val" style="color:#f59e0b">${t.pe}</div><div class="graf-detail-kpi-label">Empates</div></div>
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val" style="color:#ef4444">${t.pp}</div><div class="graf-detail-kpi-label">Derrotas</div></div>
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val">${t.gf}</div><div class="graf-detail-kpi-label">GF</div></div>
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val">${t.gc}</div><div class="graf-detail-kpi-label">GC</div></div>
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val" style="color:${ef>=0?'#22c55e':'#ef4444'}">${ef>=0?'+':''}${ef}</div><div class="graf-detail-kpi-label">Diferencia</div></div>
+        ${t.vi != null ? `<div class="graf-detail-kpi"><div class="graf-detail-kpi-val">🔒 ${t.vi}</div><div class="graf-detail-kpi-label">Vallas Invictas</div></div>` : ''}
+        ${t.pts != null ? `<div class="graf-detail-kpi"><div class="graf-detail-kpi-val" style="color:var(--dorado)">${t.pts}</div><div class="graf-detail-kpi-label">Puntos</div></div>` : ''}
+        <div class="graf-detail-kpi"><div class="graf-detail-kpi-val">${pct(t.pg)}</div><div class="graf-detail-kpi-label">% Victorias</div></div>
+      </div>
+      <div class="graf-coming-soon">📂 Los fixtures y estadísticas de jugadores de este torneo estarán disponibles próximamente.</div>`;
+  }
+
+  window.grafDetalle = grafDetalle;
+  buildTimeline();
 }
 
 // ──────────────────────────────────────────────
