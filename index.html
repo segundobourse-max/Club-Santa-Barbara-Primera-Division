@@ -2744,7 +2744,7 @@ function renderTorneoApertura() {
     const colDefs = [
       { key:'nombre', label:'Jugador',        title:'Ordenar por nombre',        numeric:false },
       ...(hasPos     ? [{ key:'pos',    label:'🏃 POS', title:'Posición',              numeric:true }] : []),
-      ...(hasTitular ? [{ key:'tit',    label:'👕 TIT', title:'Partidos como titular', numeric:true }] : []),
+      ...(hasTitular ? [{ key:'tit',    label:'🎽 PJ',  title:'Partidos jugados',      numeric:true }] : []),
       ...(hasCitado  ? [{ key:'cit',    label:'📋 CIT', title:'Veces convocado',       numeric:true }] : []),
       { key:'goles', label:'⚽ GOL',         title:'Goles',                      numeric:true },
       { key:'asist', label:'👟 AST',         title:'Asistencias',                numeric:true },
