@@ -935,6 +935,48 @@
     .ap-fecha-btn.active { background:var(--azul-claro); border-color:var(--azul-claro); color:#fff; }
     .ap-fecha-btn.played { border-color:rgba(34,197,94,0.35); }
     .ap-fecha-btn.pending { color:var(--dorado); border-color:rgba(245,158,11,0.25); }
+
+    /* ── Apertura tab nav ── */
+    .ap-tab-nav { display:flex; gap:0; border-bottom:1px solid #1e2a3a; margin-bottom:24px; }
+    .ap-tab-btn {
+      display:flex; align-items:center; gap:8px;
+      padding:12px 20px; background:transparent; border:none;
+      color:#475569; font-size:0.82rem; font-weight:600; font-family:inherit;
+      cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+      transition:all 0.2s ease; white-space:nowrap;
+    }
+    .ap-tab-btn:hover { color:#94a3b8; }
+    .ap-tab-btn.active { color:var(--dorado); border-bottom-color:var(--dorado); }
+    .ap-tab-btn .ap-tab-icon { font-size:1.1rem; }
+    .ap-tab-panel { display:none; }
+    .ap-tab-panel.active { display:block; animation: apFadeIn .2s ease; }
+    @keyframes apFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Plantel tab ── */
+    .ap-plantel-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+    .ap-plantel-card {
+      background:linear-gradient(160deg,#1a2236,#131825);
+      border:1px solid #1e2a3a; border-radius:14px; padding:14px 16px;
+      display:flex; align-items:center; gap:12px; transition:all 0.2s;
+    }
+    .ap-plantel-card:hover { border-color:rgba(245,158,11,0.3); }
+    .ap-plantel-card.suspendido { border-color:rgba(239,68,68,0.3); opacity:.8; }
+    .ap-plantel-avatar {
+      width:40px; height:40px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.78rem; font-weight:800;
+      background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(245,158,11,.06));
+      border:1px solid rgba(245,158,11,.25); color:var(--dorado);
+    }
+    .ap-plantel-info { min-width:0; }
+    .ap-plantel-name { font-size:0.82rem; font-weight:700; color:#e2e8f0; margin-bottom:4px; }
+    .ap-plantel-meta { display:flex; flex-wrap:wrap; gap:5px; }
+    .ap-plantel-badge { font-size:0.65rem; font-weight:700; border-radius:6px; padding:2px 7px; }
+    .ap-plantel-gol  { background:rgba(34,197,94,.12);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+    .ap-plantel-ta   { background:rgba(245,158,11,.12); color:#f59e0b; border:1px solid rgba(245,158,11,.3); }
+    .ap-plantel-tr   { background:rgba(239,68,68,.12);  color:#ef4444; border:1px solid rgba(239,68,68,.3); }
+    .ap-plantel-susp { background:rgba(239,68,68,.15);  color:#ef4444; border:1px solid rgba(239,68,68,.35); font-weight:800; }
+    .ap-plantel-ok   { background:rgba(34,197,94,.08);  color:#22c55e; border:1px solid rgba(34,197,94,.15); }
     .ap-match-summary {
       background:var(--azul-card); border:1px solid rgba(255,255,255,0.06);
       border-radius:14px; padding:18px 22px; margin-bottom:16px;
@@ -2461,97 +2503,143 @@ function renderTorneoApertura() {
   const isA = d === DATA_A;
   const name = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
 
-  // Use partidos (always populated) as primary source; filter to numeric fechas only
   const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
   const played   = partidos.filter(m => m.resultado !== null);
   const pending  = partidos.filter(m => m.resultado === null);
   const last     = played.length ? played[played.length - 1] : null;
   const next     = pending.length ? pending[0] : null;
+  const detLast  = last && (d.apertura || []).find(m => String(m.fecha) === String(last.fecha));
+  const detNext  = next && (d.apertura || []).find(m => String(m.fecha) === String(next.fecha));
 
-  // Supplement last/next with apertura detail if available
-  const detLast = last && (d.apertura || []).find(m => String(m.fecha) === String(last.fecha));
-  const detNext = next && (d.apertura || []).find(m => String(m.fecha) === String(next.fecha));
+  const rc    = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
+  const badge = m => m.gf > m.gc ? '<span class="ap-mc-badge won">Victoria</span>'
+                   : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>'
+                   : '<span class="ap-mc-badge draw">Empate</span>';
 
-  const rc = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
-  const badge = m => m.gf > m.gc ? '<span class="ap-mc-badge won">Victoria</span>' : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>' : '<span class="ap-mc-badge draw">Empate</span>';
+  // ── Tab 1: Plantel ──────────────────────────────────────────────────────
+  function buildPlantelTab() {
+    const jugs = d.jugadores || [];
+    if (!jugs.length) {
+      return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
+    }
+    const initials = n => n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    const cards = jugs.map(j => {
+      const susp = j.suspendido || '';
+      const isSusp = susp && susp !== '-' && susp !== '0';
+      const badges = [
+        j.goles && j.goles !== '0' && j.goles !== '-' ? `<span class="ap-plantel-badge ap-plantel-gol">⚽ ${j.goles} gol${j.goles>1?'es':''}</span>` : '',
+        j.ta && j.ta !== '0' && j.ta !== '-' ? `<span class="ap-plantel-badge ap-plantel-ta">🟨 ${j.ta} TA</span>` : '',
+        j.rojas && j.rojas !== '0' && j.rojas !== '-' ? `<span class="ap-plantel-badge ap-plantel-tr">🟥 ${j.rojas} TR</span>` : '',
+        isSusp ? `<span class="ap-plantel-badge ap-plantel-susp">🚫 SUSP</span>` : `<span class="ap-plantel-badge ap-plantel-ok">✓ Disponible</span>`,
+      ].filter(Boolean).join('');
+      return `
+        <div class="ap-plantel-card${isSusp ? ' suspendido' : ''}">
+          <div class="ap-plantel-avatar">${initials(j.nombre)}</div>
+          <div class="ap-plantel-info">
+            <div class="ap-plantel-name">${j.nombre}</div>
+            <div class="ap-plantel-meta">${badges}</div>
+          </div>
+        </div>`;
+    }).join('');
+    return `<div class="ap-plantel-grid">${cards}</div>`;
+  }
 
+  // ── Tab 2: Tabla Completa ───────────────────────────────────────────────
   const lastCard = last ? `
-    <div class="ap-match-card" onclick="selectFecha(${last.fecha})">
+    <div class="ap-match-card" onclick="apSwitchTab('fechas');selectFecha(${last.fecha})">
       <div class="ap-card-title">⚽ Último Partido</div>
       ${badge(last)}
       <div class="ap-mc-rival">vs ${last.rival}</div>
       <div class="ap-mc-score" style="color:${rc(last)}">${last.resultado}</div>
-      <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}${detLast && detLast.dia ? '<br>' + detLast.dia : ''}${detLast && detLast.hora ? ' · ' + detLast.hora : ''}</div>
+      <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}${detLast?.dia ? '<br>' + detLast.dia : ''}${detLast?.hora ? ' · ' + detLast.hora : ''}</div>
       ${last.posCSB ? `<div class="ap-mc-meta" style="color:var(--dorado)">🏅 Posición: ${last.posCSB}</div>` : ''}
-      ${last.obs ? `<div class="ap-mc-meta" style="font-style:italic;margin-top:4px">${last.obs}</div>` : ''}
     </div>` : `<div class="ap-match-card"><div class="ap-card-title">⚽ Último Partido</div><div class="ap-mc-pending">Sin partidos jugados</div></div>`;
 
   const nextCard = next ? `
-    <div class="ap-match-card" onclick="selectFecha(${next.fecha})">
+    <div class="ap-match-card" onclick="apSwitchTab('fechas');selectFecha(${next.fecha})">
       <div class="ap-card-title">🗓 Próximo Partido</div>
       <span class="ap-mc-badge next">Próximo</span>
       <div class="ap-mc-rival">vs ${next.rival}</div>
       <div class="ap-mc-pending">Pendiente</div>
-      <div class="ap-mc-meta">Fecha ${next.fecha}${next.local ? ' · ' + next.local : ''}${detNext && detNext.dia ? '<br>' + detNext.dia : ''}${detNext && detNext.hora ? ' · ' + detNext.hora : ''}</div>
-      ${next.posCSB ? `<div class="ap-mc-meta" style="color:var(--dorado)">🏅 Última pos: ${next.posCSB}</div>` : ''}
+      <div class="ap-mc-meta">Fecha ${next.fecha}${next.local ? ' · ' + next.local : ''}${detNext?.dia ? '<br>' + detNext.dia : ''}${detNext?.hora ? ' · ' + detNext.hora : ''}</div>
     </div>` : `<div class="ap-match-card"><div class="ap-card-title">🗓 Próximo Partido</div><div class="ap-mc-pending">Torneo finalizado</div></div>`;
 
-  // Standings table – full columns with copa color coding
   const tabla = d.tabla || [];
   const copaLegendItems = [
-    { color: 'var(--dorado)', label: 'Campeón / Ascenso' },
-    { color: 'var(--verde)',  label: 'Recopa / Promoción' },
-    { color: 'var(--azul-claro)', label: 'Copa de Honor' },
-    { color: 'var(--rojo)',   label: 'Descenso' },
+    { color:'var(--dorado)',     label:'Campeón / Ascenso' },
+    { color:'var(--verde)',      label:'Recopa / Promoción' },
+    { color:'var(--azul-claro)',label:'Copa de Honor' },
+    { color:'var(--rojo)',       label:'Descenso' },
   ];
   const tablaHtml = tabla.length ? `
     <div class="ap-standings-card">
       <div class="ap-card-title">📊 Tabla de Posiciones</div>
       <div style="overflow-x:auto">
-      <table class="ap-table">
-        <thead><tr>
-          <th>#</th><th>Equipo</th>
-          <th style="text-align:left;min-width:80px">Clasificación</th>
-          <th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
-          <th>GF</th><th>GC</th><th>PTS</th><th>DF</th>
-        </tr></thead>
-        <tbody>${tabla.map(t => {
-          const cc = copaColor(t.copas);
-          return `<tr class="${t.csb ? 'csb-row' : ''}">
-            <td>${t.pos}</td>
-            <td style="font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
-            <td style="text-align:left;font-size:0.7rem;${cc}">${t.copas || ''}</td>
-            <td>${t.pj ?? '–'}</td><td>${t.pg ?? '–'}</td><td>${t.pe ?? '–'}</td><td>${t.pp ?? '–'}</td>
-            <td>${t.gf ?? '–'}</td><td>${t.gc ?? '–'}</td>
-            <td><strong>${t.pts}</strong></td><td>${t.df ?? '–'}</td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
+        <table class="ap-table">
+          <thead><tr>
+            <th>#</th><th>Equipo</th>
+            <th style="text-align:left;min-width:80px">Clasificación</th>
+            <th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
+            <th>GF</th><th>GC</th><th>PTS</th><th>DF</th>
+          </tr></thead>
+          <tbody>${tabla.map(t => {
+            const cc = copaColor(t.copas);
+            return `<tr class="${t.csb ? 'csb-row' : ''}">
+              <td>${t.pos}</td>
+              <td style="font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
+              <td style="text-align:left;font-size:0.7rem;${cc}">${t.copas || ''}</td>
+              <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
+              <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
+              <td><strong>${t.pts}</strong></td><td>${t.df??'–'}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
       </div>
       <div class="ap-copa-legend">
         ${copaLegendItems.map(l => `<span class="ap-legend-item"><span class="ap-legend-dot" style="background:${l.color}"></span>${l.label}</span>`).join('')}
       </div>
     </div>` : `<div class="ap-standings-card"><div class="ap-card-title">📊 Tabla de Posiciones</div><div style="color:var(--gris-texto);font-size:0.82rem">Cargando…</div></div>`;
 
-  // Fecha buttons — numeric only, from partidos
-  const allFechas = partidos
-    .map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null }))
-    .sort((a, b) => a.n - b.n);
+  // ── Tab 3: Fecha a Fecha ────────────────────────────────────────────────
+  const allFechas = partidos.map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null })).sort((a,b) => a.n - b.n);
   const fechaBtns = allFechas.map(f =>
     `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="selectFecha(${f.n})">Fecha ${f.n}</button>`
   ).join('');
 
+  // ── Render shell ────────────────────────────────────────────────────────
   document.getElementById('torneo-apertura-content').innerHTML = `
     <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
     <div class="section-title" style="margin-bottom:20px">🥇 ${name}</div>
-    <div class="ap-overview">${tablaHtml}<div class="ap-match-cards">${lastCard}${nextCard}</div></div>
-    <div class="ap-fechas-title">📅 Fechas del Torneo</div>
-    <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas registradas</span>'}</div>
-    <div id="ap-fecha-detail"></div>`;
 
-  // Auto-select last played fecha
+    <nav class="ap-tab-nav">
+      <button class="ap-tab-btn active" data-tab="plantel"  onclick="apSwitchTab('plantel')"> <span class="ap-tab-icon">🌟</span> Plantel</button>
+      <button class="ap-tab-btn"        data-tab="tabla"    onclick="apSwitchTab('tabla')">   <span class="ap-tab-icon">📊</span> Tabla Completa</button>
+      <button class="ap-tab-btn"        data-tab="fechas"   onclick="apSwitchTab('fechas')">  <span class="ap-tab-icon">📅</span> Fecha a Fecha</button>
+    </nav>
+
+    <div class="ap-tab-panel active" id="ap-tab-plantel">
+      ${buildPlantelTab()}
+    </div>
+
+    <div class="ap-tab-panel" id="ap-tab-tabla">
+      <div class="ap-overview">${tablaHtml}<div class="ap-match-cards">${lastCard}${nextCard}</div></div>
+    </div>
+
+    <div class="ap-tab-panel" id="ap-tab-fechas">
+      <div class="ap-fechas-title">📅 Fechas del Torneo</div>
+      <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas</span>'}</div>
+      <div id="ap-fecha-detail"></div>
+    </div>`;
+
+  // Auto-select last played fecha (pre-render into fechas tab without switching)
   const autoFecha = last ? last.fecha : (allFechas.length ? allFechas[0].n : null);
   if (autoFecha !== null) selectFecha(autoFecha);
+
+  window.apSwitchTab = function(tab) {
+    document.querySelectorAll('.ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.ap-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'ap-tab-' + tab));
+    if (tab === 'fechas' && autoFecha !== null) selectFecha(autoFecha);
+  };
 }
 
 // ──────────────────────────────────────────────
