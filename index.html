@@ -969,9 +969,12 @@
     .ap-plantel-table thead th {
       background:#0f1520; color:var(--gris-texto); font-size:0.68rem; font-weight:700;
       text-transform:uppercase; letter-spacing:.04em; padding:10px 12px; text-align:center;
-      border-bottom:1px solid #1e2a3a; white-space:nowrap;
+      border-bottom:1px solid #1e2a3a; white-space:nowrap; transition:color .15s;
     }
     .ap-plantel-table thead th:first-child { text-align:left; }
+    .ap-plantel-table thead th:hover { color:#94a3b8; }
+    .ap-plantel-table thead th.ap-sort-active { color:var(--dorado); }
+    .ap-sort-arrow { display:inline-block; width:10px; margin-left:2px; font-size:0.7rem; }
     .ap-plantel-table tbody tr { border-bottom:1px solid rgba(255,255,255,.04); transition:background .15s; }
     .ap-plantel-table tbody tr:last-child { border-bottom:none; }
     .ap-plantel-table tbody tr:hover { background:rgba(255,255,255,.03); }
@@ -2537,17 +2540,14 @@ function renderTorneoApertura() {
       return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
     }
 
-    // KPI helpers
     const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
-    const byGoles  = [...jugs].sort((a,b) => numVal(b.goles)  - numVal(a.goles));
-    const byAsist  = [...jugs].sort((a,b) => numVal(b.asist)  - numVal(a.asist));
-    const byGA     = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
-    const byPJ     = [...jugs].sort((a,b) => numVal(b.titular || b.citado) - numVal(a.titular || a.citado));
 
-    const topG  = byGoles[0];
-    const topA  = byAsist[0];
-    const topGA = byGA[0];
-    const topPJ = byPJ[0];
+    // KPIs
+    const byGoles = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
+    const byAsist = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
+    const byGA    = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
+    const byPJ    = [...jugs].sort((a,b) => numVal(b.titular ?? b.citado) - numVal(a.titular ?? a.citado));
+    const topG = byGoles[0], topA = byAsist[0], topGA = byGA[0], topPJ = byPJ[0];
 
     function kpiCard(icon, val, name, label) {
       return `<div class="ap-plantel-kpi">
@@ -2557,61 +2557,111 @@ function renderTorneoApertura() {
         <div class="ap-plantel-kpi-label">${label}</div>
       </div>`;
     }
-
     const kpisHtml = `<div class="ap-plantel-kpis">
-      ${kpiCard('⚽', numVal(topG?.goles), topG?.nombre || '—', 'Máximo Goleador')}
-      ${kpiCard('🎯', numVal(topA?.asist), topA?.nombre || '—', 'Máximo Asistidor')}
+      ${kpiCard('⚽', numVal(topG?.goles),  topG?.nombre  || '—', 'Máximo Goleador')}
+      ${kpiCard('🎯', numVal(topA?.asist),  topA?.nombre  || '—', 'Máximo Asistidor')}
       ${kpiCard('🌟', numVal(topGA?.goles)+numVal(topGA?.asist), topGA?.nombre || '—', 'Más Goles + Asistencias')}
       ${kpiCard('🏃', numVal(topPJ?.titular ?? topPJ?.citado), topPJ?.nombre || '—', 'Más Partidos Jugados')}
     </div>`;
 
-    // Table rows — sorted by G+A desc, then goles
-    const sorted = [...jugs].sort((a,b) => {
-      const gaB = numVal(b.goles)+numVal(b.asist), gaA = numVal(a.goles)+numVal(a.asist);
-      return gaB !== gaA ? gaB - gaA : numVal(b.goles) - numVal(a.goles);
-    });
-
     const hasPos     = jugs.some(j => j.pos);
-    const hasCitado  = jugs.some(j => j.citado !== undefined);
-    const hasTitular = jugs.some(j => j.titular !== undefined);
-    const hasTA      = jugs.some(j => j.ta      !== undefined);
+    const hasCitado  = jugs.some(j => j.citado  !== undefined);
+    const hasTitular = jugs.some(j => j.titular  !== undefined);
+    const hasTA      = jugs.some(j => j.ta       !== undefined);
 
-    const thead = `<thead><tr>
-      <th>Jugador</th>
-      ${hasPos     ? '<th>POS</th>'      : ''}
-      ${hasTitular ? '<th title="Partidos jugados como titular">TIT</th>' : ''}
-      ${hasCitado  ? '<th title="Veces convocado">CIT</th>'  : ''}
-      <th title="Goles">GOL</th>
-      <th title="Asistencias">AST</th>
-      <th title="Goles + Asistencias">G+A</th>
-      ${hasTA      ? '<th title="Tarjetas amarillas">TA</th>' : ''}
-      <th title="Tarjetas rojas">TR</th>
-    </tr></thead>`;
+    // Position order for default sort
+    const POS_ORDER = { ARQ:0, DFI:1, DFC:2, DFD:3, DEF:4, MI:5, MC:6, MCO:7, MD:8, DC:9, DEL:10 };
+    const posRank = p => POS_ORDER[String(p || '').toUpperCase()] ?? 99;
 
-    const tbody = sorted.map(j => {
+    // Encode each row as data-* for client-side sort
+    const tableId = 'ap-plantel-tbl';
+    const rows = jugs.map((j, idx) => {
       const g  = numVal(j.goles);
       const a  = numVal(j.asist);
       const ta = numVal(j.ta);
       const tr = numVal(j.rojas);
       const tit = numVal(j.titular);
       const cit = numVal(j.citado);
-      return `<tr>
+      return { j, g, a, ta, tr, tit, cit, idx };
+    });
+
+    function renderRows(arr) {
+      return arr.map(({ j, g, a, ta, tr, tit, cit }) => `<tr
+          data-nombre="${j.nombre.toLowerCase()}"
+          data-pos="${posRank(j.pos)}"
+          data-tit="${tit}" data-cit="${cit}"
+          data-goles="${g}" data-asist="${a}" data-ga="${g+a}"
+          data-ta="${ta}" data-tr="${tr}">
         <td>${j.nombre}</td>
         ${hasPos     ? `<td><span class="pos-badge">${j.pos || '—'}</span></td>` : ''}
         ${hasTitular ? `<td>${tit || '—'}</td>` : ''}
         ${hasCitado  ? `<td>${cit || '—'}</td>` : ''}
-        <td class="${g > 0 ? 'num-goles' : ''}">${g || '—'}</td>
-        <td class="${a > 0 ? 'num-asist' : ''}">${a || '—'}</td>
+        <td class="${g  > 0 ? 'num-goles' : ''}">${g  || '—'}</td>
+        <td class="${a  > 0 ? 'num-asist' : ''}">${a  || '—'}</td>
         <td class="${(g+a) > 0 ? 'num-ga' : ''}">${(g+a) || '—'}</td>
-        ${hasTA      ? `<td class="${ta > 0 ? 'num-rojas' : ''}" style="${ta > 0 ? 'color:#f59e0b' : ''}">${ta || '—'}</td>` : ''}
+        ${hasTA ? `<td style="${ta > 0 ? 'color:#f59e0b;font-weight:700' : ''}">${ta || '—'}</td>` : ''}
         <td class="${tr > 0 ? 'num-rojas' : ''}">${tr || '—'}</td>
-      </tr>`;
-    }).join('');
+      </tr>`).join('');
+    }
 
-    return `${kpisHtml}
-      <div class="ap-plantel-table-wrap">
-        <table class="ap-plantel-table">${thead}<tbody>${tbody}</tbody></table>
-      </div>`;
+    // Default order: by position
+    const defaultSorted = [...rows].sort((a,b) => posRank(a.j.pos) - posRank(b.j.pos));
+
+    const colDefs = [
+      { key:'nombre', label:'Jugador',   title:'Ordenar por nombre',            numeric:false },
+      ...(hasPos     ? [{ key:'pos',    label:'POS', title:'Ordenar por posición',       numeric:true }] : []),
+      ...(hasTitular ? [{ key:'tit',    label:'TIT', title:'Partidos como titular',       numeric:true }] : []),
+      ...(hasCitado  ? [{ key:'cit',    label:'CIT', title:'Veces convocado',             numeric:true }] : []),
+      { key:'goles', label:'GOL',        title:'Goles',                          numeric:true },
+      { key:'asist', label:'AST',        title:'Asistencias',                    numeric:true },
+      { key:'ga',    label:'G+A',        title:'Goles + Asistencias',            numeric:true },
+      ...(hasTA      ? [{ key:'ta',     label:'TA',  title:'Tarjetas amarillas',          numeric:true }] : []),
+      { key:'tr',    label:'TR',         title:'Tarjetas rojas',                 numeric:true },
+    ];
+
+    const thead = `<thead><tr>${colDefs.map((c,i) =>
+      `<th data-col="${c.key}" title="${c.title}" onclick="apPlantelSort('${tableId}','${c.key}',${c.numeric})"
+          style="cursor:pointer;user-select:none;${i===0?'text-align:left':''}"
+          class="${c.key==='pos'?'ap-sort-active':''}">
+        ${c.label} <span class="ap-sort-arrow" data-col="${c.key}">${c.key==='pos'?'↑':''}</span>
+      </th>`
+    ).join('')}</tr></thead>`;
+
+    const tableHtml = `<div class="ap-plantel-table-wrap">
+      <table class="ap-plantel-table" id="${tableId}">
+        ${thead}
+        <tbody>${renderRows(defaultSorted)}</tbody>
+      </table>
+    </div>`;
+
+    // Sort state per table instance
+    window._apPlantelSortState = { col: 'pos', asc: true };
+    window.apPlantelSort = function(tid, col, numeric) {
+      const st = window._apPlantelSortState;
+      const asc = st.col === col ? !st.asc : (col === 'nombre' || col === 'pos');
+      st.col = col; st.asc = asc;
+
+      const tbl = document.getElementById(tid);
+      if (!tbl) return;
+      const tbody = tbl.querySelector('tbody');
+      const trs = [...tbody.querySelectorAll('tr')];
+      trs.sort((a, b) => {
+        const av = a.dataset[col] ?? '', bv = b.dataset[col] ?? '';
+        let cmp = numeric ? (Number(av) - Number(bv)) : av.localeCompare(bv, 'es');
+        return asc ? cmp : -cmp;
+      });
+      tbody.innerHTML = trs.map(r => r.outerHTML).join('');
+
+      // Update arrows
+      tbl.querySelectorAll('.ap-sort-arrow').forEach(el => {
+        el.textContent = el.dataset.col === col ? (asc ? '↑' : '↓') : '';
+      });
+      tbl.querySelectorAll('th[data-col]').forEach(el => {
+        el.classList.toggle('ap-sort-active', el.dataset.col === col);
+      });
+    };
+
+    return `${kpisHtml}${tableHtml}`;
   }
 
   // ── Tab 2: Tabla Completa ───────────────────────────────────────────────
