@@ -4893,9 +4893,9 @@ function parseDetailedMatches(rows, startInSection = false) {
   let pCols = null; // dynamic column map, set from player header row
 
   for (const row of rows) {
-    const c0 = (row[0]||'').trim();
-    const c1 = (row[1]||'').trim();
-    const c2 = (row[2]||'').trim();
+    const c0 = String(row[0]??'').trim();
+    const c1 = String(row[1]??'').trim();
+    const c2 = String(row[2]??'').trim();
 
     // Anchor: section/match header row "Rival | Fecha | Lugar"
     // (basic table uses "Rival | Fecha | Local/Visita" — different c2)
@@ -4911,7 +4911,7 @@ function parseDetailedMatches(rows, startInSection = false) {
     // Player column header: "Jugador/Nombre | Citado | Titular | ..."
     // Detect column positions dynamically so A (has Posicion) and B (no Posicion) both work
     if (/^(Jugador|Nombre)$/i.test(c0) && /^citado$/i.test(c1)) {
-      const h = row.map(c => (c||'').toLowerCase());
+      const h = row.map(c => String(c??'').toLowerCase());
       pCols = {
         citado:   h.findIndex(c => c.includes('citado')),
         titular:  h.findIndex(c => c.includes('titular')),
@@ -5036,12 +5036,12 @@ async function loadLiveData() {
   }
 
   // PRIMERA A detailed match data + cumulative player stats (A22:J524)
-  if (ok(aDet)) {
+  if (ok(aDet)) try {
     const p   = parsePlayers(ok(aDet));
-    const det = parseDetailedMatches(ok(aDet), true); // startInSection=true: range already scoped
+    const det = parseDetailedMatches(ok(aDet), true);
     if (p.length > 0)   DATA_A.jugadores = p;
     if (det.length > 0) DATA_A.apertura  = det;
-  }
+  } catch(e) { console.warn('parseDetailedMatches A:', e); }
 
   // PRIMERA B standings
   let bTbl = ok(bSim) ? parseSimStandings(ok(bSim), 5) : [];
@@ -5055,12 +5055,12 @@ async function loadLiveData() {
   }
 
   // PRIMERA B detailed match data + cumulative player stats (A22:J524)
-  if (ok(bDet)) {
+  if (ok(bDet)) try {
     const p   = parsePlayers(ok(bDet));
     const det = parseDetailedMatches(ok(bDet), true);
     if (p.length > 0)   DATA_B.jugadores = p;
     if (det.length > 0) DATA_B.apertura  = det;
-  }
+  } catch(e) { console.warn('parseDetailedMatches B:', e); }
 
   // Estadisticas Historicas
   if (aHist.status === 'fulfilled' && aHist.value?.length > 3) {
