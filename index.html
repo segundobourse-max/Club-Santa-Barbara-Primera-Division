@@ -4737,9 +4737,10 @@ const GS = {
 
 const PROXY_URL = 'https://script.google.com/macros/s/AKfycbzDmI2fgAZEONfC7gwuwazmR-GVPd4ISVTQiBBEU7324Sn8Pp6YGxnZwsrwe5J8ghE8/exec';
 
-async function fetchProxy(tab, range) {
+async function fetchProxy(tab, range, sheetId) {
   let url = `${PROXY_URL}?tab=${encodeURIComponent(tab)}`;
-  if (range) url += `&range=${encodeURIComponent(range)}`;
+  if (range)   url += `&range=${encodeURIComponent(range)}`;
+  if (sheetId) url += `&sheetId=${encodeURIComponent(sheetId)}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(r.status);
   const json = await r.json();
@@ -5010,8 +5011,8 @@ async function loadLiveData() {
     fetchCSV(GS.B_SIM),
     fetchCSV(GS.B_MAIN, null, 'A1:J18'),
     fetchCSV(GS.B_MAIN, null, 'A22:J524'),
-    fetchCSVFallback(GS.A_MAIN, 'Estadisticas Historicas'),
-    fetchCSVFallback(GS.B_MAIN, 'Estadisticas Historicas'),
+    fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
+    fetchProxy('Estadisticas Historicas', null, GS.B_MAIN),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
