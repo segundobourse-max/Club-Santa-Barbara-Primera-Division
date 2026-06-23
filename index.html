@@ -4889,28 +4889,30 @@ function parseMatches(rows) {
 
 // Parse standings from sheet range L37:V53
 // Expected columns: Pos | Equipo | Clasificación | PTS | PJ | PG | PE | PP | GF | GC | DF
-// Sheet L37:V53 layout: Clasificación | Equipo | PTS | PJ | PG | PE | PP | GF | GC | DF
+// Sheet L37:V53 layout: Clasificación | Equipo | Pos | PTS | PJ | PG | PE | PP | GF | GC | DF
 // Row 0 = header, rows 1+ = teams in position order
 function parseTablaSheet(rows) {
   if (!rows || rows.length < 2) return [];
   const num = v => { const n = parseInt(String(v??'').replace(/[^0-9\-]/g,'')); return isNaN(n) ? 0 : n; };
-  const start = 1; // skip header row
   const result = [];
   let rank = 1;
-  for (let i = start; i < rows.length; i++) {
+  for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     const equipo = String(r[1]??'').trim();
     if (!equipo) continue;
-    const copas = String(r[0]??'').trim();
-    const pts   = num(r[2]);
-    const pj    = num(r[3]);
     result.push({
-      pos: rank + '°',
-      equipo, copas, pts, pj,
-      pg: num(r[4]), pe: num(r[5]), pp: num(r[6]),
-      gf: num(r[7]), gc: num(r[8]),
-      df: num(r[9]),
-      csb: /santa.b[aá]rb/i.test(equipo),
+      pos:   rank + '°',
+      equipo,
+      copas: String(r[0]??'').trim(),
+      pts:   num(r[3]),
+      pj:    num(r[4]),
+      pg:    num(r[5]),
+      pe:    num(r[6]),
+      pp:    num(r[7]),
+      gf:    num(r[8]),
+      gc:    num(r[9]),
+      df:    num(r[10]),
+      csb:   /santa.b[aá]rb/i.test(equipo),
     });
     rank++;
   }
