@@ -3126,9 +3126,6 @@ function renderResumen() {
         }).join('') || '<div style="color:#475569;padding:20px;text-align:center;font-size:0.82rem">Sin partidos jugados aún</div>';
       })()}
     </div>`;
-
-  // Live update from sheet (background, re-renders on success)
-  fetchResumenHistorico(d);
 }
 
 // ──────────────────────────────────────────────
@@ -3179,18 +3176,18 @@ function parseEstHistSheet(rows) {
   };
 }
 
-async function fetchResumenHistorico(d) {
+async function fetchResumenHistorico(d, sheetId) {
   try {
-    const rows = await fetchProxy('Estadisticas Historicas');
-    if (!rows || rows.length < 3) return;
+    const rows = await fetchCSVFallback(sheetId, 'Estadisticas Historicas');
+    if (!rows || rows.length < 3) return false;
     const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(rows);
     let changed = false;
     if (historico && historico.pj > 0)    { d.historico = historico; changed = true; }
     if (goleadores.length)  { d.topHist.goles    = goleadores;  changed = true; }
     if (asistidores.length) { d.topHist.asist    = asistidores; changed = true; }
     if (masPartidos.length) { d.topHist.partidos = masPartidos; changed = true; }
-    if (changed && currentData === d) renderResumen();
-  } catch(e) {}
+    return changed;
+  } catch(e) { return false; }
 }
 
 // ──────────────────────────────────────────────
@@ -5006,13 +5003,15 @@ async function loadLiveData() {
   if (statusEl) { statusEl.textContent = 'Actualizando…'; statusEl.className = 'loading'; }
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
-  const [aSim, aBasic, aDet, bSim, bBasic, bDet] = await Promise.allSettled([
+  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:J524'),  // fecha-a-fecha + player stats
     fetchCSV(GS.B_SIM),
     fetchCSV(GS.B_MAIN, null, 'A1:J18'),
     fetchCSV(GS.B_MAIN, null, 'A22:J524'),
+    fetchCSVFallback(GS.A_MAIN, 'Estadisticas Historicas'),
+    fetchCSVFallback(GS.B_MAIN, 'Estadisticas Historicas'),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -5054,9 +5053,24 @@ async function loadLiveData() {
     if (det.length > 0) DATA_B.apertura  = det;
   }
 
+  // Estadisticas Historicas
+  if (aHist.status === 'fulfilled' && aHist.value?.length > 3) {
+    const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(aHist.value);
+    if (historico?.pj > 0)    DATA_A.historico        = historico;
+    if (goleadores.length)    DATA_A.topHist.goles    = goleadores;
+    if (asistidores.length)   DATA_A.topHist.asist    = asistidores;
+    if (masPartidos.length)   DATA_A.topHist.partidos = masPartidos;
+  }
+  if (bHist.status === 'fulfilled' && bHist.value?.length > 3) {
+    const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(bHist.value);
+    if (historico?.pj > 0)    DATA_B.historico        = historico;
+    if (goleadores.length)    DATA_B.topHist.goles    = goleadores;
+    if (asistidores.length)   DATA_B.topHist.asist    = asistidores;
+    if (masPartidos.length)   DATA_B.topHist.partidos = masPartidos;
+  }
+
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
-  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_Basic:${s(bBasic)} B_Det:${s(bDet)}`);
-  console.log(`Tabla A:${DATA_A.tabla.length} Part A:${DATA_A.partidos.length} Jug A:${DATA_A.jugadores.length} Det A:${DATA_A.apertura.length} | Tabla B:${DATA_B.tabla.length} Part B:${DATA_B.partidos.length} Jug B:${DATA_B.jugadores.length} Det B:${DATA_B.apertura.length}`);
+  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_Basic:${s(bBasic)} B_Det:${s(bDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)}`);
 
   _refreshing = false;
   const now = new Date();
