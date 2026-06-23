@@ -2675,6 +2675,14 @@ function renderTorneoApertura() {
 
     const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
 
+    // Build position map from detailed match data
+    const posMap = {};
+    for (const match of (d.apertura || [])) {
+      for (const p of (match.jugadores || [])) {
+        if (p.nombre && p.pos && !posMap[p.nombre]) posMap[p.nombre] = p.pos;
+      }
+    }
+
     // KPIs
     const byGoles = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
     const byAsist = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
@@ -2712,7 +2720,8 @@ function renderTorneoApertura() {
       const pg  = numVal(j.promGol);
       const pa  = numVal(j.promAsist);
       const pga = numVal(j.promGA);
-      return { j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, idx };
+      const pos = posMap[j.nombre] || j.pos || '';
+      return { j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, pos, idx };
     });
 
     const z = v => v > 0 ? v : `<span style="color:rgba(255,255,255,.2);font-size:.72rem">0</span>`;
@@ -2722,12 +2731,12 @@ function renderTorneoApertura() {
     const defaultSorted = [...rows].sort((a,b) => b.pj - a.pj);
 
     function renderRows(arr) {
-      return arr.map(({ j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga }, rankIdx) => `<tr
+      return arr.map(({ j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, pos }) => `<tr
           data-nombre="${j.nombre.toLowerCase()}"
           data-pj="${pj}" data-tit="${tit}" data-ent="${ent}" data-sal="${sal}" data-cit="${cit}"
           data-goles="${g}" data-asist="${a}" data-ga="${g+a}" data-tr="${tr}"
           data-pg="${pg}" data-pa="${pa}" data-pga="${pga}">
-        <td><span style="color:#64748b;font-size:.7rem;margin-right:6px">${rankIdx+1}°</span>${j.nombre}</td>
+        <td>${pos ? `<span class="pos-badge" style="margin-right:6px">${pos}</span>` : ''}${j.nombre}</td>
         <td class="${pj  > 0 ? '' : 'num-zero'}">${z(pj)}</td>
         <td class="${tit > 0 ? '' : 'num-zero'}">${z(tit)}</td>
         <td class="${ent > 0 ? '' : 'num-zero'}">${z(ent)}</td>
@@ -2790,11 +2799,7 @@ function renderTorneoApertura() {
         let cmp = numeric ? (Number(av) - Number(bv)) : av.localeCompare(bv, 'es');
         return asc ? cmp : -cmp;
       });
-      // Update rank numbers after sort
-      tbody.innerHTML = trs.map((r, i) => {
-        const html = r.outerHTML.replace(/<td><span style="color:#64748b[^>]*>\d+°<\/span>/, `<td><span style="color:#64748b;font-size:.7rem;margin-right:6px">${i+1}°</span>`);
-        return html;
-      }).join('');
+      tbody.innerHTML = trs.map(r => r.outerHTML).join('');
 
       // Update arrows
       tbl.querySelectorAll('.ap-sort-arrow').forEach(el => {
