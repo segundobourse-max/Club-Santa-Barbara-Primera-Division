@@ -2675,101 +2675,104 @@ function renderTorneoApertura() {
 
     const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
 
+    // Build position map from detailed match data
+    const posMap = {};
+    for (const match of (d.apertura || [])) {
+      for (const p of (match.jugadores || [])) {
+        if (p.nombre && p.pos && !posMap[p.nombre]) posMap[p.nombre] = p.pos;
+      }
+    }
+
     // KPIs
     const byGoles = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
     const byAsist = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
     const byGA    = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
-    const byPJ    = [...jugs].sort((a,b) => (numVal(b.titular)+numVal(b.sup)) - (numVal(a.titular)+numVal(a.sup)));
+    const byPJ    = [...jugs].sort((a,b) => numVal(b.pj || (numVal(b.titular)+numVal(b.sup || b.entro))) - numVal(a.pj || (numVal(a.titular)+numVal(a.sup || a.entro))));
     const topG = byGoles[0], topA = byAsist[0], topGA = byGA[0], topPJ = byPJ[0];
 
     function kpiCard(icon, val, name, label) {
       return `<div class="ap-plantel-kpi">
         <div class="ap-plantel-kpi-icon">${icon}</div>
+        <div class="ap-plantel-kpi-label">${label}</div>
         <div class="ap-plantel-kpi-val">${val}</div>
         <div class="ap-plantel-kpi-name">${name}</div>
-        <div class="ap-plantel-kpi-label">${label}</div>
       </div>`;
     }
+    const getPJ = j => numVal(j.pj) || (numVal(j.titular) + numVal(j.entro));
     const kpisHtml = `<div class="ap-plantel-kpis">
       ${kpiCard('⚽', numVal(topG?.goles),  topG?.nombre  || '—', 'Máximo Goleador')}
       ${kpiCard('🎯', numVal(topA?.asist),  topA?.nombre  || '—', 'Máximo Asistidor')}
       ${kpiCard('🌟', numVal(topGA?.goles)+numVal(topGA?.asist), topGA?.nombre || '—', 'Más Goles + Asistencias')}
-      ${kpiCard('🏃', numVal(topPJ?.titular)+numVal(topPJ?.sup), topPJ?.nombre || '—', 'Más Partidos Jugados')}
+      ${kpiCard('🏃', getPJ(topPJ || {}), topPJ?.nombre || '—', 'Más Partidos Jugados')}
     </div>`;
-
-    const hasPos     = jugs.some(j => j.pos);
-    const hasCitado  = jugs.some(j => j.citado  !== undefined);
-    const hasTitular = jugs.some(j => j.titular  !== undefined);
-    const hasSup     = jugs.some(j => j.sup      !== undefined);
-    const hasTA      = jugs.some(j => j.ta       !== undefined);
-
-    // Position order for default sort
-    const POS_ORDER = { ARQ:0, DFI:1, DFC:2, DFD:3, DEF:4, MI:5, MC:6, MCO:7, MD:8, DC:9, DEL:10 };
-    const posRank = p => POS_ORDER[String(p || '').toUpperCase()] ?? 99;
 
     // Encode each row as data-* for client-side sort
     const tableId = 'ap-plantel-tbl';
     const rows = jugs.map((j, idx) => {
       const g   = numVal(j.goles);
       const a   = numVal(j.asist);
-      const ta  = numVal(j.ta);
       const tr  = numVal(j.rojas);
       const tit = numVal(j.titular);
-      const sup = numVal(j.sup);
-      const pj  = tit + sup;
+      const ent = numVal(j.entro);
+      const sal = numVal(j.salio);
+      const pj  = numVal(j.pj) || (tit + ent);
       const cit = numVal(j.citado);
-      return { j, g, a, ta, tr, tit, sup, pj, cit, idx };
+      const pg  = numVal(j.promGol);
+      const pa  = numVal(j.promAsist);
+      const pga = numVal(j.promGA);
+      const pos = posMap[j.nombre] || j.pos || '';
+      return { j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, pos, idx };
     });
 
-    // KPI: re-sort byPJ using real pj
-    const byPJreal = [...rows].sort((a,b) => b.pj - a.pj);
-    const topPJreal = byPJreal[0];
-
     const z = v => v > 0 ? v : `<span style="color:rgba(255,255,255,.2);font-size:.72rem">0</span>`;
+    const zf = v => v > 0 ? v.toFixed(2) : `<span style="color:rgba(255,255,255,.2);font-size:.72rem">0</span>`;
+
+    // Default order: by PJ desc
+    const defaultSorted = [...rows].sort((a,b) => b.pj - a.pj);
 
     function renderRows(arr) {
-      return arr.map(({ j, g, a, ta, tr, tit, sup, pj, cit }) => `<tr
+      return arr.map(({ j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, pos }) => `<tr
           data-nombre="${j.nombre.toLowerCase()}"
-          data-pos="${posRank(j.pos)}"
-          data-pj="${pj}" data-tit="${tit}" data-sup="${sup}" data-cit="${cit}"
-          data-goles="${g}" data-asist="${a}" data-ga="${g+a}"
-          data-ta="${ta}" data-tr="${tr}">
-        <td>${j.nombre}</td>
-        ${hasPos     ? `<td><span class="pos-badge">${j.pos || '?'}</span></td>` : ''}
+          data-pj="${pj}" data-tit="${tit}" data-ent="${ent}" data-sal="${sal}" data-cit="${cit}"
+          data-goles="${g}" data-asist="${a}" data-ga="${g+a}" data-tr="${tr}"
+          data-pg="${pg}" data-pa="${pa}" data-pga="${pga}">
+        <td>${pos ? `<span class="pos-badge" style="margin-right:6px">${pos}</span>` : ''}${j.nombre}</td>
         <td class="${pj  > 0 ? '' : 'num-zero'}">${z(pj)}</td>
-        ${hasTitular ? `<td class="${tit > 0 ? '' : 'num-zero'}">${z(tit)}</td>` : ''}
-        ${hasSup     ? `<td class="${sup > 0 ? '' : 'num-zero'}">${z(sup)}</td>` : ''}
-        ${hasCitado  ? `<td class="${cit > 0 ? '' : 'num-zero'}">${z(cit)}</td>` : ''}
+        <td class="${tit > 0 ? '' : 'num-zero'}">${z(tit)}</td>
+        <td class="${ent > 0 ? '' : 'num-zero'}">${z(ent)}</td>
+        <td class="${sal > 0 ? '' : 'num-zero'}">${z(sal)}</td>
         <td class="${g   > 0 ? 'num-goles' : 'num-zero'}">${z(g)}</td>
         <td class="${a   > 0 ? 'num-asist' : 'num-zero'}">${z(a)}</td>
-        <td class="${(g+a) > 0 ? 'num-ga'  : 'num-zero'}">${z(g+a)}</td>
-        ${hasTA ? `<td class="${ta > 0 ? 'num-ta' : 'num-zero'}">${z(ta)}</td>` : ''}
         <td class="${tr  > 0 ? 'num-rojas' : 'num-zero'}">${z(tr)}</td>
+        <td class="${cit > 0 ? '' : 'num-zero'}">${z(cit)}</td>
+        <td class="${(g+a) > 0 ? 'num-ga' : 'num-zero'}">${z(g+a)}</td>
+        <td class="${pg  > 0 ? 'num-goles' : 'num-zero'}">${zf(pg)}</td>
+        <td class="${pa  > 0 ? 'num-asist' : 'num-zero'}">${zf(pa)}</td>
+        <td class="${pga > 0 ? 'num-ga'    : 'num-zero'}">${zf(pga)}</td>
       </tr>`).join('');
     }
 
-    // Default order: by position
-    const defaultSorted = [...rows].sort((a,b) => posRank(a.j.pos) - posRank(b.j.pos));
-
     const colDefs = [
-      { key:'nombre', label:'Jugador',        title:'Ordenar por nombre',        numeric:false },
-      ...(hasPos     ? [{ key:'pos',    label:'🏃 POS', title:'Posición',              numeric:true }] : []),
-      { key:'pj',    label:'🎽 PJ',          title:'Partidos jugados (TIT+SUP)', numeric:true },
-      ...(hasTitular ? [{ key:'tit',    label:'👕 TIT', title:'Partidos como titular', numeric:true }] : []),
-      ...(hasSup     ? [{ key:'sup',    label:'🔄 SUP', title:'Partidos como suplente',numeric:true }] : []),
-      ...(hasCitado  ? [{ key:'cit',    label:'📋 CIT', title:'Veces convocado',       numeric:true }] : []),
-      { key:'goles', label:'⚽ GOL',         title:'Goles',                      numeric:true },
-      { key:'asist', label:'👟 AST',         title:'Asistencias',                numeric:true },
-      { key:'ga',    label:'🔥 G+A',         title:'Goles + Asistencias',        numeric:true },
-      ...(hasTA      ? [{ key:'ta',     label:'🟨 TA',  title:'Tarjetas amarillas',    numeric:true }] : []),
-      { key:'tr',    label:'🟥 TR',          title:'Tarjetas rojas',             numeric:true },
+      { key:'nombre', label:'Jugador',     title:'Ordenar por nombre',          numeric:false },
+      { key:'pj',    label:'🎽 PJ',        title:'Partidos Jugados',            numeric:true },
+      { key:'tit',   label:'👕 TIT',       title:'Partidos como titular',       numeric:true },
+      { key:'ent',   label:'🔄 ENT',       title:'Entró desde el banco',        numeric:true },
+      { key:'sal',   label:'⬇ SAL',        title:'Salió siendo titular',        numeric:true },
+      { key:'goles', label:'⚽ GOL',        title:'Goles',                      numeric:true },
+      { key:'asist', label:'👟 AST',        title:'Asistencias',                numeric:true },
+      { key:'tr',    label:'🟥 TR',         title:'Tarjetas rojas',             numeric:true },
+      { key:'cit',   label:'📋 CIT',        title:'Veces convocado',            numeric:true },
+      { key:'ga',    label:'🔥 G+A',        title:'Goles + Asistencias',        numeric:true },
+      { key:'pg',    label:'📈 Prom.G',     title:'Promedio de goles',          numeric:true },
+      { key:'pa',    label:'📈 Prom.A',     title:'Promedio de asistencias',    numeric:true },
+      { key:'pga',   label:'📈 Prom.G+A',   title:'Promedio Goles + Asist.',    numeric:true },
     ];
 
     const thead = `<thead><tr>${colDefs.map((c,i) =>
       `<th data-col="${c.key}" title="${c.title}" onclick="apPlantelSort('${tableId}','${c.key}',${c.numeric})"
           style="cursor:pointer;user-select:none;${i===0?'text-align:left':''}"
-          class="${c.key==='pos'?'ap-sort-active':''}">
-        ${c.label} <span class="ap-sort-arrow" data-col="${c.key}">${c.key==='pos'?'↑':''}</span>
+          class="${c.key==='pj'?'ap-sort-active':''}">
+        ${c.label} <span class="ap-sort-arrow" data-col="${c.key}">${c.key==='pj'?'↓':''}</span>
       </th>`
     ).join('')}</tr></thead>`;
 
@@ -2781,10 +2784,10 @@ function renderTorneoApertura() {
     </div>`;
 
     // Sort state per table instance
-    window._apPlantelSortState = { col: 'pos', asc: true };
+    window._apPlantelSortState = { col: 'pj', asc: false };
     window.apPlantelSort = function(tid, col, numeric) {
       const st = window._apPlantelSortState;
-      const asc = st.col === col ? !st.asc : (col === 'nombre' || col === 'pos');
+      const asc = st.col === col ? !st.asc : col === 'nombre';
       st.col = col; st.asc = asc;
 
       const tbl = document.getElementById(tid);
@@ -4860,21 +4863,43 @@ function parseMatches(rows) {
 }
 
 function parsePlayers(rows) {
+  const num = v => { const n = parseFloat(String(v??'').replace(',','.')); return isNaN(n) ? 0 : n; };
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     if (!/jugador/i.test(r[0]||'') || !r.some(c=>/goles/i.test(c||''))) continue;
-    const h = r.map(c=>(c||'').toLowerCase());
-    const citI=h.findIndex(c=>c.includes('citado')), titI=h.findIndex(c=>c.includes('titular'));
-    const golI=h.findIndex(c=>c.includes('goles')), astI=h.findIndex(c=>c.includes('asist'));
-    const rojI=h.findIndex(c=>c.includes('roja'));
+    const h = r.map(c => String(c??'').toLowerCase());
+    const pjI   = h.findIndex(c => c.includes('partidos jugados') || (c.includes('partidos') && !c.includes('prom')));
+    const citI  = h.findIndex(c => c.includes('citado'));
+    const titI  = h.findIndex(c => c.includes('titular'));
+    const entI  = h.findIndex(c => c.includes('entr'));
+    const salI  = h.findIndex(c => c.includes('sali'));
+    const golI  = h.findIndex(c => c.includes('goles') || c === 'gol');
+    const astI  = h.findIndex(c => c.includes('asist'));
+    const rojI  = h.findIndex(c => c.includes('roja'));
+    const pgolI = h.findIndex(c => c.includes('promedio') && c.includes('gol'));
+    const pastI = h.findIndex(c => c.includes('promedio') && c.includes('asist'));
+    const pgaI  = h.findIndex(c => c.includes('promedio') && (c.includes('g+a') || c.includes('ga')));
     const players = [];
     for (let j = i+1; j < rows.length; j++) {
-      const row = rows[j]; const nombre = row[0]||'';
+      const row = rows[j]; const nombre = String(row[0]??'').trim();
       if (!nombre || /^(jugador|rival|fecha)/i.test(nombre)) break;
-      const citado=citI>=0?parseInt(row[citI])||0:0, goles=golI>=0?parseInt(row[golI])||0:0;
+      const citado = citI >= 0 ? num(row[citI]) : 0;
+      const goles  = golI >= 0 ? num(row[golI]) : 0;
       if (!citado && !goles) continue;
-      players.push({ nombre, citado, titular:titI>=0?parseInt(row[titI])||0:0,
-                     goles, asist:astI>=0?parseInt(row[astI])||0:0, rojas:rojI>=0?parseInt(row[rojI])||0:0 });
+      players.push({
+        nombre,
+        pj:    pjI  >= 0 ? num(row[pjI])  : (titI >= 0 ? num(row[titI]) : 0),
+        citado,
+        titular: titI >= 0 ? num(row[titI]) : 0,
+        entro:   entI >= 0 ? num(row[entI]) : 0,
+        salio:   salI >= 0 ? num(row[salI]) : 0,
+        goles,
+        asist:   astI >= 0 ? num(row[astI]) : 0,
+        rojas:   rojI >= 0 ? num(row[rojI]) : 0,
+        promGol: pgolI >= 0 ? num(row[pgolI]) : 0,
+        promAsist: pastI >= 0 ? num(row[pastI]) : 0,
+        promGA:  pgaI  >= 0 ? num(row[pgaI])  : 0,
+      });
     }
     if (players.length >= 3) return players;
   }
@@ -5016,7 +5041,7 @@ async function loadLiveData() {
   const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
-    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:J524'),  // fecha-a-fecha + player stats
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + player stats
     fetchCSV(GS.B_SIM),
     fetchCSV(GS.B_MAIN, null, 'A1:J18'),
     fetchCSV(GS.B_MAIN, null, 'A22:J524'),
