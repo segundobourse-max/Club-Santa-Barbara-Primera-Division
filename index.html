@@ -4968,15 +4968,15 @@ function parseDetailedMatches(rows, startInSection = false) {
     const pi  = pCols && pCols.pos     >= 0 ? pCols.pos     : 8;
     const pqi = pCols && pCols.porQuien>= 0 ? pCols.porQuien : 9;
 
-    const citado   = (row[ci] ||'').trim() === '1';
-    const titular  = (row[ti] ||'').trim() === '1';
-    const entro    = (row[ei] ||'').trim() === '1';
-    const salio    = (row[si] ||'').trim() === '1';
-    const goles    = parseInt(row[gi]||'0') || 0;
-    const asist    = parseInt(row[ai]||'0') || 0;
-    const rojas    = parseInt(row[ri]||'0') || 0;
-    const pos      = (row[pi] ||'').trim();
-    const porQuien = (row[pqi]||'').trim();
+    const citado   = String(row[ci] ??'').trim() === '1';
+    const titular  = String(row[ti] ??'').trim() === '1';
+    const entro    = String(row[ei] ??'').trim() === '1';
+    const salio    = String(row[si] ??'').trim() === '1';
+    const goles    = parseInt(row[gi]??'0') || 0;
+    const asist    = parseInt(row[ai]??'0') || 0;
+    const rojas    = parseInt(row[ri]??'0') || 0;
+    const pos      = String(row[pi] ??'').trim();
+    const porQuien = String(row[pqi]??'').trim();
 
     if (citado || titular || entro || pos) {
       current.jugadores.push({ nombre:c0, citado, titular, entro, salio, goles, asist, rojas, pos, porQuien });
@@ -4988,7 +4988,7 @@ function parseDetailedMatches(rows, startInSection = false) {
 function refreshCurrentView() {
   if (!currentData) return;
   const map = { 'tab-resumen':renderResumen, 'tab-posiciones':renderTorneosMenu,
-                'tab-historial':renderHistorial, 'tab-jugadores':renderJugadores,
+                'tab-historial':renderHistorial, 'tab-jugadores':renderJugadoresMenu,
                 'tab-graficos':renderGraficos };
   for (const [id, fn] of Object.entries(map)) {
     const el = document.getElementById(id);
