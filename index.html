@@ -3126,6 +3126,71 @@ function renderResumen() {
         }).join('') || '<div style="color:#475569;padding:20px;text-align:center;font-size:0.82rem">Sin partidos jugados aún</div>';
       })()}
     </div>`;
+
+  // Live update from sheet (background, re-renders on success)
+  fetchResumenHistorico(d);
+}
+
+// ──────────────────────────────────────────────
+// RESUMEN: live fetch from "Estadisticas Historicas"
+// ──────────────────────────────────────────────
+function parseEstHistSheet(rows) {
+  const num = v => { const n = parseFloat(String(v ?? '').replace(',','.')); return isNaN(n) ? 0 : n; };
+  let historico = null;
+  const goleadores = [], asistidores = [], masPartidos = [];
+  let readGol = false, readAsi = false, readPar = false;
+
+  for (const row of rows) {
+    const c = row.map(v => String(v ?? '').trim());
+    const rowUp = c.join('|').toUpperCase();
+
+    // TOTAL row: col C=PJ, D=PG, E=PE, F=PP, G=GF, H=GC, I=VI (indices 2-8)
+    if (!historico && c.some(v => v.toUpperCase() === 'TOTAL')) {
+      const pj = num(row[2]);
+      if (pj > 0) historico = { pj, pg: num(row[3]), pe: num(row[4]), pp: num(row[5]), gf: num(row[6]), gc: num(row[7]), vi: num(row[8]) };
+    }
+
+    // Section headers
+    if (rowUp.includes('GOLEADORES')) { readGol = true; continue; }
+    if (rowUp.includes('ASISTIDOR'))  { readAsi = true; continue; }
+    if (rowUp.includes('MAS PARTIDOS') || rowUp.includes('MÁS PARTIDOS')) { readPar = true; continue; }
+
+    // Skip "Posicion/Jugador/Cantidad" header rows
+    if (c[1]?.toUpperCase() === 'JUGADOR' || c[5]?.toUpperCase() === 'JUGADOR' || c[14]?.toUpperCase() === 'JUGADOR') continue;
+
+    // Goleadores: cols A=0(pos) B=1(nombre) C=2(valor)
+    if (readGol && c[1] && !isNaN(parseFloat(c[2])))
+      goleadores.push({ nombre: c[1], valor: num(row[2]) });
+
+    // Asistidores: cols E=4(pos) F=5(nombre) G=6(valor)
+    if (readAsi && c[5] && !isNaN(parseFloat(c[6])))
+      asistidores.push({ nombre: c[5], valor: num(row[6]) });
+
+    // Más partidos: cols N=13(pos) O=14(nombre) P=15(valor)
+    if (readPar && c[14] && !isNaN(parseFloat(c[15])))
+      masPartidos.push({ nombre: c[14], valor: num(row[15]) });
+  }
+
+  return {
+    historico,
+    goleadores:  goleadores.slice(0, 5),
+    asistidores: asistidores.slice(0, 5),
+    masPartidos: masPartidos.slice(0, 5),
+  };
+}
+
+async function fetchResumenHistorico(d) {
+  try {
+    const rows = await fetchProxy('Estadisticas Historicas');
+    if (!rows || rows.length < 3) return;
+    const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(rows);
+    let changed = false;
+    if (historico && historico.pj > 0)    { d.historico = historico; changed = true; }
+    if (goleadores.length)  { d.topHist.goles    = goleadores;  changed = true; }
+    if (asistidores.length) { d.topHist.asist    = asistidores; changed = true; }
+    if (masPartidos.length) { d.topHist.partidos = masPartidos; changed = true; }
+    if (changed && currentData === d) renderResumen();
+  } catch(e) {}
 }
 
 // ──────────────────────────────────────────────
