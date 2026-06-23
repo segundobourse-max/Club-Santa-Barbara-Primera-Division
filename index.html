@@ -1002,8 +1002,18 @@
     .ap-table { width:100%; border-collapse:collapse; font-size:0.73rem; }
     .ap-table th { color:var(--gris-texto); font-weight:600; padding:3px 5px; text-align:center; font-size:0.6rem; text-transform:uppercase; }
     .ap-table th:nth-child(2) { text-align:left; }
-    .ap-table td { padding:4px 5px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--texto); text-align:center; }
+    .ap-table th:nth-child(3) { text-align:left; }
+    .ap-table td { padding:5px 5px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--texto); text-align:center; }
     .ap-table td:nth-child(2) { text-align:left; }
+    .ap-table td:nth-child(3) { text-align:left; }
+    .ap-table tr.leader-row td { background:rgba(34,197,94,.07); }
+    .ap-table tr.leader-row td:first-child { border-left:3px solid #22c55e; }
+    .ap-table tr.leader-row td:nth-child(2) { color:#22c55e; font-weight:700; }
+    .copa-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-size:0.6rem; font-weight:700; white-space:nowrap; }
+    .copa-campeon  { background:rgba(245,158,11,.12); color:#f59e0b; border:1px solid rgba(245,158,11,.3); }
+    .copa-recopa   { background:rgba(34,197,94,.10);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }
+    .copa-honor    { background:rgba(251,146,60,.10); color:#fb923c; border:1px solid rgba(251,146,60,.25); }
+    .copa-descenso { background:rgba(239,68,68,.10);  color:#ef4444; border:1px solid rgba(239,68,68,.25); }
     .ap-table tr.csb-row td { color:var(--azul-claro); font-weight:700; background:rgba(59,130,246,0.08); }
     .ap-fechas-title { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-texto); margin-bottom:10px; font-weight:700; }
     .ap-fecha-nav { display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; padding-bottom:6px; margin-bottom:20px; }
@@ -2745,9 +2755,9 @@ function renderTorneoApertura() {
         <td class="${sup > 0 ? '' : 'num-zero'}">${z(sup)}</td>
         <td class="${g   > 0 ? 'num-goles' : 'num-zero'}">${z(g)}</td>
         <td class="${a   > 0 ? 'num-asist' : 'num-zero'}">${z(a)}</td>
+        <td class="${(g+a) > 0 ? 'num-ga' : 'num-zero'}">${z(g+a)}</td>
         <td class="${tr  > 0 ? 'num-rojas' : 'num-zero'}">${z(tr)}</td>
         <td class="${cit > 0 ? '' : 'num-zero'}">${z(cit)}</td>
-        <td class="${(g+a) > 0 ? 'num-ga' : 'num-zero'}">${z(g+a)}</td>
         <td class="${pg  > 0 ? 'num-goles' : 'num-zero'}">${zf(pg)}</td>
         <td class="${pa  > 0 ? 'num-asist' : 'num-zero'}">${zf(pa)}</td>
         <td class="${pga > 0 ? 'num-ga'    : 'num-zero'}">${zf(pga)}</td>
@@ -2761,9 +2771,9 @@ function renderTorneoApertura() {
       { key:'sup',   label:'🔄 SUP',         title:'Partidos como suplente',      numeric:true },
       { key:'goles', label:'⚽ GOL',          title:'Goles',                      numeric:true },
       { key:'asist', label:'👟 AST',          title:'Asistencias',                numeric:true },
+      { key:'ga',    label:'🔥 G+A',          title:'Goles + Asistencias',        numeric:true },
       { key:'tr',    label:'🟥 TR',           title:'Tarjetas rojas',             numeric:true },
       { key:'cit',   label:'📋 CIT',          title:'Veces convocado',            numeric:true },
-      { key:'ga',    label:'🔥 G+A',          title:'Goles + Asistencias',        numeric:true },
       { key:'pg',    label:'📈 Prom.G',       title:'Promedio de goles',          numeric:true },
       { key:'pa',    label:'📈 Prom.A',       title:'Promedio de asistencias',    numeric:true },
       { key:'pga',   label:'📈 Prom.G+A',     title:'Promedio Goles + Asist.',    numeric:true },
@@ -2837,10 +2847,10 @@ function renderTorneoApertura() {
 
   const tabla = d.tabla || [];
   const copaLegendItems = [
-    { color:'var(--dorado)',     label:'Campeón / Ascenso' },
-    { color:'var(--verde)',      label:'Recopa / Promoción' },
-    { color:'var(--azul-claro)',label:'Copa de Honor' },
-    { color:'var(--rojo)',       label:'Descenso' },
+    { color:'#f59e0b', label:'Campeón / Supercopa' },
+    { color:'#22c55e', label:'Recopa / Promoción' },
+    { color:'#fb923c', label:'Copa de Honor' },
+    { color:'#ef4444', label:'Descenso' },
   ];
   const aifaUrl = isA
     ? 'https://www.aifa.ar/torneo/division-a-apertura-2026/posiciones'
@@ -2848,16 +2858,30 @@ function renderTorneoApertura() {
 
   const aifaSlug = isA ? 'division-a-apertura-2026' : 'division-b-apertura-2026';
 
+  function copaBadge(copa) {
+    if (!copa || copa === '-') return '<span style="color:rgba(255,255,255,.2)">—</span>';
+    let cls = '';
+    if (/campe[oó]n|supercopa/i.test(copa))   cls = 'copa-campeon';
+    else if (/recopa|promoci[oó]n/i.test(copa)) cls = 'copa-recopa';
+    else if (/copa de honor/i.test(copa))       cls = 'copa-honor';
+    else if (/descenso/i.test(copa))            cls = 'copa-descenso';
+    else return '<span style="color:rgba(255,255,255,.2)">—</span>';
+    return `<span class="copa-badge ${cls}">${copa}</span>`;
+  }
+
   function renderTablaRows(rows) {
-    return rows.map(t => {
-      const cc = copaColor(t.copas);
-      return `<tr class="${t.csb ? 'csb-row' : ''}">
-        <td>${t.pos}</td>
-        <td style="font-weight:${t.csb ? '700' : '400'}">${t.csb ? '⭐ ' : ''}${t.equipo}</td>
-        <td style="text-align:left;font-size:0.7rem;${cc}">${t.copas || ''}</td>
+    return rows.map((t, i) => {
+      const isLeader = i === 0;
+      const df = (t.df > 0 ? '+' : '') + (t.df ?? 0);
+      const dfColor = t.df > 0 ? 'color:#22c55e' : t.df < 0 ? 'color:#ef4444' : '';
+      return `<tr class="${isLeader ? 'leader-row' : t.csb ? 'csb-row' : ''}">
+        <td style="font-weight:700;color:${isLeader ? '#22c55e' : 'var(--gris-texto)'}">${t.pos}</td>
+        <td>${t.csb && !isLeader ? '⭐ ' : isLeader ? '🏆 ' : ''}${t.equipo}</td>
+        <td>${copaBadge(t.copas)}</td>
+        <td><strong style="color:${isLeader ? '#22c55e' : 'var(--dorado)'}">${t.pts}</strong></td>
         <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
         <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
-        <td><strong>${t.pts}</strong></td><td>${t.df??'–'}</td>
+        <td style="${dfColor}">${df}</td>
       </tr>`;
     }).join('');
   }
@@ -2875,9 +2899,9 @@ function renderTorneoApertura() {
         <table class="ap-table">
           <thead><tr>
             <th>#</th><th>Equipo</th>
-            <th style="text-align:left;min-width:80px">Clasificación</th>
-            <th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
-            <th>GF</th><th>GC</th><th>PTS</th><th>DF</th>
+            <th style="text-align:left;min-width:90px">Clasificación</th>
+            <th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
+            <th>GF</th><th>GC</th><th>DF</th>
           </tr></thead>
           <tbody id="aifa-tabla-body">${renderTablaRows(tabla)}</tbody>
         </table>
@@ -4864,6 +4888,34 @@ function parseMatches(rows) {
     });
 }
 
+// Parse standings from sheet range L37:V53
+// Expected columns: Pos | Equipo | Clasificación | PTS | PJ | PG | PE | PP | GF | GC | DF
+function parseTablaSheet(rows) {
+  if (!rows || rows.length < 2) return [];
+  const num = v => { const n = parseInt(String(v??'').replace(/[^0-9\-]/g,'')); return isNaN(n) ? 0 : n; };
+  // Row 0 may be header; detect by checking if first cell is non-numeric
+  const start = isNaN(parseInt(String(rows[0][0]??''))) ? 1 : 0;
+  const result = [];
+  for (let i = start; i < rows.length; i++) {
+    const r = rows[i];
+    const equipo = String(r[1]??'').trim();
+    if (!equipo) continue;
+    const pos   = String(r[0]??'').trim();
+    const copas = String(r[2]??'').trim();
+    const pts   = num(r[3]);
+    const pj    = num(r[4]);
+    if (!equipo || pj === 0 && pts === 0) continue;
+    result.push({
+      pos, equipo, copas, pts, pj,
+      pg:  num(r[5]), pe: num(r[6]), pp: num(r[7]),
+      gf:  num(r[8]), gc: num(r[9]),
+      df:  num(r[10]),
+      csb: /santa.b[aá]rb/i.test(equipo),
+    });
+  }
+  return result;
+}
+
 // Parse the exact global stats range (L3:X33): row 0 = header, rows 1+ = players
 // Columns: Jugador | PJ | Titular | Entro | Salio | Goles | Asistencias | Rojas | Citado | G+A | PromGol | PromAsist | PromGA
 function parseGlobalStats(rows) {
@@ -5086,7 +5138,7 @@ async function loadLiveData() {
   if (statusEl) { statusEl.textContent = 'Actualizando…'; statusEl.className = 'loading'; }
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
-  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist, aGlobal] = await Promise.allSettled([
+  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist, aGlobal, aTabla] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + positions
@@ -5095,7 +5147,8 @@ async function loadLiveData() {
     fetchCSV(GS.B_MAIN, null, 'A22:J524'),
     fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
     fetchProxy('Estadisticas Historicas', null, GS.B_HIST),
-    fetchProxy('Apertura 2026', 'L3:X33', GS.A_MAIN),  // global player stats table
+    fetchProxy('Apertura 2026', 'L3:X33',  GS.A_MAIN),  // global player stats table
+    fetchProxy('Apertura 2026', 'L37:V53', GS.A_MAIN),  // standings table
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -5120,6 +5173,12 @@ async function loadLiveData() {
   if (ok(aGlobal)) {
     const p = parseGlobalStats(ok(aGlobal));
     if (p.length > 0) DATA_A.jugadores = p;
+  }
+
+  // PRIMERA A standings from sheet (L37:V53)
+  if (ok(aTabla)) {
+    const t = parseTablaSheet(ok(aTabla));
+    if (t.length >= 5) DATA_A.tabla = t;
   }
 
   // PRIMERA B standings
