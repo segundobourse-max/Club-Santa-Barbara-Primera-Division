@@ -4864,6 +4864,50 @@ function parseMatches(rows) {
     });
 }
 
+// Parse the exact global stats range (L3:X33): row 0 = header, rows 1+ = players
+// Columns: Jugador | PJ | Titular | Entro | Salio | Goles | Asistencias | Rojas | Citado | G+A | PromGol | PromAsist | PromGA
+function parseGlobalStats(rows) {
+  if (!rows || rows.length < 2) return [];
+  const num = v => { const n = parseFloat(String(v??'').replace(',','.')); return isNaN(n) ? 0 : n; };
+  const h = rows[0].map(c => String(c??'').toLowerCase().trim());
+  const idx = k => h.findIndex(c => c.includes(k));
+  const cols = {
+    nombre:    0,
+    pj:        idx('partidos jugados') >= 0 ? idx('partidos jugados') : 1,
+    titular:   idx('titular') >= 0 ? idx('titular') : 2,
+    entro:     idx('entr')    >= 0 ? idx('entr')    : 3,
+    salio:     idx('sali')    >= 0 ? idx('sali')    : 4,
+    goles:     idx('goles')   >= 0 ? idx('goles')   : 5,
+    asist:     idx('asist')   >= 0 ? idx('asist')   : 6,
+    rojas:     idx('roja')    >= 0 ? idx('roja')    : 7,
+    citado:    idx('citado')  >= 0 ? idx('citado')  : 8,
+    promGol:   h.findIndex(c => c.includes('prom') && c.includes('gol')),
+    promAsist: h.findIndex(c => c.includes('prom') && c.includes('asist')),
+    promGA:    h.findIndex(c => c.includes('prom') && (c.includes('g+a') || (c.includes('g') && c.includes('a') && !c.includes('gol') && !c.includes('asist')))),
+  };
+  const players = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const nombre = String(row[cols.nombre] ?? '').trim();
+    if (!nombre || /^(jugador|total|porcentaje|promedio)/i.test(nombre)) continue;
+    players.push({
+      nombre,
+      pj:        num(row[cols.pj]),
+      titular:   num(row[cols.titular]),
+      entro:     num(row[cols.entro]),
+      salio:     num(row[cols.salio]),
+      goles:     num(row[cols.goles]),
+      asist:     num(row[cols.asist]),
+      rojas:     num(row[cols.rojas]),
+      citado:    num(row[cols.citado]),
+      promGol:   cols.promGol   >= 0 ? num(row[cols.promGol])   : 0,
+      promAsist: cols.promAsist >= 0 ? num(row[cols.promAsist]) : 0,
+      promGA:    cols.promGA    >= 0 ? num(row[cols.promGA])    : 0,
+    });
+  }
+  return players;
+}
+
 function parsePlayers(rows) {
   const num = v => { const n = parseFloat(String(v??'').replace(',','.')); return isNaN(n) ? 0 : n; };
   for (let i = 0; i < rows.length; i++) {
@@ -5042,15 +5086,16 @@ async function loadLiveData() {
   if (statusEl) { statusEl.textContent = 'Actualizando…'; statusEl.className = 'loading'; }
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
-  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist] = await Promise.allSettled([
+  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist, aGlobal] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
-    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + player stats
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + positions
     fetchCSV(GS.B_SIM),
     fetchCSV(GS.B_MAIN, null, 'A1:J18'),
     fetchCSV(GS.B_MAIN, null, 'A22:J524'),
     fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
     fetchProxy('Estadisticas Historicas', null, GS.B_HIST),
+    fetchProxy('Apertura 2026', 'L3:X33', GS.A_MAIN),  // global player stats table
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -5065,13 +5110,17 @@ async function loadLiveData() {
     if (m.length > 0) DATA_A.partidos = m;
   }
 
-  // PRIMERA A detailed match data + cumulative player stats (A22:J524)
+  // PRIMERA A detailed match data (A22:N524) — used only for positions + fecha-a-fecha
   if (ok(aDet)) try {
-    const p   = parsePlayers(ok(aDet));
     const det = parseDetailedMatches(ok(aDet), true);
-    if (p.length > 0)   DATA_A.jugadores = p;
-    if (det.length > 0) DATA_A.apertura  = det;
+    if (det.length > 0) DATA_A.apertura = det;
   } catch(e) { console.warn('parseDetailedMatches A:', e); }
+
+  // PRIMERA A global player stats (L3:X33) — exact range, row 0 = header
+  if (ok(aGlobal)) {
+    const p = parseGlobalStats(ok(aGlobal));
+    if (p.length > 0) DATA_A.jugadores = p;
+  }
 
   // PRIMERA B standings
   let bTbl = ok(bSim) ? parseSimStandings(ok(bSim), 5) : [];
