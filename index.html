@@ -2745,9 +2745,9 @@ function renderTorneoApertura() {
         <td class="${sup > 0 ? '' : 'num-zero'}">${z(sup)}</td>
         <td class="${g   > 0 ? 'num-goles' : 'num-zero'}">${z(g)}</td>
         <td class="${a   > 0 ? 'num-asist' : 'num-zero'}">${z(a)}</td>
+        <td class="${(g+a) > 0 ? 'num-ga' : 'num-zero'}">${z(g+a)}</td>
         <td class="${tr  > 0 ? 'num-rojas' : 'num-zero'}">${z(tr)}</td>
         <td class="${cit > 0 ? '' : 'num-zero'}">${z(cit)}</td>
-        <td class="${(g+a) > 0 ? 'num-ga' : 'num-zero'}">${z(g+a)}</td>
         <td class="${pg  > 0 ? 'num-goles' : 'num-zero'}">${zf(pg)}</td>
         <td class="${pa  > 0 ? 'num-asist' : 'num-zero'}">${zf(pa)}</td>
         <td class="${pga > 0 ? 'num-ga'    : 'num-zero'}">${zf(pga)}</td>
@@ -2761,9 +2761,9 @@ function renderTorneoApertura() {
       { key:'sup',   label:'🔄 SUP',         title:'Partidos como suplente',      numeric:true },
       { key:'goles', label:'⚽ GOL',          title:'Goles',                      numeric:true },
       { key:'asist', label:'👟 AST',          title:'Asistencias',                numeric:true },
+      { key:'ga',    label:'🔥 G+A',          title:'Goles + Asistencias',        numeric:true },
       { key:'tr',    label:'🟥 TR',           title:'Tarjetas rojas',             numeric:true },
       { key:'cit',   label:'📋 CIT',          title:'Veces convocado',            numeric:true },
-      { key:'ga',    label:'🔥 G+A',          title:'Goles + Asistencias',        numeric:true },
       { key:'pg',    label:'📈 Prom.G',       title:'Promedio de goles',          numeric:true },
       { key:'pa',    label:'📈 Prom.A',       title:'Promedio de asistencias',    numeric:true },
       { key:'pga',   label:'📈 Prom.G+A',     title:'Promedio Goles + Asist.',    numeric:true },
