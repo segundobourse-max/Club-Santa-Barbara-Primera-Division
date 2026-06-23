@@ -1193,13 +1193,17 @@
       display:flex; align-items:center; justify-content:center;
     }
     .ap-pdot {
-      width:42px; height:42px; border-radius:50%; background:#000;
-      border:2.5px solid rgba(255,255,255,0.85);
+      width:54px; height:54px; border-radius:50%; background:#1e3a5f;
+      border:3px solid rgba(255,255,255,0.85);
       display:flex; align-items:center; justify-content:center;
-      font-size:0.72rem; font-weight:900; color:#fff; letter-spacing:-0.02em;
-      box-shadow:0 2px 8px rgba(0,0,0,0.7); position:relative;
+      font-size:0.78rem; font-weight:900; color:#fff; letter-spacing:-0.02em;
+      box-shadow:0 2px 10px rgba(0,0,0,0.75); position:relative;
     }
-    .ap-pdot.hat-trick { border-color:#fbbf24; box-shadow:0 0 10px rgba(251,191,36,0.6); }
+    .ap-pdot.csb {
+      background:linear-gradient(160deg,#1d4ed8 0%,#1d4ed8 48%,#fff 48%,#fff 100%);
+      border-color:#60a5fa;
+    }
+    .ap-pdot.hat-trick { border-color:#fbbf24; box-shadow:0 0 12px rgba(251,191,36,0.7); }
     .ap-pdot-badge {
       position:absolute; top:-10px; right:-12px;
       display:flex; gap:1px; align-items:center;
@@ -1226,11 +1230,13 @@
     .ap-squad-stat { font-size:0.67rem; margin-left:auto; }
     .ap-squad-stat.gol { color:var(--verde); }
     .ap-squad-stat.roja { color:var(--rojo); }
-    .ap-change { display:flex; align-items:baseline; gap:6px; padding:5px 0; font-size:0.76rem; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .ap-change { display:flex; align-items:center; gap:6px; padding:6px 0; font-size:0.76rem; border-bottom:1px solid rgba(255,255,255,0.04); flex-wrap:wrap; }
     .ap-change:last-child { border-bottom:none; }
-    .ap-change .cin { color:var(--verde); font-weight:700; }
-    .ap-change .cout { color:var(--rojo); opacity:0.85; }
-    .ap-change .cmet { font-size:0.65rem; color:var(--gris-texto); }
+    .ap-change .cin { color:var(--verde); font-weight:700; display:flex; align-items:center; gap:3px; }
+    .ap-change .cin::before { content:'↗'; font-size:0.85rem; }
+    .ap-change .cout { color:var(--rojo); opacity:0.85; display:flex; align-items:center; gap:3px; }
+    .ap-change .cout::before { content:'↘'; font-size:0.85rem; }
+    .ap-change .cmet { font-size:0.65rem; color:var(--gris-texto); padding:0 2px; }
     .ap-ms-obs { font-size:0.78rem; color:var(--gris-texto); margin-top:8px; font-style:italic; grid-column:1/-1; }
     /* ── Fecha detail redesigned header ── */
     .ap-fd-card { background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:20px 24px; margin-bottom:16px; }
@@ -1242,7 +1248,16 @@
     .ap-fd-meta-item { display:flex; flex-direction:column; gap:2px; }
     .ap-fd-meta-label { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.09em; color:var(--gris-texto); font-weight:700; }
     .ap-fd-meta-val { font-size:0.82rem; color:var(--blanco); font-weight:600; }
-    .ap-fd-obs { margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05); font-size:0.78rem; color:var(--gris-texto); line-height:1.55; }
+    .ap-fd-obs { margin-top:14px; padding:10px 14px 10px 16px; border-left:3px solid rgba(100,160,255,0.4); background:rgba(99,179,237,0.05); border-radius:0 8px 8px 0; font-size:0.80rem; color:var(--gris-texto); line-height:1.6; font-style:italic; }
+    .ap-fd-meta-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .ap-fd-pill { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.09); border-radius:20px; padding:5px 12px; font-size:0.78rem; color:var(--blanco); }
+    .ap-fd-pill-ico { font-size:1rem; line-height:1; }
+    .ap-fd-pill-lbl { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-texto); margin-right:2px; }
+    .ap-fd-pill-val { font-weight:700; }
+    .ap-fd-pill.highlight { background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.25); }
+    .ap-fd-form-row { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+    .ap-fd-form-chip { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.09); border-radius:8px; padding:6px 14px; font-size:0.8rem; font-weight:700; color:var(--blanco); display:flex; flex-direction:column; gap:2px; }
+    .ap-fd-form-chip span { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-texto); font-weight:400; }
     .ap-fd-ph { color:rgba(255,255,255,0.2); font-style:italic; }
     .ap-squad-num { font-size:0.65rem; color:var(--gris-texto); min-width:20px; text-align:right; flex-shrink:0; }
     .ap-squad-empty { color:rgba(255,255,255,0.2); font-style:italic; }
@@ -2420,7 +2435,7 @@ function buildPitch(titulares) {
       const rojaBadge = (!isPlaceholder && rojas > 0) ? `<div class="ap-pdot-roja">🟥</div>` : '';
       markers += `<div class="ap-player" style="left:${x.toFixed(1)}%;top:${y}%">
         <div class="ap-player-wrap">
-          <div class="ap-pdot${isPlaceholder?' placeholder':isHat?' hat-trick':''}">${initials}${topBadge}${rojaBadge}</div>
+          <div class="ap-pdot${isPlaceholder?' placeholder':isHat?' hat-trick':' csb'}">${initials}${topBadge}${rojaBadge}</div>
         </div>
         <div class="ap-pname${isPlaceholder?' ph':''}">${displayName}</div>
       </div>`;
@@ -2461,8 +2476,47 @@ function buildPitch(titulares) {
   return `<div class="ap-pitch">${markings}${markers}</div>`;
 }
 
+function formatISODate(raw) {
+  if (!raw || raw === '—') return raw || '—';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = meses[d.getUTCMonth()];
+    const yy = d.getUTCFullYear();
+    return `${dd} de ${mm}, ${yy}`;
+  }
+  return raw;
+}
+
+function formatISODia(raw) {
+  if (!raw || raw === '—') return raw || '—';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2,'0');
+    return `${dias[d.getUTCDay()]} ${dd}/${mm}`;
+  }
+  return raw;
+}
+
+function formatISOHora(raw) {
+  if (!raw || raw === '—') return raw || '—';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    const hh = String(d.getUTCHours()).padStart(2,'0');
+    const min = String(d.getUTCMinutes()).padStart(2,'0');
+    return `${hh}:${min} hs`;
+  }
+  if (/^\d{1,2}:\d{2}$/.test(String(raw).trim())) return raw.trim() + ' hs';
+  return raw;
+}
+
 function buildFechaDetailHTML(basic, detail) {
-  // Merge: detail overrides basic; "—" shown as placeholder when missing
   const ph = v => (v === '—' || v === null || v === undefined)
     ? `<span class="ap-fd-ph">—</span>` : v;
 
@@ -2472,8 +2526,8 @@ function buildFechaDetailHTML(basic, detail) {
   const gf        = detail ? detail.gf               : (basic ? basic.gf                : null);
   const gc        = detail ? detail.gc               : (basic ? basic.gc                : null);
   const local     = (basic && basic.local)            || '—';
-  const dia       = (detail && detail.dia)            || '—';
-  const hora      = (detail && detail.hora)           || '—';
+  const dia       = formatISODia((detail && detail.dia) || '—');
+  const hora      = formatISOHora((detail && detail.hora) || '—');
   const lugar     = (detail && detail.lugar)          || '—';
   const formCSB   = (detail && detail.formacionCSB)   || '—';
   const formRiv   = (detail && detail.formacionRival) || '—';
@@ -2486,21 +2540,27 @@ function buildFechaDetailHTML(basic, detail) {
   const played   = resultado !== null;
   const resColor = gf === null ? '' : gf > gc ? 'var(--verde)' : gf < gc ? 'var(--rojo)' : 'var(--dorado)';
 
-  // All meta fields always shown with placeholder when empty
-  const metaFields = [
-    { label: 'FECHA',            val: fecha !== '—' ? `Fecha ${fecha}` : '—' },
-    { label: 'DÍA',             val: dia },
-    { label: 'HORA',            val: hora },
-    { label: 'LOCAL / VISITA',  val: local },
-    { label: 'LUGAR',           val: lugar },
-    { label: 'FORMACIÓN CSB',   val: formCSB },
-    { label: 'FORMACIÓN RIVAL', val: formRiv },
-    { label: 'RESULTADO PARCIAL', val: parciales },
-    { label: 'POSICIÓN CSB',    val: posCSB },
-    { label: 'POSICIÓN RIVAL',  val: posRival },
-  ];
-
   const rivalDisplay = rival !== '—' ? rival : `<span class="ap-fd-ph">Rival</span>`;
+
+  const pills = [
+    { ico: '📅', lbl: 'Fecha', val: fecha !== '—' ? `Fecha ${fecha}` : null },
+    { ico: '📆', lbl: 'Día',   val: dia !== '—' ? dia : null },
+    { ico: '🕐', lbl: 'Hora',  val: hora !== '—' ? hora : null },
+    { ico: '📍', lbl: 'Lugar', val: lugar !== '—' ? lugar : null },
+    { ico: '🏟️', lbl: local === 'Local' ? 'Local' : 'Visitante', val: local !== '—' ? local : null, highlight: local === 'Local' },
+  ].filter(p => p.val);
+
+  const extraMeta = [
+    parciales !== '—' ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">⏱</span><span class="ap-fd-pill-lbl">Parcial</span><span class="ap-fd-pill-val">${parciales}</span></span>` : '',
+    posCSB !== '—'    ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">📊</span><span class="ap-fd-pill-lbl">Pos CSB</span><span class="ap-fd-pill-val">${posCSB}°</span></span>` : '',
+    posRival !== '—'  ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">📊</span><span class="ap-fd-pill-lbl">Pos Rival</span><span class="ap-fd-pill-val">${posRival}°</span></span>` : '',
+  ].filter(Boolean).join('');
+
+  const formRow = (formCSB !== '—' || formRiv !== '—') ? `
+    <div class="ap-fd-form-row">
+      ${formCSB !== '—' ? `<div class="ap-fd-form-chip"><span>Formación CSB</span>${formCSB}</div>` : ''}
+      ${formRiv !== '—' ? `<div class="ap-fd-form-chip"><span>Formación Rival</span>${formRiv}</div>` : ''}
+    </div>` : '';
 
   const summary = `
     <div class="ap-fd-card">
@@ -2510,13 +2570,16 @@ function buildFechaDetailHTML(basic, detail) {
           ? `<div class="ap-fd-score" style="color:${resColor}">${resultado}</div>`
           : `<div class="ap-fd-pending">⏳ Pendiente</div>`}
       </div>
-      <div class="ap-fd-meta">
-        ${metaFields.map(f => `<div class="ap-fd-meta-item">
-          <div class="ap-fd-meta-label">${f.label}</div>
-          <div class="ap-fd-meta-val">${ph(f.val)}</div>
-        </div>`).join('')}
+      <div class="ap-fd-meta-pills">
+        ${pills.map(p => `<span class="ap-fd-pill${p.highlight?' highlight':''}">
+          <span class="ap-fd-pill-ico">${p.ico}</span>
+          <span class="ap-fd-pill-lbl">${p.lbl}</span>
+          <span class="ap-fd-pill-val">${p.val}</span>
+        </span>`).join('')}
+        ${extraMeta}
       </div>
-      ${obs ? `<div class="ap-fd-obs">📝 ${obs}</div>` : ''}
+      ${formRow}
+      ${obs ? `<div class="ap-fd-obs">${obs}</div>` : ''}
     </div>`;
 
   const titulares  = jugadores.filter(j => j.titular);
@@ -2593,9 +2656,9 @@ function buildFechaDetailHTML(basic, detail) {
           ${cambios.length ? `
           <div class="ap-squad-sec" style="margin-top:14px">Cambios</div>
           ${cambios.map(c => `<div class="ap-change">
-            <span class="cin">▲ ${c.inp.nombre}</span>
+            <span class="cin">${c.inp.nombre}</span>
             <span class="cmet">por</span>
-            <span class="cout">▽ ${c.out ? c.out.nombre : '?'}</span>
+            <span class="cout">${c.out ? c.out.nombre : '?'}</span>
           </div>`).join('')}` : ''}
         </div>
       </div>
