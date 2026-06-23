@@ -2683,11 +2683,15 @@ function renderTorneoApertura() {
       }
     }
 
+    // Group rank for default positional sort
+    const POS_GROUP = { ARQ:0, DFI:1, DFC:1, DFD:1, DEF:1, MI:2, MC:2, MCO:2, MD:2, DC:3, DEL:3 };
+    const posGroup = p => POS_GROUP[String(p||'').toUpperCase()] ?? 4;
+
     // KPIs
     const byGoles = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
     const byAsist = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
     const byGA    = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
-    const byPJ    = [...jugs].sort((a,b) => numVal(b.pj || (numVal(b.titular)+numVal(b.sup || b.entro))) - numVal(a.pj || (numVal(a.titular)+numVal(a.sup || a.entro))));
+    const byPJ    = [...jugs].sort((a,b) => numVal(b.pj || numVal(b.titular)) - numVal(a.pj || numVal(a.titular)));
     const topG = byGoles[0], topA = byAsist[0], topGA = byGA[0], topPJ = byPJ[0];
 
     function kpiCard(icon, val, name, label) {
@@ -2698,12 +2702,11 @@ function renderTorneoApertura() {
         <div class="ap-plantel-kpi-name">${name}</div>
       </div>`;
     }
-    const getPJ = j => numVal(j.pj) || (numVal(j.titular) + numVal(j.entro));
     const kpisHtml = `<div class="ap-plantel-kpis">
       ${kpiCard('⚽', numVal(topG?.goles),  topG?.nombre  || '—', 'Máximo Goleador')}
       ${kpiCard('🎯', numVal(topA?.asist),  topA?.nombre  || '—', 'Máximo Asistidor')}
       ${kpiCard('🌟', numVal(topGA?.goles)+numVal(topGA?.asist), topGA?.nombre || '—', 'Más Goles + Asistencias')}
-      ${kpiCard('🏃', getPJ(topPJ || {}), topPJ?.nombre || '—', 'Más Partidos Jugados')}
+      ${kpiCard('🏃', numVal(topPJ?.pj) || numVal(topPJ?.titular), topPJ?.nombre || '—', 'Más Partidos Jugados')}
     </div>`;
 
     // Encode each row as data-* for client-side sort
@@ -2713,34 +2716,33 @@ function renderTorneoApertura() {
       const a   = numVal(j.asist);
       const tr  = numVal(j.rojas);
       const tit = numVal(j.titular);
-      const ent = numVal(j.entro);
-      const sal = numVal(j.salio);
-      const pj  = numVal(j.pj) || (tit + ent);
+      const sup = numVal(j.entro);   // "Entro" from sheet = Suplentes
+      const pj  = numVal(j.pj) || (tit + sup);
       const cit = numVal(j.citado);
       const pg  = numVal(j.promGol);
       const pa  = numVal(j.promAsist);
       const pga = numVal(j.promGA);
       const pos = posMap[j.nombre] || j.pos || '';
-      return { j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, pos, idx };
+      const grp = posGroup(pos);
+      return { j, g, a, tr, tit, sup, pj, cit, pg, pa, pga, pos, grp, idx };
     });
 
-    const z = v => v > 0 ? v : `<span style="color:rgba(255,255,255,.2);font-size:.72rem">0</span>`;
-    const zf = v => v > 0 ? v.toFixed(2) : `<span style="color:rgba(255,255,255,.2);font-size:.72rem">0</span>`;
+    const z  = v => v > 0 ? v : `<span class="num-zero">0</span>`;
+    const zf = v => v > 0 ? v.toFixed(2) : `<span class="num-zero">—</span>`;
 
-    // Default order: by PJ desc
-    const defaultSorted = [...rows].sort((a,b) => b.pj - a.pj);
+    // Default order: by position group, then PJ desc within group
+    const defaultSorted = [...rows].sort((a,b) => a.grp !== b.grp ? a.grp - b.grp : b.pj - a.pj);
 
     function renderRows(arr) {
-      return arr.map(({ j, g, a, tr, tit, ent, sal, pj, cit, pg, pa, pga, pos }) => `<tr
+      return arr.map(({ j, g, a, tr, tit, sup, pj, cit, pg, pa, pga, pos }) => `<tr
           data-nombre="${j.nombre.toLowerCase()}"
-          data-pj="${pj}" data-tit="${tit}" data-ent="${ent}" data-sal="${sal}" data-cit="${cit}"
+          data-pj="${pj}" data-tit="${tit}" data-sup="${sup}" data-cit="${cit}"
           data-goles="${g}" data-asist="${a}" data-ga="${g+a}" data-tr="${tr}"
           data-pg="${pg}" data-pa="${pa}" data-pga="${pga}">
         <td>${pos ? `<span class="pos-badge" style="margin-right:6px">${pos}</span>` : ''}${j.nombre}</td>
         <td class="${pj  > 0 ? '' : 'num-zero'}">${z(pj)}</td>
         <td class="${tit > 0 ? '' : 'num-zero'}">${z(tit)}</td>
-        <td class="${ent > 0 ? '' : 'num-zero'}">${z(ent)}</td>
-        <td class="${sal > 0 ? '' : 'num-zero'}">${z(sal)}</td>
+        <td class="${sup > 0 ? '' : 'num-zero'}">${z(sup)}</td>
         <td class="${g   > 0 ? 'num-goles' : 'num-zero'}">${z(g)}</td>
         <td class="${a   > 0 ? 'num-asist' : 'num-zero'}">${z(a)}</td>
         <td class="${tr  > 0 ? 'num-rojas' : 'num-zero'}">${z(tr)}</td>
@@ -2753,26 +2755,25 @@ function renderTorneoApertura() {
     }
 
     const colDefs = [
-      { key:'nombre', label:'Jugador',     title:'Ordenar por nombre',          numeric:false },
-      { key:'pj',    label:'🎽 PJ',        title:'Partidos Jugados',            numeric:true },
-      { key:'tit',   label:'👕 TIT',       title:'Partidos como titular',       numeric:true },
-      { key:'ent',   label:'🔄 ENT',       title:'Entró desde el banco',        numeric:true },
-      { key:'sal',   label:'⬇ SAL',        title:'Salió siendo titular',        numeric:true },
-      { key:'goles', label:'⚽ GOL',        title:'Goles',                      numeric:true },
-      { key:'asist', label:'👟 AST',        title:'Asistencias',                numeric:true },
-      { key:'tr',    label:'🟥 TR',         title:'Tarjetas rojas',             numeric:true },
-      { key:'cit',   label:'📋 CIT',        title:'Veces convocado',            numeric:true },
-      { key:'ga',    label:'🔥 G+A',        title:'Goles + Asistencias',        numeric:true },
-      { key:'pg',    label:'📈 Prom.G',     title:'Promedio de goles',          numeric:true },
-      { key:'pa',    label:'📈 Prom.A',     title:'Promedio de asistencias',    numeric:true },
-      { key:'pga',   label:'📈 Prom.G+A',   title:'Promedio Goles + Asist.',    numeric:true },
+      { key:'nombre', label:'Jugador',       title:'Ordenar por nombre',          numeric:false },
+      { key:'pj',    label:'🎽 PJ',          title:'Partidos Jugados',            numeric:true },
+      { key:'tit',   label:'👕 TIT',         title:'Partidos como titular',       numeric:true },
+      { key:'sup',   label:'🔄 SUP',         title:'Partidos como suplente',      numeric:true },
+      { key:'goles', label:'⚽ GOL',          title:'Goles',                      numeric:true },
+      { key:'asist', label:'👟 AST',          title:'Asistencias',                numeric:true },
+      { key:'tr',    label:'🟥 TR',           title:'Tarjetas rojas',             numeric:true },
+      { key:'cit',   label:'📋 CIT',          title:'Veces convocado',            numeric:true },
+      { key:'ga',    label:'🔥 G+A',          title:'Goles + Asistencias',        numeric:true },
+      { key:'pg',    label:'📈 Prom.G',       title:'Promedio de goles',          numeric:true },
+      { key:'pa',    label:'📈 Prom.A',       title:'Promedio de asistencias',    numeric:true },
+      { key:'pga',   label:'📈 Prom.G+A',     title:'Promedio Goles + Asist.',    numeric:true },
     ];
 
     const thead = `<thead><tr>${colDefs.map((c,i) =>
       `<th data-col="${c.key}" title="${c.title}" onclick="apPlantelSort('${tableId}','${c.key}',${c.numeric})"
           style="cursor:pointer;user-select:none;${i===0?'text-align:left':''}"
-          class="${c.key==='pj'?'ap-sort-active':''}">
-        ${c.label} <span class="ap-sort-arrow" data-col="${c.key}">${c.key==='pj'?'↓':''}</span>
+          class="">
+        ${c.label} <span class="ap-sort-arrow" data-col="${c.key}"></span>
       </th>`
     ).join('')}</tr></thead>`;
 
@@ -2783,10 +2784,12 @@ function renderTorneoApertura() {
       </table>
     </div>`;
 
-    // Sort state per table instance
-    window._apPlantelSortState = { col: 'pj', asc: false };
+    // Sort state: null means default positional order
+    window._apPlantelSortState = { col: null, asc: false };
+    window._apPlantelDefaultRows = defaultSorted;
     window.apPlantelSort = function(tid, col, numeric) {
       const st = window._apPlantelSortState;
+      // Toggle: same col → flip; new col → desc for numeric, asc for nombre
       const asc = st.col === col ? !st.asc : col === 'nombre';
       st.col = col; st.asc = asc;
 
@@ -2796,12 +2799,11 @@ function renderTorneoApertura() {
       const trs = [...tbody.querySelectorAll('tr')];
       trs.sort((a, b) => {
         const av = a.dataset[col] ?? '', bv = b.dataset[col] ?? '';
-        let cmp = numeric ? (Number(av) - Number(bv)) : av.localeCompare(bv, 'es');
+        const cmp = numeric ? (Number(av) - Number(bv)) : av.localeCompare(bv, 'es');
         return asc ? cmp : -cmp;
       });
       tbody.innerHTML = trs.map(r => r.outerHTML).join('');
 
-      // Update arrows
       tbl.querySelectorAll('.ap-sort-arrow').forEach(el => {
         el.textContent = el.dataset.col === col ? (asc ? '↑' : '↓') : '';
       });
