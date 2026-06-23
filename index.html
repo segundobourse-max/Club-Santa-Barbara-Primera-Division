@@ -2859,14 +2859,13 @@ function renderTorneoApertura() {
   const aifaSlug = isA ? 'division-a-apertura-2026' : 'division-b-apertura-2026';
 
   function copaBadge(copa) {
-    if (!copa || copa === '-') return '<span style="color:rgba(255,255,255,.2)">—</span>';
-    let cls = '';
-    if (/campe[oó]n|supercopa/i.test(copa))   cls = 'copa-campeon';
-    else if (/recopa|promoci[oó]n/i.test(copa)) cls = 'copa-recopa';
-    else if (/copa de honor/i.test(copa))       cls = 'copa-honor';
-    else if (/descenso/i.test(copa))            cls = 'copa-descenso';
-    else return '<span style="color:rgba(255,255,255,.2)">—</span>';
-    return `<span class="copa-badge ${cls}">${copa}</span>`;
+    if (!copa || copa === '-' || copa === '–') return '<span style="color:rgba(255,255,255,.15)">—</span>';
+    if (/campe[oó]n|supercopa/i.test(copa))    return `<span class="copa-badge copa-campeon">${copa}</span>`;
+    if (/recopa/i.test(copa))                   return `<span class="copa-badge copa-recopa">${copa}</span>`;
+    if (/promoci[oó]n/i.test(copa))             return `<span class="copa-badge copa-honor">${copa}</span>`;
+    if (/copa de honor/i.test(copa))            return `<span class="copa-badge copa-honor">${copa}</span>`;
+    if (/descenso/i.test(copa))                 return `<span class="copa-badge copa-descenso">${copa}</span>`;
+    return `<span style="color:rgba(255,255,255,.4);font-size:0.68rem">${copa}</span>`;
   }
 
   function renderTablaRows(rows) {
@@ -2876,9 +2875,9 @@ function renderTorneoApertura() {
       const dfColor = t.df > 0 ? 'color:#22c55e' : t.df < 0 ? 'color:#ef4444' : '';
       return `<tr class="${isLeader ? 'leader-row' : t.csb ? 'csb-row' : ''}">
         <td style="font-weight:700;color:${isLeader ? '#22c55e' : 'var(--gris-texto)'}">${t.pos}</td>
-        <td>${t.csb && !isLeader ? '⭐ ' : isLeader ? '🏆 ' : ''}${t.equipo}</td>
+        <td>${isLeader ? '🏆 ' : t.csb ? '⭐ ' : ''}${t.equipo}</td>
         <td>${copaBadge(t.copas)}</td>
-        <td><strong style="color:${isLeader ? '#22c55e' : 'var(--dorado)'}">${t.pts}</strong></td>
+        <td><strong style="color:${isLeader ? '#22c55e' : '#f1f5f9'}">${t.pts}</strong></td>
         <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
         <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
         <td style="${dfColor}">${df}</td>
@@ -4890,28 +4889,30 @@ function parseMatches(rows) {
 
 // Parse standings from sheet range L37:V53
 // Expected columns: Pos | Equipo | Clasificación | PTS | PJ | PG | PE | PP | GF | GC | DF
+// Sheet L37:V53 layout: Clasificación | Equipo | PTS | PJ | PG | PE | PP | GF | GC | DF
+// Row 0 = header, rows 1+ = teams in position order
 function parseTablaSheet(rows) {
   if (!rows || rows.length < 2) return [];
   const num = v => { const n = parseInt(String(v??'').replace(/[^0-9\-]/g,'')); return isNaN(n) ? 0 : n; };
-  // Row 0 may be header; detect by checking if first cell is non-numeric
-  const start = isNaN(parseInt(String(rows[0][0]??''))) ? 1 : 0;
+  const start = 1; // skip header row
   const result = [];
+  let rank = 1;
   for (let i = start; i < rows.length; i++) {
     const r = rows[i];
     const equipo = String(r[1]??'').trim();
     if (!equipo) continue;
-    const pos   = String(r[0]??'').trim();
-    const copas = String(r[2]??'').trim();
-    const pts   = num(r[3]);
-    const pj    = num(r[4]);
-    if (!equipo || pj === 0 && pts === 0) continue;
+    const copas = String(r[0]??'').trim();
+    const pts   = num(r[2]);
+    const pj    = num(r[3]);
     result.push({
-      pos, equipo, copas, pts, pj,
-      pg:  num(r[5]), pe: num(r[6]), pp: num(r[7]),
-      gf:  num(r[8]), gc: num(r[9]),
-      df:  num(r[10]),
+      pos: rank + '°',
+      equipo, copas, pts, pj,
+      pg: num(r[4]), pe: num(r[5]), pp: num(r[6]),
+      gf: num(r[7]), gc: num(r[8]),
+      df: num(r[9]),
       csb: /santa.b[aá]rb/i.test(equipo),
     });
+    rank++;
   }
   return result;
 }
