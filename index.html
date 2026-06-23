@@ -3132,6 +3132,12 @@ function renderResumen() {
 // RESUMEN: live fetch from "Estadisticas Historicas"
 // ──────────────────────────────────────────────
 function parseEstHistSheet(rows) {
+  // Column layout (confirmed from sheet data):
+  // Tournament table: A=0(comp) B=1(empty) C=2(año) D=3(PJ) E=4(PG) F=5(PE) G=6(PP) H=7(GF) I=8(GC) J=9(VI)
+  // TOTAL row: col 0="TOTAL", 3=PJ, 4=PG, 5=PE, 6=PP, 7=GF, 8=GC, 9=VI
+  // Goleadores (bottom-left):  pos=0, nombre=1, empty=2, valor=3
+  // Asistidores (bottom-mid):  pos=6, nombre=7, empty=8, valor=9
+  // Más partidos (top-right):  pos=13, nombre=14, empty=15, valor=16
   const num = v => { const n = parseFloat(String(v ?? '').replace(',','.')); return isNaN(n) ? 0 : n; };
   let historico = null;
   const goleadores = [], asistidores = [], masPartidos = [];
@@ -3141,31 +3147,33 @@ function parseEstHistSheet(rows) {
     const c = row.map(v => String(v ?? '').trim());
     const rowUp = c.join('|').toUpperCase();
 
-    // TOTAL row: col C=PJ, D=PG, E=PE, F=PP, G=GF, H=GC, I=VI (indices 2-8)
-    if (!historico && c.some(v => v.toUpperCase() === 'TOTAL')) {
-      const pj = num(row[2]);
-      if (pj > 0) historico = { pj, pg: num(row[3]), pe: num(row[4]), pp: num(row[5]), gf: num(row[6]), gc: num(row[7]), vi: num(row[8]) };
+    // TOTAL row
+    if (!historico && c[0].toUpperCase() === 'TOTAL') {
+      const pj = num(row[3]);
+      if (pj > 0) historico = { pj, pg: num(row[4]), pe: num(row[5]), pp: num(row[6]), gf: num(row[7]), gc: num(row[8]), vi: num(row[9]) };
     }
 
-    // Section headers
-    if (rowUp.includes('GOLEADORES')) { readGol = true; continue; }
-    if (rowUp.includes('ASISTIDOR'))  { readAsi = true; continue; }
-    if (rowUp.includes('MAS PARTIDOS') || rowUp.includes('MÁS PARTIDOS')) { readPar = true; continue; }
+    // Section headers — multiple can appear on same row, handle all before continuing
+    let headerFound = false;
+    if (rowUp.includes('GOLEADORES') && !readGol) { readGol = true; headerFound = true; }
+    if (rowUp.includes('ASISTIDOR')  && !readAsi) { readAsi = true; headerFound = true; }
+    if ((rowUp.includes('MAS PARTIDOS') || rowUp.includes('MÁS PARTIDOS')) && !readPar) { readPar = true; headerFound = true; }
+    if (headerFound) continue;
 
-    // Skip "Posicion/Jugador/Cantidad" header rows
-    if (c[1]?.toUpperCase() === 'JUGADOR' || c[5]?.toUpperCase() === 'JUGADOR' || c[14]?.toUpperCase() === 'JUGADOR') continue;
+    // Skip Posicion/Jugador/Cantidad header rows
+    if (c[1]?.toUpperCase() === 'JUGADOR' || c[7]?.toUpperCase() === 'JUGADOR' || c[14]?.toUpperCase() === 'JUGADOR') continue;
 
-    // Goleadores: cols A=0(pos) B=1(nombre) C=2(valor)
-    if (readGol && c[1] && !isNaN(parseFloat(c[2])))
-      goleadores.push({ nombre: c[1], valor: num(row[2]) });
+    // Goleadores: nombre=col1, valor=col3
+    if (readGol && c[1] && !isNaN(parseFloat(c[3])))
+      goleadores.push({ nombre: c[1], valor: num(row[3]) });
 
-    // Asistidores: cols E=4(pos) F=5(nombre) G=6(valor)
-    if (readAsi && c[5] && !isNaN(parseFloat(c[6])))
-      asistidores.push({ nombre: c[5], valor: num(row[6]) });
+    // Asistidores: nombre=col7, valor=col9
+    if (readAsi && c[7] && !isNaN(parseFloat(c[9])))
+      asistidores.push({ nombre: c[7], valor: num(row[9]) });
 
-    // Más partidos: cols N=13(pos) O=14(nombre) P=15(valor)
-    if (readPar && c[14] && !isNaN(parseFloat(c[15])))
-      masPartidos.push({ nombre: c[14], valor: num(row[15]) });
+    // Más partidos: nombre=col14, valor=col16
+    if (readPar && c[14] && !isNaN(parseFloat(c[16])))
+      masPartidos.push({ nombre: c[14], valor: num(row[16]) });
   }
 
   return {
