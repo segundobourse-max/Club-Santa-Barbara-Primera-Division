@@ -3024,7 +3024,7 @@ function renderResumen() {
           <div class="sh-item">
             <div class="sh-label">Partidos Jugados</div>
             <div class="sh-value">${h.pj}</div>
-            <div class="sh-pct">Desde 2016</div>
+            <div class="sh-pct">${isA ? 'Desde 2016' : 'Desde 2023'}</div>
           </div>
           <div class="sh-item">
             <div class="sh-label">Victorias</div>
@@ -5064,18 +5064,20 @@ async function loadLiveData() {
 
   // Estadisticas Historicas
   if (aHist.status === 'fulfilled' && aHist.value?.length > 3) {
-    const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(aHist.value);
-    if (historico?.pj > 0)    DATA_A.historico        = historico;
-    if (goleadores.length)    DATA_A.topHist.goles    = goleadores;
-    if (asistidores.length)   DATA_A.topHist.asist    = asistidores;
-    if (masPartidos.length)   DATA_A.topHist.partidos = masPartidos;
+    const p = parseEstHistSheet(aHist.value);
+    console.log('A_Hist parsed:', p.historico, 'gol:', p.goleadores[0], 'par:', p.masPartidos[0]);
+    if (p.historico?.pj > 0)    DATA_A.historico        = p.historico;
+    if (p.goleadores.length)    DATA_A.topHist.goles    = p.goleadores;
+    if (p.asistidores.length)   DATA_A.topHist.asist    = p.asistidores;
+    if (p.masPartidos.length)   DATA_A.topHist.partidos = p.masPartidos;
   }
   if (bHist.status === 'fulfilled' && bHist.value?.length > 3) {
-    const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(bHist.value);
-    if (historico?.pj > 0)    DATA_B.historico        = historico;
-    if (goleadores.length)    DATA_B.topHist.goles    = goleadores;
-    if (asistidores.length)   DATA_B.topHist.asist    = asistidores;
-    if (masPartidos.length)   DATA_B.topHist.partidos = masPartidos;
+    const p = parseEstHistSheet(bHist.value);
+    console.log('B_Hist parsed:', p.historico, 'gol:', p.goleadores[0], 'par:', p.masPartidos[0]);
+    if (p.historico?.pj > 0)    DATA_B.historico        = p.historico;
+    if (p.goleadores.length)    DATA_B.topHist.goles    = p.goleadores;
+    if (p.asistidores.length)   DATA_B.topHist.asist    = p.asistidores;
+    if (p.masPartidos.length)   DATA_B.topHist.partidos = p.masPartidos;
   }
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
