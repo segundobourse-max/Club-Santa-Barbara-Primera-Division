@@ -4866,9 +4866,10 @@ function parsePlayers(rows) {
   const num = v => { const n = parseFloat(String(v??'').replace(',','.')); return isNaN(n) ? 0 : n; };
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
-    if (!/jugador/i.test(r[0]||'') || !r.some(c=>/goles/i.test(c||''))) continue;
+    // Must be the Estadisticas Globales header: has "Jugador" in col 0 AND "Partidos Jugados" somewhere
+    if (!/jugador/i.test(r[0]||'') || !r.some(c=>/partidos jugados/i.test(c||''))) continue;
     const h = r.map(c => String(c??'').toLowerCase());
-    const pjI   = h.findIndex(c => c.includes('partidos jugados') || (c.includes('partidos') && !c.includes('prom')));
+    const pjI   = h.findIndex(c => c.includes('partidos jugados'));
     const citI  = h.findIndex(c => c.includes('citado'));
     const titI  = h.findIndex(c => c.includes('titular'));
     const entI  = h.findIndex(c => c.includes('entr'));
@@ -4883,9 +4884,10 @@ function parsePlayers(rows) {
     for (let j = i+1; j < rows.length; j++) {
       const row = rows[j]; const nombre = String(row[0]??'').trim();
       if (!nombre || /^(jugador|rival|fecha)/i.test(nombre)) break;
+      if (/^(porcentajes|promedio|total)/i.test(nombre)) break;
       const citado = citI >= 0 ? num(row[citI]) : 0;
       const goles  = golI >= 0 ? num(row[golI]) : 0;
-      if (!citado && !goles) continue;
+      if (!citado && !goles && !num(row[pjI >= 0 ? pjI : 0])) continue;
       players.push({
         nombre,
         pj:    pjI  >= 0 ? num(row[pjI])  : (titI >= 0 ? num(row[titI]) : 0),
