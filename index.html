@@ -2520,8 +2520,8 @@ function buildFechaDetailHTML(basic, detail) {
   const rival     = (detail && detail.rival)          || (basic && basic.rival)          || '—';
   const fecha     = (detail && detail.fecha)          || (basic && basic.fecha)          || '—';
   const resultado = (detail && detail.resultado)      || (basic && basic.resultado)      || null;
-  const gf        = detail ? detail.gf               : (basic ? basic.gf                : null);
-  const gc        = detail ? detail.gc               : (basic ? basic.gc                : null);
+  const gf        = (detail && detail.gf != null) ? detail.gf : (basic ? basic.gf : null);
+  const gc        = (detail && detail.gc != null) ? detail.gc : (basic ? basic.gc : null);
   const local     = (basic && basic.local)            || '—';
   const dia       = formatISODia((detail && detail.dia) || '—');
   const hora      = formatISOHora((detail && detail.hora) || '—');
