@@ -4058,7 +4058,6 @@ function renderJugadoresTotales() {
       <input id="jug-search" type="search" placeholder="🔍 Buscar jugador..." oninput="_jugTotalFilter(this.value)"
         style="flex:1;min-width:160px;padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:0.85rem;outline:none">
       <div id="jug-tab-row" style="display:flex;gap:5px;flex-wrap:wrap"></div>
-      <span id="jug-count" style="color:var(--gris-texto);font-size:0.78rem;white-space:nowrap;margin-left:2px"></span>
     </div>
     <div class="table-wrap" id="jug-totales-wrap" style="overflow-x:auto;position:relative">
       <div style="color:var(--gris-texto);padding:24px;text-align:center">Cargando...</div>
@@ -4155,11 +4154,17 @@ function _jugTotalBuild() {
   const tabRow = document.getElementById('jug-tab-row');
   if (!wrap || !_jugTotalesData) return;
 
-  // Tab pills
+  // Tab pills — active = naranja sólido, inactivo = relieve sutil
   if (tabRow) {
-    tabRow.innerHTML = JUG_TABS.map(t => `
-      <button onclick="_jugTotalSetTab('${t.key}')" style="padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,${_jugTotalesTab===t.key?'0.3':'0.1'});background:${_jugTotalesTab===t.key?'rgba(255,255,255,0.12)':'transparent'};color:${_jugTotalesTab===t.key?'#fff':'var(--gris-texto)'};font-size:0.78rem;cursor:pointer;white-space:nowrap">${t.label}</button>`).join('');
+    tabRow.innerHTML = JUG_TABS.map(t => {
+      const active = _jugTotalesTab === t.key;
+      return `<button onclick="_jugTotalSetTab('${t.key}')" style="padding:5px 14px;border-radius:20px;border:1px solid ${active?'rgba(249,115,22,0.6)':'rgba(255,255,255,0.09)'};background:${active?'#f97316':'rgba(255,255,255,0.06)'};color:${active?'#fff':'#94a3b8'};font-size:0.78rem;font-weight:${active?'700':'400'};cursor:pointer;white-space:nowrap;transition:all .15s">${t.label}</button>`;
+    }).join('');
   }
+
+  // Update search placeholder with player count
+  const searchEl = document.getElementById('jug-search');
+  if (searchEl) searchEl.placeholder = `🔍 Buscar entre ${_jugTotalesData.length} jugadores…`;
 
   const activeCols = JUG_TABS.find(t => t.key === _jugTotalesTab)?.cols || JUG_TABS[0].cols;
 
@@ -4180,12 +4185,6 @@ function _jugTotalBuild() {
   const countEl = document.getElementById('jug-count');
   if (countEl) countEl.textContent = `${rows.length} jugador${rows.length !== 1 ? 'es' : ''}`;
 
-  // Compute max per numeric col for progress bars
-  const maxVals = {};
-  activeCols.forEach(ci => {
-    maxVals[ci] = Math.max(...rows.map(r => _jugTotalNumeric(r[ci]) || 0), 1);
-  });
-
   // Top 3 sets for medal highlights
   const rankMap = new Map();
   rows.forEach((r, i) => rankMap.set(r, i));
@@ -4200,7 +4199,7 @@ function _jugTotalBuild() {
     ${activeCols.map(ci => {
       const m = COL_META[ci] || { label: _jugTotalesCols[ci], icon: '', color: '#94a3b8' };
       const active = _jugTotalesSort.col === ci;
-      return `<th onclick="_jugTotalSort(${ci})" style="cursor:pointer;user-select:none;min-width:80px;padding:10px 12px;font-size:0.65rem;color:${active ? m.color : 'var(--gris-texto)'};text-align:right;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
+      return `<th onclick="_jugTotalSort(${ci})" style="cursor:pointer;user-select:none;min-width:72px;padding:10px 12px;font-size:0.65rem;color:${active ? m.color : 'var(--gris-texto)'};text-align:center;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
         ${m.icon} ${m.label}${active ? `<span style="font-size:0.7em;margin-left:3px">${_jugTotalesSort.asc ? '▲' : '▼'}</span>` : ''}
       </th>`;
     }).join('')}`;
@@ -4220,25 +4219,22 @@ function _jugTotalBuild() {
       const v = r[ci];
       const n = _jugTotalNumeric(v);
       const m = COL_META[ci] || { color: '#94a3b8' };
-      const pct = (n !== null && !isNaN(n) && maxVals[ci] > 0) ? Math.round(n / maxVals[ci] * 100) : 0;
       const isNull = n === null || isNaN(n) || n === 0;
       const isDecimal = n !== null && !isNaN(n) && !Number.isInteger(n);
       const display = isNull
         ? `<span style="color:rgba(255,255,255,0.18)">—</span>`
         : `<span style="color:${m.color};font-weight:800;font-size:0.92rem">${isDecimal ? n.toFixed(2).replace('.',',') : n}</span>`;
-      const bar = (!isNull && pct > 0 && [JUG_COL.goles,JUG_COL.asist,JUG_COL.gmas,JUG_COL.pj].includes(ci))
-        ? `<div style="height:4px;border-radius:999px;background:rgba(255,255,255,0.07);margin-top:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${m.color};border-radius:999px;box-shadow:0 0 4px ${m.color}44"></div></div>` : '';
-      return `<td style="text-align:right;padding:9px 12px;vertical-align:middle">${display}${bar}</td>`;
+      return `<td style="text-align:center;padding:9px 14px;vertical-align:middle">${display}</td>`;
     }).join('');
 
-    return `<tr style="background:${bg};${borderLeft};transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${bg}'">
-      <td style="position:sticky;left:0;z-index:1;background:inherit;text-align:center;padding:9px 8px;font-size:0.82rem">${rank >= 0 ? medals[rank] : `<span style="color:rgba(255,255,255,0.25);font-size:0.72rem">${i+1}</span>`}</td>
-      <td style="position:sticky;left:44px;z-index:1;background:inherit;padding:8px 12px;min-width:200px">
+    return `<tr style="background:${bg};${borderLeft};transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='${hoverBg}';this.querySelectorAll('td[data-sticky]').forEach(t=>t.style.background='${hoverBg}')" onmouseout="this.style.background='${bg}';this.querySelectorAll('td[data-sticky]').forEach(t=>t.style.background='${bg}')">
+      <td data-sticky="1" style="position:sticky;left:0;z-index:1;background:${bg};text-align:center;padding:9px 8px;font-size:0.82rem">${rank >= 0 ? medals[rank] : `<span style="color:rgba(255,255,255,0.25);font-size:0.72rem">${i+1}</span>`}</td>
+      <td data-sticky="1" style="position:sticky;left:44px;z-index:1;background:${bg};padding:8px 12px;min-width:200px">
         <div style="display:flex;align-items:center;gap:9px">
           <div style="width:34px;height:34px;border-radius:50%;background:${pb};border:1.5px solid ${pc}44;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:900;color:${pc};flex-shrink:0">${initials}</div>
           <div>
             <div style="font-weight:800;color:#fff;font-size:0.9rem;line-height:1.1">${nombre}</div>
-            <span style="display:inline-block;margin-top:2px;padding:1px 6px;border-radius:4px;font-size:0.6rem;font-weight:800;letter-spacing:.05em;color:${pc};background:${pb}">${pos}</span>
+            <span style="display:inline-block;margin-top:2px;padding:2px 8px;border-radius:999px;font-size:0.6rem;font-weight:800;letter-spacing:.05em;color:${pc};background:${pb};border:1px solid ${pc}44">${pos}</span>
           </div>
         </div>
       </td>
