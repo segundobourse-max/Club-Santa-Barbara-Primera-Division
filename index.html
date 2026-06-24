@@ -1269,6 +1269,40 @@
     .ap-inc-group:last-child { border-bottom:none; }
     .ap-inc-label { font-size:0.68rem; font-weight:700; color:var(--gris-texto); min-width:90px; }
     .ap-inc-item { background:rgba(255,255,255,0.06); border-radius:6px; padding:2px 8px; color:var(--texto); font-size:0.74rem; }
+    /* ── Recopa bracket ── */
+    .rc-bracket-wrap { overflow-x:auto; padding:8px 0 20px; }
+    .rc-bracket { display:flex; align-items:stretch; gap:0; min-width:900px; }
+    .rc-side { display:flex; gap:0; }
+    .rc-side.right { flex-direction:row-reverse; }
+    .rc-round-col { display:flex; flex-direction:column; }
+    .rc-round-header { font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; text-align:center; padding:6px 12px; margin-bottom:8px; border-radius:20px; white-space:nowrap; }
+    .rc-round-header.octavos   { background:rgba(139,92,246,.15); color:#a78bfa; border:1px solid rgba(139,92,246,.3); }
+    .rc-round-header.cuartos   { background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
+    .rc-round-header.semis     { background:rgba(100,116,139,.12); color:#94a3b8; border:1px solid rgba(100,116,139,.3); }
+    .rc-round-header.final     { background:rgba(245,158,11,.18); color:#f59e0b; border:1px solid rgba(245,158,11,.4); }
+    .rc-matches { display:flex; flex-direction:column; flex:1; }
+    .rc-slot { display:flex; flex-direction:column; justify-content:center; flex:1; padding:4px 0; position:relative; }
+    .rc-connector-right::after { content:''; position:absolute; right:-18px; top:50%; width:18px; height:2px; background:rgba(255,255,255,.12); }
+    .rc-connector-left::after  { content:''; position:absolute; left:-18px; top:50%; width:18px; height:2px; background:rgba(255,255,255,.12); }
+    .rc-match-card { background:#1a2540; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:9px 12px; margin:4px 8px; min-width:155px; }
+    .rc-match-card.csb { border-color:rgba(245,158,11,.5); box-shadow:0 0 12px rgba(245,158,11,.12); }
+    .rc-match-card.pending { opacity:.7; }
+    .rc-match-card.final-card { border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.04); min-width:160px; }
+    .rc-team-row { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:3px 0; font-size:0.74rem; }
+    .rc-team-row + .rc-team-row { border-top:1px solid rgba(255,255,255,.05); }
+    .rc-team-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#94a3b8; }
+    .rc-team-name.winner { color:#f1f5f9; font-weight:700; }
+    .rc-team-name.csb-name { color:#fbbf24; font-weight:700; }
+    .rc-team-name.tbd { color:rgba(255,255,255,.2); font-style:italic; }
+    .rc-score { font-size:0.88rem; font-weight:900; min-width:16px; text-align:center; color:#f1f5f9; }
+    .rc-score.win { color:#22c55e; }
+    .rc-score.loss { color:#ef4444; }
+    .rc-score.tbd { color:rgba(255,255,255,.2); }
+    .rc-meta { font-size:0.58rem; color:var(--gris-texto); margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; }
+    .rc-center { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 8px; min-width:50px; }
+    .rc-center-line { flex:1; width:2px; background:rgba(255,255,255,.06); }
+    .rc-final-col { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .rc-round-label { writing-mode:horizontal-tb; font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--gris-texto); margin:6px 0; }
   </style>
 </head>
 <body>
@@ -2689,36 +2723,259 @@ function selectFecha(n) {
 // ──────────────────────────────────────────────
 // RENDER: RECOPA
 // ──────────────────────────────────────────────
-let selectedFechaRecopa = null;
+let selectedFaseCopa = null;
 
-function selectFechaRecopa(n) {
-  selectedFechaRecopa = n;
-  document.querySelectorAll('#torneo-recopa-content .ap-fecha-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.fecha === String(n));
+function selectFaseCopa(key) {
+  selectedFaseCopa = key;
+  document.querySelectorAll('#rc-fase-nav .ap-fecha-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.key === key);
   });
-  renderFechaDetail(null, null, 'ap-recopa-detail');
+  const d = currentData;
+  const copaPartidos = (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
+  const basic  = copaPartidos.find(m => (m.rival + '|' + m.posCSB) === key) || null;
+  const detail = (d.apertura || []).find(m => !/^\d+$/.test(String(m.fecha)) && m.rival?.toLowerCase() === basic?.rival?.toLowerCase()) || null;
+  renderFechaDetail(basic, detail, 'rc-fase-detail');
 }
 
 function renderRecopa() {
-  const isA = currentData === DATA_A;
+  const d = currentData;
+  const isA = d === DATA_A;
   const name = isA ? 'Recopa AIFA A 2026' : 'Recopa AIFA B 2026';
-  // Placeholder fecha buttons 1-8 (copa format)
-  const totalFechas = 8;
-  const fechaBtns = Array.from({length: totalFechas}, (_, i) => {
-    const n = i + 1;
-    return `<button class="ap-fecha-btn pending" data-fecha="${n}" onclick="selectFechaRecopa(${n})">Fecha ${n}</button>`;
+
+  // Copa matches (non-numeric fecha)
+  const copaPartidos = (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
+
+  // ── Tab 1: Plantel (reuse same logic as Apertura) ──────────────────────
+  function buildRecoPlantelTab() {
+    const jugs = d.jugadores || [];
+    if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
+    const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
+    const posMap = {};
+    for (const match of (d.apertura || [])) {
+      for (const p of (match.jugadores || [])) {
+        if (p.nombre && p.pos && !posMap[p.nombre]) posMap[p.nombre] = p.pos;
+      }
+    }
+    const POS_GROUP = { ARQ:0, DFI:1, DFC:1, DFD:1, DEF:1, MI:2, MC:2, MCO:2, MD:2, DC:3, DEL:3 };
+    const posGroup  = p => POS_GROUP[String(p||'').toUpperCase()] ?? 4;
+    const byGoles   = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
+    const byAsist   = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
+    const byGA      = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
+    const byPJ      = [...jugs].sort((a,b) => numVal(b.pj) - numVal(a.pj));
+    const topG = byGoles[0], topA = byAsist[0], topGA = byGA[0], topPJ = byPJ[0];
+    function kpiCard(icon, val, name, label) {
+      return `<div class="ap-plantel-kpi">
+        <div class="ap-plantel-kpi-icon">${icon}</div>
+        <div class="ap-plantel-kpi-label">${label}</div>
+        <div class="ap-plantel-kpi-val">${val}</div>
+        <div class="ap-plantel-kpi-name">${name}</div>
+      </div>`;
+    }
+    const kpisHtml = `<div class="ap-plantel-kpis">
+      ${kpiCard('⚽', numVal(topG?.goles),  topG?.nombre  || '—', 'Máx. Goleador')}
+      ${kpiCard('🎯', numVal(topA?.asist),  topA?.nombre  || '—', 'Máx. Asistidor')}
+      ${kpiCard('🌟', numVal(topGA?.goles)+numVal(topGA?.asist), topGA?.nombre || '—', 'G+A')}
+      ${kpiCard('🏃', numVal(topPJ?.pj),    topPJ?.nombre || '—', 'Más PJ')}
+    </div>`;
+    const rows = jugs.map(j => {
+      const g=numVal(j.goles),a=numVal(j.asist),tr=numVal(j.rojas),tit=numVal(j.titular),sup=numVal(j.entro);
+      const pj=numVal(j.pj)||(tit+sup),cit=numVal(j.citado),pg=numVal(j.promGol),pa=numVal(j.promAsist),pga=numVal(j.promGA);
+      const pos=posMap[j.nombre]||j.pos||'',grp=posGroup(pos);
+      return {j,g,a,tr,tit,sup,pj,cit,pg,pa,pga,pos,grp};
+    });
+    const defSorted=[...rows].sort((a,b)=>a.grp!==b.grp?a.grp-b.grp:b.pj-a.pj);
+    const z=v=>v>0?v:`<span class="num-zero">0</span>`;
+    const zf=v=>v>0?v.toFixed(2):`<span class="num-zero">—</span>`;
+    const tid='rc-plantel-tbl';
+    function renderRows(arr){
+      return arr.map(({j,g,a,tr,tit,sup,pj,cit,pg,pa,pga,pos})=>`<tr
+          data-nombre="${j.nombre.toLowerCase()}"
+          data-pj="${pj}" data-tit="${tit}" data-sup="${sup}" data-cit="${cit}"
+          data-goles="${g}" data-asist="${a}" data-ga="${g+a}" data-tr="${tr}"
+          data-pg="${pg}" data-pa="${pa}" data-pga="${pga}">
+        <td>${pos?`<span class="pos-badge" style="margin-right:6px">${pos}</span>`:''}${j.nombre}</td>
+        <td class="${pj>0?'':'num-zero'}">${z(pj)}</td><td class="${tit>0?'':'num-zero'}">${z(tit)}</td>
+        <td class="${sup>0?'':'num-zero'}">${z(sup)}</td><td class="${g>0?'num-goles':'num-zero'}">${z(g)}</td>
+        <td class="${a>0?'num-asist':'num-zero'}">${z(a)}</td><td class="${(g+a)>0?'num-ga':'num-zero'}">${z(g+a)}</td>
+        <td class="${tr>0?'num-rojas':'num-zero'}">${z(tr)}</td><td class="${cit>0?'':'num-zero'}">${z(cit)}</td>
+        <td class="${pg>0?'num-goles':'num-zero'}">${zf(pg)}</td><td class="${pa>0?'num-asist':'num-zero'}">${zf(pa)}</td>
+        <td class="${pga>0?'num-ga':'num-zero'}">${zf(pga)}</td>
+      </tr>`).join('');
+    }
+    const colDefs=[
+      {key:'nombre',label:'Jugador',numeric:false},{key:'pj',label:'🎽 PJ',numeric:true},
+      {key:'tit',label:'👕 TIT',numeric:true},{key:'sup',label:'🔄 SUP',numeric:true},
+      {key:'goles',label:'⚽ GOL',numeric:true},{key:'asist',label:'👟 AST',numeric:true},
+      {key:'ga',label:'🔥 G+A',numeric:true},{key:'tr',label:'🟥 TR',numeric:true},
+      {key:'cit',label:'📋 CIT',numeric:true},{key:'pg',label:'📈 Prom.G',numeric:true},
+      {key:'pa',label:'📈 Prom.A',numeric:true},{key:'pga',label:'📈 Prom.G+A',numeric:true},
+    ];
+    const thead=`<thead><tr>${colDefs.map((c,i)=>`<th data-col="${c.key}" onclick="rcPlantelSort('${tid}','${c.key}',${c.numeric})" style="cursor:pointer;user-select:none;${i===0?'text-align:left':''}">${c.label} <span class="ap-sort-arrow" data-col="${c.key}"></span></th>`).join('')}</tr></thead>`;
+    window._rcPlantelSortState={col:null,asc:false};
+    window._rcPlantelDefaultRows=defSorted;
+    window.rcPlantelSort=function(tid2,col,numeric){
+      const st=window._rcPlantelSortState;
+      const asc=st.col===col?!st.asc:col==='nombre';
+      st.col=col;st.asc=asc;
+      const tbl=document.getElementById(tid2);if(!tbl)return;
+      const tbody=tbl.querySelector('tbody');
+      const trs=[...tbody.querySelectorAll('tr')];
+      trs.sort((a,b)=>{const av=a.dataset[col]??'',bv=b.dataset[col]??'';const cmp=numeric?(Number(av)-Number(bv)):av.localeCompare(bv,'es');return asc?cmp:-cmp;});
+      tbody.innerHTML=trs.map(r=>r.outerHTML).join('');
+      tbl.querySelectorAll('.ap-sort-arrow').forEach(el=>{el.textContent=el.dataset.col===col?(asc?'↑':'↓'):'';});
+      tbl.querySelectorAll('th[data-col]').forEach(el=>{el.classList.toggle('ap-sort-active',el.dataset.col===col);});
+    };
+    return `${kpisHtml}<div class="ap-plantel-table-wrap"><table class="ap-plantel-table" id="${tid}">${thead}<tbody>${renderRows(defSorted)}</tbody></table></div>`;
+  }
+
+  // ── Tab 2: Fase de Eliminación (bracket) ───────────────────────────────
+  function rcTeam(name, score, isWinner, isCsb, isPending) {
+    const nameClass = isCsb ? 'csb-name' : isPending ? 'tbd' : isWinner ? 'winner' : '';
+    const scoreClass = isPending ? 'tbd' : isWinner ? 'win' : score !== null ? 'loss' : 'tbd';
+    const scoreStr = score !== null ? score : '–';
+    return `<div class="rc-team-row">
+      <span class="rc-team-name ${nameClass}">${isCsb ? '⭐ ' : ''}${name}</span>
+      <span class="rc-score ${scoreClass}">${scoreStr}</span>
+    </div>`;
+  }
+
+  function rcMatch(t1, g1, t2, g2, meta, isCsb, isPending, isCSBwinner) {
+    // Determine winners
+    const w1 = g1 !== null && g2 !== null && g1 > g2;
+    const w2 = g1 !== null && g2 !== null && g2 > g1;
+    const csb1 = isCsb && isCSBwinner === 't1';
+    const csb2 = isCsb && isCSBwinner === 't2';
+    return `<div class="rc-match-card${isCsb ? ' csb' : ''}${isPending ? ' pending' : ''}">
+      ${rcTeam(t1, g1, w1, csb1, isPending)}
+      ${rcTeam(t2, g2, w2, csb2, isPending)}
+      ${meta ? `<div class="rc-meta">${meta}</div>` : ''}
+    </div>`;
+  }
+
+  function rcRound(label, cls, slots) {
+    return `<div class="rc-round-col">
+      <div style="text-align:center;margin-bottom:6px;padding:0 8px">
+        <span class="rc-round-header ${cls}">${label}</span>
+      </div>
+      <div class="rc-matches" style="flex:1">
+        ${slots.map(s => `<div class="rc-slot">${s}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Bracket data from AIFA image
+  const leftOctavos = [
+    rcMatch('GEBA BLANCO','RHINO',1,0,'📅 07/03 00:00 · POSTERGADO',false,false),
+    rcMatch('REGATAS "B"','REP. DEL OESTE',1,0,'📅 07/03 15:00 · Club Regatas Avellaneda',false,false),
+    rcMatch('LIBERTADOR "A"','SAN FERNANDO',4,1,'📅 06/03 22:00 · Club Acassuso',false,false),
+    rcMatch('SANTA BÁRBARA "A"','EL CHASQUI "A"',2,1,'📅 07/03 18:00 · Club Santa Bárbara, Talar',true,false,'t1'),
+  ];
+  const leftCuartos = [
+    rcMatch('GEBA BLANCO','REGATAS "B"',2,0,'📅 21/05 21:00 · Club GEBA, Sede Palermo',false,false),
+    rcMatch('LIBERTADOR "A"','SANTA BÁRBARA "A"',2,5,'📅 23/05 14:30 · Santa Bárbara, C. Marcos',true,false,'t2'),
+  ];
+  const leftSemis = [
+    rcMatch('GEBA BLANCO','SANTA BÁRBARA "A"',null,null,'📅 15/08 20:00 · Por definir',true,true,'t2'),
+  ];
+  const rightOctavos = [
+    rcMatch('VILO','SHOLEM',null,null,'📅 07/03 19:00 · Club Vilo, Vte. López',false,true),
+    rcMatch('SANTA BÁRBARA "B"','ZAFADOS F.C.',null,null,'📅 07/03 16:00 · Club Santa Bárbara, Talar',false,true),
+    rcMatch('HEBRAICA','AFALP "B"',null,null,'📅 07/03 14:00 · Sede Hebraica, Pilar',false,true),
+    rcMatch('CISSAB','LASALLE',null,null,'📅 07/03 17:00 · Cissab, Tristán Suárez',false,true),
+  ];
+  const rightCuartos = [
+    rcMatch('SHOLEM','SANTA BÁRBARA "B"',3,0,'📅 23/05 17:00 · Santa Bárbara, C. Marcos',false,false),
+    rcMatch('HEBRAICA','CISSAB',2,3,'📅 23/05 14:00 · Est. Monumental de C.',false,false),
+  ];
+  const rightSemis = [
+    rcMatch('SHOLEM','CISSAB',null,null,'📅 15/08 20:00 · Por definir',false,true),
+  ];
+  const finalMatch = `<div class="rc-match-card final-card" style="margin:0 8px">
+    <div style="text-align:center;font-size:0.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#f59e0b;margin-bottom:8px">🏆 Final</div>
+    ${rcTeam('TBD', null, false, false, true)}
+    ${rcTeam('TBD', null, false, false, true)}
+    <div class="rc-meta">📅 22/11/2026 20:00 · Por definir</div>
+  </div>`;
+
+  const bracketHtml = `
+    <div class="rc-bracket-wrap">
+      <div class="rc-bracket">
+        <div class="rc-side">
+          ${rcRound('Octavos de Final','octavos', leftOctavos)}
+          <div class="rc-center"><div class="rc-center-line"></div></div>
+          ${rcRound('Cuartos de Final','cuartos', leftCuartos)}
+          <div class="rc-center"><div class="rc-center-line"></div></div>
+          ${rcRound('Semifinales','semis', leftSemis)}
+          <div class="rc-center"><div class="rc-center-line"></div></div>
+        </div>
+        <div class="rc-final-col">
+          <div style="margin-bottom:8px;text-align:center"><span class="rc-round-header final">Final</span></div>
+          ${finalMatch}
+        </div>
+        <div class="rc-side right">
+          ${rcRound('Octavos de Final','octavos', rightOctavos)}
+          <div class="rc-center"><div class="rc-center-line"></div></div>
+          ${rcRound('Cuartos de Final','cuartos', rightCuartos)}
+          <div class="rc-center"><div class="rc-center-line"></div></div>
+          ${rcRound('Semifinales','semis', rightSemis)}
+          <div class="rc-center"><div class="rc-center-line"></div></div>
+        </div>
+      </div>
+    </div>`;
+
+  // ── Tab 3: Fase por Fase ────────────────────────────────────────────────
+  const roundOrder = { 'octavos':1, 'cuartos':2, 'semi':3, 'final':4 };
+  const sortedCopa = [...copaPartidos].sort((a,b) => {
+    const ra = roundOrder[Object.keys(roundOrder).find(k => String(a.posCSB||'').toLowerCase().includes(k)) || ''] || 9;
+    const rb = roundOrder[Object.keys(roundOrder).find(k => String(b.posCSB||'').toLowerCase().includes(k)) || ''] || 9;
+    return ra - rb;
+  });
+
+  const faseBtns = sortedCopa.map(m => {
+    const key = m.rival + '|' + m.posCSB;
+    const played = m.resultado !== null;
+    const lbl = m.posCSB || 'Copa';
+    return `<button class="ap-fecha-btn ${played?'played':'pending'}" data-key="${key}" onclick="selectFaseCopa('${key.replace(/'/g,"\\'")}')">
+      ${lbl}
+    </button>`;
   }).join('');
 
+  // ── Render ──────────────────────────────────────────────────────────────
   document.getElementById('torneo-recopa-content').innerHTML = `
     <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
     <div class="section-title" style="margin-bottom:20px">🏅 ${name}</div>
-    <div class="ap-fechas-title">📅 Fechas del Torneo</div>
-    <div class="ap-fecha-nav">${fechaBtns}</div>
-    <div id="ap-recopa-detail"></div>`;
 
-  // Auto-select fecha 1
-  selectedFechaRecopa = null;
-  selectFechaRecopa(1);
+    <nav class="ap-tab-nav">
+      <button class="ap-tab-btn active" data-tab="rc-plantel"  onclick="rcSwitchTab('rc-plantel')"> <span class="ap-tab-icon">🌟</span> Plantel</button>
+      <button class="ap-tab-btn"        data-tab="rc-bracket"  onclick="rcSwitchTab('rc-bracket')"> <span class="ap-tab-icon">📊</span> Fase de Eliminación</button>
+      <button class="ap-tab-btn"        data-tab="rc-fases"    onclick="rcSwitchTab('rc-fases')">   <span class="ap-tab-icon">📅</span> Fase por Fase</button>
+    </nav>
+
+    <div class="ap-tab-panel active" id="rc-tab-rc-plantel">
+      ${buildRecoPlantelTab()}
+    </div>
+
+    <div class="ap-tab-panel" id="rc-tab-rc-bracket">
+      ${bracketHtml}
+    </div>
+
+    <div class="ap-tab-panel" id="rc-tab-rc-fases">
+      <div class="ap-fechas-title">🏆 Instancias del Torneo</div>
+      <div class="ap-fecha-nav" id="rc-fase-nav">${faseBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin partidos de copa</span>'}</div>
+      <div id="rc-fase-detail"></div>
+    </div>`;
+
+  window.rcSwitchTab = function(tab) {
+    document.querySelectorAll('#torneo-recopa-content .ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('#torneo-recopa-content .ap-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'rc-tab-' + tab));
+    if (tab === 'rc-fases' && !selectedFaseCopa && sortedCopa.length) {
+      selectFaseCopa(sortedCopa[0].rival + '|' + sortedCopa[0].posCSB);
+    }
+  };
+
+  // Auto-select first copa match for Fase por Fase (background, without switching tab)
+  selectedFaseCopa = null;
+  if (sortedCopa.length) selectFaseCopa(sortedCopa[0].rival + '|' + sortedCopa[0].posCSB);
 }
 
 // ──────────────────────────────────────────────
