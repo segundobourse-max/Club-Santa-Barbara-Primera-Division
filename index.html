@@ -287,15 +287,15 @@
     @media (max-width: 400px) { .hist-kpis { grid-template-columns: repeat(2,1fr); } }
 
     .hist-kpi {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      padding: 10px 10px 9px;
-      display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 9px;
+      padding: 7px 6px 6px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
     }
-    .hist-kpi-icon { font-size: 1rem; opacity: 0.75; line-height: 1; }
-    .hist-kpi-val { font-size: 1.45rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -.02em; }
-    .hist-kpi-label { font-size: .58rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+    .hist-kpi-icon { font-size: .85rem; opacity: 0.6; line-height: 1; }
+    .hist-kpi-val { font-size: 1.25rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -.02em; }
+    .hist-kpi-label { font-size: .56rem; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
 
     /* Semantic color variants — color only on the number, no border glow */
     .hist-kpi-win  .hist-kpi-val { color: #22c55e; }
@@ -352,72 +352,64 @@
     .hist-bal-neg { color: #ef4444 !important; font-weight: 600; }
     .hist-bal-neu { color: #64748b !important; }
     .hist-rival-arrow { margin-left: 6px; color: #334155; font-size: .7rem; }
+    /* ── Empty state ── */
     .hist-empty { text-align: center; padding: 40px; color: #475569; font-size: .88rem; }
+    .hd-empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 52px 24px; text-align: center;
+      background: rgba(255,255,255,.02); border: 1px solid #1e2a3a;
+      border-radius: 18px; gap: 10px;
+    }
+    .hd-empty-icon { font-size: 2.8rem; opacity: .28; line-height: 1; margin-bottom: 4px; }
+    .hd-empty-title { font-size: 1rem; font-weight: 800; color: #e2e8f0; }
+    .hd-empty-sub { font-size: .8rem; color: #64748b; line-height: 1.6; max-width: 320px; }
 
     /* ── HISTORIAL DETALLE ── */
-    .hd-back { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #1e2a3a; border-radius: 10px; padding: 7px 14px; color: #64748b; font-size: .8rem; cursor: pointer; font-family: inherit; transition: all .2s; margin-bottom: 24px; }
+    .hd-back { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid #1e2a3a; border-radius: 10px; padding: 7px 14px; color: #64748b; font-size: .8rem; cursor: pointer; font-family: inherit; transition: all .2s; margin-bottom: 18px; }
     .hd-back:hover { border-color: var(--dorado); color: var(--dorado); }
 
-    .hd-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+    .hd-layout { display: grid; grid-template-columns: 270px 1fr; gap: 20px; align-items: start; }
     @media (max-width: 800px) { .hd-layout { grid-template-columns: 1fr; } }
 
-    .hd-sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
-
-    .hd-club-card {
-      background: linear-gradient(145deg,#1a2236,#131825);
-      border: 1px solid #1e2a3a; border-radius: 18px; padding: 22px 18px; text-align: center;
+    /* Unified profile card */
+    .hd-sidebar { position: sticky; top: 12px; }
+    .hd-profile-card {
+      background: linear-gradient(160deg,#1a2236,#131825);
+      border: 1px solid #1e2a3a; border-radius: 18px; overflow: hidden;
+    }
+    .hd-profile-identity {
+      padding: 22px 18px 18px; text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,.05);
     }
     .hd-club-avatar {
-      width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px;
-      background: linear-gradient(135deg, rgba(245,158,11,.2), rgba(245,158,11,.05));
-      border: 2px solid rgba(245,158,11,.3);
+      width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 10px;
+      background: linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.04));
+      border: 2px solid rgba(245,158,11,.28);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; font-weight: 900; color: var(--dorado);
+      font-size: 1.2rem; font-weight: 900; color: var(--dorado);
     }
-    .hd-club-name { font-size: 1rem; font-weight: 800; color: #e2e8f0; margin-bottom: 4px; }
-    .hd-club-sub { font-size: .72rem; color: #475569; text-transform: uppercase; letter-spacing: .07em; }
+    .hd-club-name { font-size: 1rem; font-weight: 800; color: #e2e8f0; margin-bottom: 3px; }
+    .hd-club-sub { font-size: .68rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .07em; }
 
-    .hd-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .hd-stat {
-      background: rgba(16,22,36,.7); backdrop-filter: blur(8px);
-      border: 1px solid #1e2a3a; border-radius: 12px;
-      padding: 14px 10px; text-align: center;
-    }
-    .hd-stat-val { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1; }
-    .hd-stat-label { font-size: .62rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin-top: 4px; }
-    .hd-stat-win .hd-stat-val  { color: #22c55e; }
-    .hd-stat-win  { border-color: rgba(34,197,94,.3); background: rgba(20,40,28,.7); }
-    .hd-stat-draw .hd-stat-val { color: #f59e0b; }
-    .hd-stat-draw { border-color: rgba(245,158,11,.3); background: rgba(40,32,10,.7); }
-    .hd-stat-loss .hd-stat-val { color: #ef4444; }
-    .hd-stat-loss { border-color: rgba(239,68,68,.3); background: rgba(40,14,14,.7); }
+    .hd-profile-section { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .hd-profile-section:last-child { border-bottom: none; }
+    .hd-section-label { font-size: .6rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .09em; font-weight: 700; margin-bottom: 10px; }
 
-    .hd-meter-card {
-      background: linear-gradient(145deg,#1a2236,#131825);
-      border: 1px solid #1e2a3a; border-radius: 14px; padding: 16px 18px;
-    }
-    .hd-meter-title { font-size: .65rem; color: #475569; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; margin-bottom: 12px; }
-    .hd-meter-track { background: rgba(255,255,255,.05); border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 6px; }
-    .hd-meter-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #d97706, #f59e0b); transition: width .6s cubic-bezier(.4,0,.2,1); }
-    .hd-meter-label { display: flex; justify-content: space-between; font-size: .72rem; color: #64748b; }
+    .hd-meter-track { background: rgba(255,255,255,.06); border-radius: 6px; height: 7px; overflow: hidden; margin-bottom: 5px; }
+    .hd-meter-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg,#d97706,#f59e0b); transition: width .6s cubic-bezier(.4,0,.2,1); }
+    .hd-meter-row { display: flex; justify-content: space-between; font-size: .7rem; color: rgba(255,255,255,.35); }
     .hd-meter-pct { color: var(--dorado); font-weight: 700; }
 
-    .hd-racha-card {
-      background: linear-gradient(145deg,#1a2236,#131825);
-      border: 1px solid #1e2a3a; border-radius: 14px; padding: 14px 18px;
-      display: flex; align-items: center; gap: 12px;
-    }
-    .hd-racha-icon { font-size: 1.5rem; }
-    .hd-racha-label { font-size: .65rem; color: #475569; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
-    .hd-racha-val { font-size: .88rem; font-weight: 700; margin-top: 2px; }
+    .hd-racha-row { display: flex; align-items: center; gap: 10px; }
+    .hd-racha-icon { font-size: 1.3rem; }
+    .hd-racha-label { font-size: .62rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+    .hd-racha-val { font-size: .85rem; font-weight: 700; margin-top: 2px; }
 
-    .hd-goals-card {
-      background: linear-gradient(145deg,#1a2236,#131825);
-      border: 1px solid #1e2a3a; border-radius: 14px; padding: 14px 18px;
-    }
-    .hd-goals-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: .8rem; }
-    .hd-goals-label { color: #64748b; font-weight: 600; }
-    .hd-goals-val { font-weight: 800; font-size: .95rem; }
+    .hd-goals-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; font-size: .78rem; }
+    .hd-goals-row:last-child { margin-bottom: 0; }
+    .hd-goals-label { color: rgba(255,255,255,.45); font-weight: 500; }
+    .hd-goals-val { font-weight: 800; font-size: .92rem; }
+    .hd-goals-divider { height: 1px; background: rgba(255,255,255,.06); margin: 8px 0; }
 
     .hd-main { display: flex; flex-direction: column; gap: 10px; }
     .hd-torneo-group { margin-bottom: 6px; }
@@ -3791,7 +3783,7 @@ async function _loadPartidosCache() {
   if (_partidosCache) return _partidosCache;
   try {
     // Full historical sheet (2016 – present) lives in B_HIST workbook
-    const rows = await fetchProxy('Partidos por torneos', null, GS.B_HIST);
+    const rows = await fetchProxy('Partidos Historial', null, GS.A_MAIN);
     _partidosCache = _parsePartidosPorTorneos(rows);
   } catch(e) {
     _partidosCache = [];
@@ -3869,31 +3861,34 @@ function renderHistorialDetalle(rival) {
         <div class="hist-kpi"><div class="hist-kpi-icon">🎯</div><div class="hist-kpi-val">${efectividad}%</div><div class="hist-kpi-label">Efectividad</div></div>
       </div>`;
 
-    // ── Sidebar ───────────────────────────────────────────────────────────
+    // ── Unified sidebar ───────────────────────────────────────────────────
     function initials(s) { return s.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
     const sidebar = `
       <div class="hd-sidebar">
-        <div class="hd-club-card">
-          <div class="hd-club-avatar">${initials(rival)}</div>
-          <div class="hd-club-name">${rival}</div>
-          <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} desde 2016</div>
-        </div>
-        <div class="hd-meter-card">
-          <div class="hd-meter-title">Efectividad de puntos</div>
-          <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${efectividad}%"></div></div>
-          <div class="hd-meter-label"><span>0%</span><span class="hd-meter-pct">${efectividad}%</span><span>100%</span></div>
-        </div>
-        <div class="hd-racha-card">
-          <div class="hd-racha-icon">${rachaIcon}</div>
-          <div><div class="hd-racha-label">Último resultado</div><div class="hd-racha-val" style="color:${rachaColor}">${rachaLabel}</div></div>
-        </div>
-        <div class="hd-goals-card">
-          <div class="hd-meter-title" style="margin-bottom:10px">Balance de goles</div>
-          <div class="hd-goals-row"><span class="hd-goals-label">⚽ Goles a favor</span><span class="hd-goals-val" style="color:#60a5fa">${gf}</span></div>
-          <div class="hd-goals-row"><span class="hd-goals-label">🥅 Goles en contra</span><span class="hd-goals-val" style="color:#ef4444">${gc}</span></div>
-          <div class="hd-goals-row" style="margin-top:6px;border-top:1px solid #1e2a3a;padding-top:8px">
-            <span class="hd-goals-label">📈 Diferencia</span>
-            <span class="hd-goals-val" style="color:${dif>0?'#22c55e':dif<0?'#ef4444':'#64748b'}">${difSign}${dif}</span>
+        <div class="hd-profile-card">
+          <div class="hd-profile-identity">
+            <div class="hd-club-avatar">${initials(rival)}</div>
+            <div class="hd-club-name">${rival}</div>
+            <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} desde 2016</div>
+          </div>
+          <div class="hd-profile-section">
+            <div class="hd-section-label">Efectividad de puntos</div>
+            <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${efectividad}%"></div></div>
+            <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct">${efectividad}%</span><span>100%</span></div>
+          </div>
+          <div class="hd-profile-section">
+            <div class="hd-section-label">Último resultado</div>
+            <div class="hd-racha-row">
+              <div class="hd-racha-icon">${rachaIcon}</div>
+              <div class="hd-racha-val" style="color:${rachaColor}">${rachaLabel}</div>
+            </div>
+          </div>
+          <div class="hd-profile-section">
+            <div class="hd-section-label">Balance de goles</div>
+            <div class="hd-goals-row"><span class="hd-goals-label">⚽ Goles a favor</span><span class="hd-goals-val" style="color:#60a5fa">${gf}</span></div>
+            <div class="hd-goals-row"><span class="hd-goals-label">🥅 Goles en contra</span><span class="hd-goals-val" style="color:#ef4444">${gc}</span></div>
+            <div class="hd-goals-divider"></div>
+            <div class="hd-goals-row"><span class="hd-goals-label">📈 Diferencia</span><span class="hd-goals-val" style="color:${dif>0?'#22c55e':dif<0?'#ef4444':'#64748b'}">${difSign}${dif}</span></div>
           </div>
         </div>
       </div>`;
@@ -3913,7 +3908,11 @@ function renderHistorialDetalle(rival) {
     });
 
     const noData = matches.length === 0
-      ? `<div class="hist-empty">No se encontraron partidos contra ${rival} en la base de datos histórica.</div>`
+      ? `<div class="hd-empty-state">
+           <div class="hd-empty-icon">⚽</div>
+           <div class="hd-empty-title">Sin historial de partidos</div>
+           <div class="hd-empty-sub">No se registran enfrentamientos oficiales contra <strong style="color:#e2e8f0">${rival}</strong> en la base de datos.</div>
+         </div>`
       : '';
 
     const matchGroups = noData || order.map(key => {
