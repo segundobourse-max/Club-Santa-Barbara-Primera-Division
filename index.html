@@ -3727,54 +3727,63 @@ function renderHistorial() {
   }).catch(() => {});
 }
 
-// ── Parser for "Partidos por torneos" sheet ──────────────────────────────────
-let _partidosCache = null; // [{torneo, anio, rival, fecha, local, gf, gc, parciales, obs}]
+// ── Parser for "Partidos Historial" sheet ────────────────────────────────────
+// Sheet layout (Google Sheets merged cells → GAS getValues returns value in first cell of merge):
+//   Merged header row  → only cells[0] populated (e.g. "2016", "APERTURA 2016 AIFA C")
+//   Column header row  → cells[0] === "Rival" (case-insensitive)
+//   Data row           → cells[0]=rival, cells[1]=fecha, cells[2]=local, cells[3]=resultado, ...
+let _partidosCache = null;
 
 function _parsePartidosPorTorneos(rows) {
   const matches = [];
   let anio = '', torneo = '';
-  const HEADER_MARKER = 'rival';
 
   for (const row of rows) {
     const cells = row.map(c => String(c ?? '').trim());
-    const nonEmpty = cells.filter(c => c);
+    const nonEmpty = cells.filter(Boolean);
+    if (!nonEmpty.length) continue;
 
-    // Year row: single cell with 4-digit year
-    if (nonEmpty.length === 1 && /^20\d{2}$/.test(nonEmpty[0])) {
-      anio = nonEmpty[0]; continue;
+    const c0 = cells[0];
+
+    // Year row: single non-empty cell that is a 4-digit year
+    if (nonEmpty.length === 1 && /^20\d{2}$/.test(c0)) {
+      anio = c0; continue;
     }
-    // Tournament header: single meaningful cell (not a column header)
-    if (nonEmpty.length <= 2 && cells[0] && cells[0].toLowerCase() !== HEADER_MARKER &&
-        !cells[0].match(/^\d+$/) && cells[0] !== 'LIBRE' && !cells[0].match(/^[A-Z]{2,}$|^Rival$/i) &&
-        (cells[0].toUpperCase().includes('AIFA') || cells[0].toUpperCase().includes('APERTURA') ||
-         cells[0].toUpperCase().includes('CLAUSURA') || cells[0].toUpperCase().includes('COPA') ||
-         cells[0].toUpperCase().includes('RECOPA') || cells[0].toUpperCase().includes('SB EN'))) {
-      torneo = cells[0]; continue;
+    // Column header row: first cell is "Rival" (any case)
+    if (c0.toLowerCase() === 'rival') continue;
+    // Skip LIBRE / separators / club title rows (no fecha in cells[1])
+    if (!c0 || c0 === 'LIBRE' || c0 === '-') continue;
+
+    // Tournament header: single non-empty cell, not a year, not a pure number
+    // (data rows always have cells[1] = fecha number, so nonEmpty > 1)
+    if (nonEmpty.length === 1 && !/^\d+$/.test(c0)) {
+      torneo = c0; continue;
     }
-    // Column header row
-    if (cells[0].toLowerCase() === HEADER_MARKER) continue;
-    // Skip empty, LIBRE or rows without rival
-    if (!cells[0] || cells[0] === 'LIBRE' || cells[0] === '-') continue;
-    // Data row: first cell is rival name (not a year, not a tournament name)
-    if (cells[0] && cells[1] && !cells[0].match(/^20\d{2}$/)) {
-      const res = cells[3] || '';
-      const parts = res.split('-').map(Number);
-      const gf = isNaN(parts[0]) ? null : parts[0];
-      const gc = isNaN(parts[1]) ? null : parts[1];
-      matches.push({
-        torneo: torneo || 'Sin torneo',
-        anio,
-        rival: cells[0].toUpperCase().trim(),
-        fecha: cells[1],
-        local: cells[2] || '',
-        resultado: res,
-        gf, gc,
-        parciales: cells[4] || '',
-        posCSB: cells[5] || '',
-        posRival: cells[6] || '',
-        obs: cells[7] || '',
-      });
-    }
+
+    // Data row: must have rival (cells[0]) AND a fecha value (cells[1])
+    const fechaRaw = cells[1];
+    if (!fechaRaw) continue;                          // no fecha → not a data row
+    if (/^20\d{2}$/.test(c0)) continue;              // year cell leaked in
+
+    const res = cells[3] ? cells[3].trim() : '';
+    const validRes = /^\d+-\d+$/.test(res);
+    const parts = validRes ? res.split('-').map(Number) : [];
+    const gf = parts.length === 2 ? parts[0] : null;
+    const gc = parts.length === 2 ? parts[1] : null;
+
+    matches.push({
+      torneo: torneo || 'Sin torneo',
+      anio,
+      rival:    c0.toUpperCase().trim(),
+      fecha:    fechaRaw,
+      local:    cells[2] || '',
+      resultado: validRes ? res : null,
+      gf, gc,
+      parciales: cells[4] || '',
+      posCSB:    cells[5] || '',
+      posRival:  cells[6] || '',
+      obs:       cells[7] || '',
+    });
   }
   return matches;
 }
@@ -3782,11 +3791,12 @@ function _parsePartidosPorTorneos(rows) {
 async function _loadPartidosCache() {
   if (_partidosCache) return _partidosCache;
   try {
-    // Full historical sheet (2016 – present) lives in B_HIST workbook
     const rows = await fetchProxy('Partidos Historial', null, GS.A_MAIN);
+    if (!rows || rows.length < 5) throw new Error('empty');
     _partidosCache = _parsePartidosPorTorneos(rows);
   } catch(e) {
-    _partidosCache = [];
+    _partidosCache = null; // allow retry on next call
+    return [];
   }
   return _partidosCache;
 }
