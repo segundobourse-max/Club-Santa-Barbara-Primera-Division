@@ -5137,13 +5137,14 @@ function parseDetailedMatches(rows, startInSection = false) {
 
     if (isFecha && isVenue) {
       const res = (row[7]||'').trim();
+      const resOk = /^\d+-\d+$/.test(res) ? res : null;
       let gf = null, gc = null;
-      if (/^\d+-\d+$/.test(res)) { const p = res.split('-').map(Number); gf=p[0]; gc=p[1]; }
+      if (resOk) { const p = resOk.split('-').map(Number); gf=p[0]; gc=p[1]; }
       current = {
         rival: c0, fecha: c1, lugar: c2,
         dia: (row[3]||'').trim(), hora: (row[4]||'').trim(),
         formacionCSB: (row[5]||'').trim(), formacionRival: (row[6]||'').trim(),
-        resultado: res || null, gf, gc, jugadores: [],
+        resultado: resOk, gf, gc, jugadores: [],
       };
       pCols = null; // reset until player header seen for this match
       matches.push(current);
