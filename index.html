@@ -281,60 +281,26 @@
     .partido-card.loss { border-left: 3px solid var(--rojo); }
 
     /* ── HISTORIAL VS CLUBES ── */
-    .hist-wrap { max-width: 1100px; }
-    .hist-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 32px; }
-    @media (max-width: 560px) { .hist-kpis { grid-template-columns: repeat(2,1fr); } }
+    .hist-wrap { width: 100%; }
+    .hist-kpis { display: grid; grid-template-columns: repeat(8,1fr); gap: 8px; margin-bottom: 20px; }
+    @media (max-width: 700px) { .hist-kpis { grid-template-columns: repeat(4,1fr); } }
+    @media (max-width: 400px) { .hist-kpis { grid-template-columns: repeat(2,1fr); } }
 
     .hist-kpi {
-      position: relative; overflow: hidden;
-      background: rgba(16,22,36,0.7);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 22px 14px 18px;
-      display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center;
-      transition: transform .3s ease, box-shadow .3s ease;
+      border-radius: 10px;
+      padding: 10px 10px 9px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
     }
-    .hist-kpi::before {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 65%);
-      pointer-events: none;
-    }
-    .hist-kpi:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(0,0,0,.5); }
-    .hist-kpi-icon { font-size: 1.3rem; opacity: 0.9; }
-    .hist-kpi-val { font-size: 2.1rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -.03em; }
-    .hist-kpi-label { font-size: .64rem; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+    .hist-kpi-icon { font-size: 1rem; opacity: 0.75; line-height: 1; }
+    .hist-kpi-val { font-size: 1.45rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -.02em; }
+    .hist-kpi-label { font-size: .58rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
 
-    /* Semantic color variants */
-    .hist-kpi-win {
-      background: rgba(20,40,28,0.75);
-      border-color: rgba(34,197,94,0.5);
-      box-shadow: 0 0 20px rgba(34,197,94,0.08);
-    }
-    .hist-kpi-win::before { background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.12) 0%, transparent 65%); }
-    .hist-kpi-win:hover { box-shadow: 0 10px 32px rgba(34,197,94,0.2); }
-    .hist-kpi-win .hist-kpi-val { color: #22c55e; }
-    .hist-kpi-win .hist-kpi-label { color: rgba(34,197,94,0.6); }
-
-    .hist-kpi-draw {
-      background: rgba(40,32,10,0.75);
-      border-color: rgba(245,158,11,0.5);
-      box-shadow: 0 0 20px rgba(245,158,11,0.06);
-    }
-    .hist-kpi-draw::before { background: radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.1) 0%, transparent 65%); }
-    .hist-kpi-draw:hover { box-shadow: 0 10px 32px rgba(245,158,11,0.18); }
+    /* Semantic color variants — color only on the number, no border glow */
+    .hist-kpi-win  .hist-kpi-val { color: #22c55e; }
     .hist-kpi-draw .hist-kpi-val { color: #f59e0b; }
-    .hist-kpi-draw .hist-kpi-label { color: rgba(245,158,11,0.6); }
-
-    .hist-kpi-loss {
-      background: rgba(40,14,14,0.75);
-      border-color: rgba(239,68,68,0.5);
-      box-shadow: 0 0 20px rgba(239,68,68,0.06);
-    }
-    .hist-kpi-loss::before { background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.1) 0%, transparent 65%); }
-    .hist-kpi-loss:hover { box-shadow: 0 10px 32px rgba(239,68,68,0.18); }
     .hist-kpi-loss .hist-kpi-val { color: #ef4444; }
-    .hist-kpi-loss .hist-kpi-label { color: rgba(239,68,68,0.6); }
 
     .hist-search-wrap { position: relative; margin-bottom: 20px; }
     .hist-search {
