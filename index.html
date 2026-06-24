@@ -3791,11 +3791,16 @@ function _parsePartidosPorTorneos(rows) {
 async function _loadPartidosCache() {
   if (_partidosCache) return _partidosCache;
   try {
+    console.log('[Historial] Fetching Partidos Historial from A_MAIN:', GS.A_MAIN);
     const rows = await fetchProxy('Partidos Historial', null, GS.A_MAIN);
-    if (!rows || rows.length < 5) throw new Error('empty');
-    _partidosCache = _parsePartidosPorTorneos(rows);
+    console.log('[Historial] Rows received:', rows ? rows.length : 'null', rows && rows[0]);
+    if (!rows || rows.length < 5) throw new Error('empty response: ' + (rows ? rows.length : 0));
+    const parsed = _parsePartidosPorTorneos(rows);
+    console.log('[Historial] Parsed matches:', parsed.length, parsed.slice(0,3));
+    _partidosCache = parsed;
   } catch(e) {
-    _partidosCache = null; // allow retry on next call
+    console.error('[Historial] Load failed:', e.message || e);
+    _partidosCache = null;
     return [];
   }
   return _partidosCache;
