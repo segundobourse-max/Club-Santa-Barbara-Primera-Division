@@ -3617,60 +3617,59 @@ const SEED_HISTORIAL = [
 let _histSort = { col:'rival', asc: true };
 
 function renderHistorial() {
+  // Start with seed data for instant render while async load completes
   let data = [...SEED_HISTORIAL];
 
-  const totales = data.reduce((acc, r) => {
-    acc.pj  += r.pj;  acc.pg += r.pg; acc.pe += r.pe;
-    acc.pp  += r.pp;  acc.gf += r.gf; acc.gc += r.gc;
-    acc.dif += r.dif;
-    return acc;
-  }, { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dif:0 });
-
   function kpi(icon, val, label, variant = '') {
-    const difVal = typeof val === 'number' && label.includes('if') ? (val > 0 ? '+' + val : val) : val;
+    const v = (typeof val === 'number' && (label.toLowerCase().includes('dif') || label.toLowerCase().includes('diferencia')))
+      ? (val > 0 ? '+' + val : val) : val;
     return `<div class="hist-kpi ${variant ? 'hist-kpi-' + variant : ''}">
       <div class="hist-kpi-icon">${icon}</div>
-      <div class="hist-kpi-val">${difVal}</div>
+      <div class="hist-kpi-val">${v}</div>
       <div class="hist-kpi-label">${label}</div>
     </div>`;
   }
 
-  const difSign = totales.dif >= 0 ? '+' : '';
-  const kpiHtml = `
-    <div class="hist-kpis">
-      ${kpi('🏟', data.length,   'Clubes enfrentados')}
-      ${kpi('📋', totales.pj,    'Partidos jugados')}
-      ${kpi('✅', totales.pg,    'Victorias',    'win')}
-      ${kpi('🟡', totales.pe,    'Empates',      'draw')}
-      ${kpi('❌', totales.pp,    'Derrotas',     'loss')}
-      ${kpi('⚽', totales.gf,    'Goles a favor')}
-      ${kpi('🥅', totales.gc,    'Goles en contra')}
-      ${kpi('📈', difSign + totales.dif, 'Diferencia de goles')}
+  function buildKpiBar(d) {
+    const t = d.reduce((acc, r) => {
+      acc.pj += r.pj; acc.pg += r.pg; acc.pe += r.pe;
+      acc.pp += r.pp; acc.gf += r.gf; acc.gc += r.gc; acc.dif += r.dif;
+      return acc;
+    }, { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dif:0 });
+    return `<div class="hist-kpis">
+      ${kpi('🏟', d.length,  'Clubes')}
+      ${kpi('📋', t.pj,      'Partidos')}
+      ${kpi('✅', t.pg,      'Victorias',   'win')}
+      ${kpi('🟡', t.pe,      'Empates',     'draw')}
+      ${kpi('❌', t.pp,      'Derrotas',    'loss')}
+      ${kpi('⚽', t.gf,      'GF')}
+      ${kpi('🥅', t.gc,      'GC')}
+      ${kpi('📈', t.dif,     'Diferencia')}
     </div>`;
+  }
 
   function difClass(v) { return v > 0 ? 'hist-dif-pos' : v < 0 ? 'hist-dif-neg' : 'hist-dif-neu'; }
   function balClass(v) { return v > 0 ? 'hist-bal-pos' : v < 0 ? 'hist-bal-neg' : 'hist-bal-neu'; }
-  function sign(v) { return v > 0 ? '+' + v : v; }
+  function sign(v) { return v > 0 ? '+' + v : String(v); }
 
   function buildTable(rows) {
     if (!rows.length) return `<div class="hist-empty">No se encontraron clubes.</div>`;
     const cols = [
-      { key:'rival', label:'Rival',        arrow: true  },
-      { key:'pj',    label:'PJ'            },
-      { key:'pg',    label:'PG'            },
-      { key:'pe',    label:'PE'            },
-      { key:'pp',    label:'PP'            },
-      { key:'dh',    label:'Bal. Hist.'    },
-      { key:'gf',    label:'GF'            },
-      { key:'gc',    label:'GC'            },
-      { key:'dif',   label:'Dif. Goles'   },
+      { key:'rival', label:'Rival' },
+      { key:'pj',    label:'PJ'   },
+      { key:'pg',    label:'PG'   },
+      { key:'pe',    label:'PE'   },
+      { key:'pp',    label:'PP'   },
+      { key:'dh',    label:'Bal.' },
+      { key:'gf',    label:'GF'   },
+      { key:'gc',    label:'GC'   },
+      { key:'dif',   label:'Dif.' },
     ];
     const thead = cols.map(c => {
       const sorted = _histSort.col === c.key;
-      const arrow = sorted ? (  _histSort.asc ? ' ▲' : ' ▼') : '';
+      const arrow = sorted ? (_histSort.asc ? ' ▲' : ' ▼') : '';
       return `<th onclick="histSort('${c.key}')" class="${sorted ? 'sorted' : ''}">${c.label}<span class="hist-sort-arrow">${arrow}</span></th>`;
     }).join('');
-
     const tbody = rows.map(r => `
       <tr onclick="histDrilldown('${r.rival.replace(/'/g,"\\'")}')">
         <td>${r.rival}<span class="hist-rival-arrow">›</span></td>
@@ -3683,7 +3682,6 @@ function renderHistorial() {
         <td>${r.gc}</td>
         <td class="${balClass(r.dif)}">${sign(r.dif)}</td>
       </tr>`).join('');
-
     return `<div class="hist-table-wrap"><table class="hist-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
   }
 
@@ -3697,46 +3695,43 @@ function renderHistorial() {
     return rows;
   }
 
+  function paint() {
+    const q = document.getElementById('hist-search-input')?.value || '';
+    const kpiEl = document.getElementById('hist-kpi-bar');
+    const tblEl = document.getElementById('hist-table-container');
+    if (kpiEl) kpiEl.innerHTML = buildKpiBar(data);
+    if (tblEl) tblEl.innerHTML = buildTable(getSorted(q));
+  }
+
   document.getElementById('partidos-grid').innerHTML = `
     <div class="hist-wrap">
-      ${kpiHtml}
+      <div id="hist-kpi-bar">${buildKpiBar(data)}</div>
       <div class="hist-search-wrap">
         <span class="hist-search-icon">🔍</span>
-        <input class="hist-search" id="hist-search-input" placeholder="Buscar club..." oninput="histFilter(this.value)">
+        <input class="hist-search" id="hist-search-input" placeholder="Buscar entre ${data.length} clubes…" oninput="histFilter(this.value)">
       </div>
       <div id="hist-table-container">${buildTable(getSorted(''))}</div>
     </div>`;
 
   document.getElementById('part-title').textContent = '';
 
-  window.histFilter = function(q) {
+  window.histFilter = q => {
     document.getElementById('hist-table-container').innerHTML = buildTable(getSorted(q));
   };
-  window.histSort = function(col) {
+  window.histSort = col => {
     if (_histSort.col === col) _histSort.asc = !_histSort.asc;
     else { _histSort.col = col; _histSort.asc = col === 'rival'; }
-    const q = document.getElementById('hist-search-input')?.value || '';
-    document.getElementById('hist-table-container').innerHTML = buildTable(getSorted(q));
+    paint();
   };
-  window.histDrilldown = function(rival) {
-    renderHistorialDetalle(rival);
-  };
+  window.histDrilldown = rival => renderHistorialDetalle(rival);
 
-  // Try live fetch from proxy
-  fetchProxy('Historial vs Clubes').then(rows => {
-    if (!rows || rows.length < 2) return;
-    const header = rows[0].map(c => String(c).toLowerCase().trim());
-    const iCol = k => header.findIndex(h => h.includes(k));
-    const ci = { rival: iCol('rival'), pj: iCol('pj'), pg: iCol('pg'), pe: iCol('pe'), pp: iCol('pp'), dh: iCol('bal'), gf: iCol('gf'), gc: iCol('gc'), dif: iCol('dif') };
-    const parsed = rows.slice(1)
-      .filter(r => r[ci.rival] && String(r[ci.rival]).trim())
-      .map(r => ({
-        rival: String(r[ci.rival]).trim().toUpperCase(),
-        pj: Number(r[ci.pj])||0, pg: Number(r[ci.pg])||0, pe: Number(r[ci.pe])||0,
-        pp: Number(r[ci.pp])||0, dh: Number(r[ci.dh])||0,
-        gf: Number(r[ci.gf])||0, gc: Number(r[ci.gc])||0, dif: Number(r[ci.dif])||0,
-      }));
-    if (parsed.length >= 5) { data = parsed; renderHistorial(); }
+  // Async: load full historical cache (2016–present) and rebuild summary from real match data
+  _loadPartidosCache().then(allMatches => {
+    if (!allMatches || allMatches.length < 10) return;
+    data = _buildSummaryFromCache(allMatches);
+    const inp = document.getElementById('hist-search-input');
+    if (inp) inp.placeholder = `Buscar entre ${data.length} clubes…`;
+    paint();
   }).catch(() => {});
 }
 
@@ -3795,12 +3790,31 @@ function _parsePartidosPorTorneos(rows) {
 async function _loadPartidosCache() {
   if (_partidosCache) return _partidosCache;
   try {
-    const rows = await fetchProxy('Partidos por torneos');
+    // Full historical sheet (2016 – present) lives in B_HIST workbook
+    const rows = await fetchProxy('Partidos por torneos', null, GS.B_HIST);
     _partidosCache = _parsePartidosPorTorneos(rows);
   } catch(e) {
     _partidosCache = [];
   }
   return _partidosCache;
+}
+
+// Build per-rival summary table from raw match cache
+function _buildSummaryFromCache(matches) {
+  const map = {};
+  for (const m of matches) {
+    if (!m.rival) continue;
+    if (!map[m.rival]) map[m.rival] = { rival: m.rival, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dif:0, dh:0 };
+    const r = map[m.rival];
+    if (m.gf !== null && m.gc !== null) {
+      r.pj++; r.gf += m.gf; r.gc += m.gc;
+      if (m.gf > m.gc)      { r.pg++; r.dh++; }
+      else if (m.gf === m.gc) { r.pe++; }
+      else                  { r.pp++; r.dh--; }
+    }
+  }
+  for (const r of Object.values(map)) r.dif = r.gf - r.gc;
+  return Object.values(map).sort((a, b) => a.rival.localeCompare(b.rival));
 }
 
 function renderHistorialDetalle(rival) {
@@ -3809,19 +3823,31 @@ function renderHistorialDetalle(rival) {
   document.getElementById('part-title').textContent = '';
 
   _loadPartidosCache().then(allMatches => {
-    const matches = allMatches.filter(m => m.rival === rival.toUpperCase());
+    const rivalUp = rival.toUpperCase();
+    // All matches vs this rival, sorted newest first (reverse chronological)
+    const matches = allMatches
+      .filter(m => m.rival === rivalUp)
+      .slice()
+      .sort((a, b) => {
+        const ay = Number(a.anio) || 0, by = Number(b.anio) || 0;
+        if (ay !== by) return by - ay;
+        const af = Number(a.fecha) || 0, bf = Number(b.fecha) || 0;
+        return bf - af;
+      });
 
-    // ── Metrics ──────────────────────────────────────────────────────────────
-    const pg = matches.filter(m => m.gf !== null && m.gf > m.gc).length;
-    const pe = matches.filter(m => m.gf !== null && m.gf === m.gc).length;
-    const pp = matches.filter(m => m.gf !== null && m.gf < m.gc).length;
-    const pj = matches.filter(m => m.gf !== null).length;
-    const gf = matches.reduce((s, m) => s + (m.gf ?? 0), 0);
-    const gc = matches.reduce((s, m) => s + (m.gc ?? 0), 0);
+    // ── KPI calculations from real match data ─────────────────────────────
+    const played = matches.filter(m => m.gf !== null && m.gc !== null);
+    const pj = played.length;
+    const pg = played.filter(m => m.gf > m.gc).length;
+    const pe = played.filter(m => m.gf === m.gc).length;
+    const pp = played.filter(m => m.gf < m.gc).length;
+    const gf = played.reduce((s, m) => s + m.gf, 0);
+    const gc = played.reduce((s, m) => s + m.gc, 0);
+    const dif = gf - gc;
     const efectividad = pj > 0 ? Math.round(((pg * 3 + pe) / (pj * 3)) * 100) : 0;
+    const difSign = dif > 0 ? '+' : '';
 
-    // Last played match result
-    const played = [...matches].filter(m => m.gf !== null).reverse();
+    // Last match (newest) result
     const last = played[0];
     let rachaIcon = '—', rachaLabel = '—', rachaColor = '#64748b';
     if (last) {
@@ -3830,20 +3856,27 @@ function renderHistorialDetalle(rival) {
       else { rachaIcon = '❌'; rachaLabel = `Derrota ${last.resultado}`; rachaColor = '#ef4444'; }
     }
 
-    function initials(s) { return s.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+    // ── Top KPI bar (rival-specific) ──────────────────────────────────────
+    const rivalKpis = `
+      <div class="hist-kpis" style="margin-bottom:18px">
+        <div class="hist-kpi"><div class="hist-kpi-icon">📋</div><div class="hist-kpi-val">${pj}</div><div class="hist-kpi-label">Partidos</div></div>
+        <div class="hist-kpi hist-kpi-win"><div class="hist-kpi-icon">✅</div><div class="hist-kpi-val">${pg}</div><div class="hist-kpi-label">Victorias</div></div>
+        <div class="hist-kpi hist-kpi-draw"><div class="hist-kpi-icon">🟡</div><div class="hist-kpi-val">${pe}</div><div class="hist-kpi-label">Empates</div></div>
+        <div class="hist-kpi hist-kpi-loss"><div class="hist-kpi-icon">❌</div><div class="hist-kpi-val">${pp}</div><div class="hist-kpi-label">Derrotas</div></div>
+        <div class="hist-kpi"><div class="hist-kpi-icon">⚽</div><div class="hist-kpi-val">${gf}</div><div class="hist-kpi-label">GF</div></div>
+        <div class="hist-kpi"><div class="hist-kpi-icon">🥅</div><div class="hist-kpi-val">${gc}</div><div class="hist-kpi-label">GC</div></div>
+        <div class="hist-kpi"><div class="hist-kpi-icon">📈</div><div class="hist-kpi-val" style="color:${dif>0?'#22c55e':dif<0?'#ef4444':'#f1f5f9'}">${difSign}${dif}</div><div class="hist-kpi-label">Diferencia</div></div>
+        <div class="hist-kpi"><div class="hist-kpi-icon">🎯</div><div class="hist-kpi-val">${efectividad}%</div><div class="hist-kpi-label">Efectividad</div></div>
+      </div>`;
 
+    // ── Sidebar ───────────────────────────────────────────────────────────
+    function initials(s) { return s.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
     const sidebar = `
       <div class="hd-sidebar">
         <div class="hd-club-card">
           <div class="hd-club-avatar">${initials(rival)}</div>
           <div class="hd-club-name">${rival}</div>
-          <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} en el historial</div>
-        </div>
-        <div class="hd-stat-grid">
-          <div class="hd-stat"><div class="hd-stat-val">${pj}</div><div class="hd-stat-label">PJ</div></div>
-          <div class="hd-stat hd-stat-win"><div class="hd-stat-val">${pg}</div><div class="hd-stat-label">Victorias</div></div>
-          <div class="hd-stat hd-stat-draw"><div class="hd-stat-val">${pe}</div><div class="hd-stat-label">Empates</div></div>
-          <div class="hd-stat hd-stat-loss"><div class="hd-stat-val">${pp}</div><div class="hd-stat-label">Derrotas</div></div>
+          <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} desde 2016</div>
         </div>
         <div class="hd-meter-card">
           <div class="hd-meter-title">Efectividad de puntos</div>
@@ -3860,47 +3893,48 @@ function renderHistorialDetalle(rival) {
           <div class="hd-goals-row"><span class="hd-goals-label">🥅 Goles en contra</span><span class="hd-goals-val" style="color:#ef4444">${gc}</span></div>
           <div class="hd-goals-row" style="margin-top:6px;border-top:1px solid #1e2a3a;padding-top:8px">
             <span class="hd-goals-label">📈 Diferencia</span>
-            <span class="hd-goals-val" style="color:${gf-gc>0?'#22c55e':gf-gc<0?'#ef4444':'#64748b'}">${gf-gc>0?'+':''}${gf-gc}</span>
+            <span class="hd-goals-val" style="color:${dif>0?'#22c55e':dif<0?'#ef4444':'#64748b'}">${difSign}${dif}</span>
           </div>
         </div>
       </div>`;
 
-    // ── Match list grouped by torneo ────────────────────────────────────────
+    // ── Match list grouped by year → torneo, newest first ─────────────────
     function resClass(m) {
-      if (m.gf === null) return 'hd-res-p';
+      if (m.gf === null || m.gc === null) return 'hd-res-p';
       return m.gf > m.gc ? 'hd-res-w' : m.gf === m.gc ? 'hd-res-d' : 'hd-res-l';
     }
 
-    // Group by torneo label
     const grouped = {};
     const order = [];
-    [...matches].reverse().forEach(m => {
+    matches.forEach(m => {
       const key = `${m.anio} · ${m.torneo}`;
       if (!grouped[key]) { grouped[key] = []; order.push(key); }
       grouped[key].push(m);
     });
 
     const noData = matches.length === 0
-      ? `<div class="hist-empty">No se encontraron partidos contra ${rival} en la base de datos.</div>`
+      ? `<div class="hist-empty">No se encontraron partidos contra ${rival} en la base de datos histórica.</div>`
       : '';
 
     const matchGroups = noData || order.map(key => {
       const grupo = grouped[key];
       const cards = grupo.map(m => {
-        const localTag = m.local.toUpperCase().includes('LOCAL')
+        const localTag = /local/i.test(m.local)
           ? `<span class="hd-tag hd-tag-local">🏠 Local</span>`
-          : m.local.toUpperCase().includes('VISIT')
+          : /visit/i.test(m.local)
             ? `<span class="hd-tag hd-tag-visit">✈ Visitante</span>` : '';
         const resLabel = m.resultado || '—';
         const obsHtml = m.obs ? `<div class="hd-match-obs">💬 ${m.obs}</div>` : '';
+        const fechaTag = m.fecha && /^\d+$/.test(String(m.fecha))
+          ? `<span class="hd-tag">Fecha ${m.fecha}</span>`
+          : m.fecha ? `<span class="hd-tag">${m.fecha}</span>` : '';
         return `
           <div class="hd-match">
             <div class="hd-match-res ${resClass(m)}">${resLabel}</div>
             <div class="hd-match-info">
               <div class="hd-match-meta">
-                ${m.fecha ? `<span class="hd-tag">Fecha ${m.fecha}</span>` : ''}
-                ${localTag}
-                ${m.posCSB ? `<span class="hd-tag">Pos. CSB: ${m.posCSB}</span>` : ''}
+                ${fechaTag}${localTag}
+                ${m.posCSB ? `<span class="hd-tag">CSB: ${m.posCSB}°</span>` : ''}
               </div>
               ${m.parciales ? `<div class="hd-match-parcial">Parciales: ${m.parciales}</div>` : ''}
               ${obsHtml}
@@ -3919,6 +3953,7 @@ function renderHistorialDetalle(rival) {
 
     el.innerHTML = `
       <button class="hd-back" onclick="renderHistorial()">← Volver al historial</button>
+      ${rivalKpis}
       <div class="hd-layout">
         ${sidebar}
         <div class="hd-main">${matchGroups}</div>
