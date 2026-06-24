@@ -1006,31 +1006,45 @@
     }
     .hist-year-line { flex:1; width:2px; background:linear-gradient(to bottom,rgba(245,158,11,.25),transparent); margin-top:8px; min-height:20px; }
     .hist-year-group { padding-bottom:28px; }
-    .hist-year-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+    .hist-year-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
     .hist-torneo-card {
       background:linear-gradient(160deg,#1a2236,#131825);
-      border:1px solid #1e2a3a; border-radius:14px; padding:16px 18px;
+      border:1px solid #1e2a3a; border-radius:14px; padding:16px 18px 14px;
       cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
     }
     .hist-torneo-card:hover { border-color:rgba(245,158,11,.35); transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.35); }
-    .hist-torneo-card.campeon { border-color:rgba(245,158,11,.5); }
+    .hist-torneo-card.campeon {
+      border-color:rgba(245,158,11,.45);
+      background:linear-gradient(160deg,#1f2a3c,#19243a,#161e30);
+      box-shadow:0 0 0 1px rgba(245,158,11,.15), 0 4px 20px rgba(245,158,11,.08);
+    }
     .hist-torneo-card.campeon::before {
       content:''; position:absolute; top:0; left:0; right:0; height:2px;
-      background:linear-gradient(90deg,transparent,var(--dorado),transparent);
+      background:linear-gradient(90deg,transparent,#f59e0b 30%,#fbbf24 50%,#f59e0b 70%,transparent);
     }
-    .hist-tc-name { font-size:0.82rem; font-weight:700; color:#e2e8f0; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
-    .hist-tc-crown { font-size:1rem; }
-    .hist-tc-pos {
-      font-size:1.4rem; font-weight:900; color:var(--dorado); margin-bottom:8px; line-height:1;
+    /* header row: badge tipo + nombre */
+    .hist-tc-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+    .hist-tc-tipo {
+      font-size:0.6rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+      border-radius:5px; padding:2px 7px; line-height:1.6; flex-shrink:0;
     }
-    .hist-tc-pos.campeon-txt { background:linear-gradient(90deg,#f59e0b,#fbbf24); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hist-tc-tipo.liga { background:rgba(96,165,250,.12); border:1px solid rgba(96,165,250,.25); color:#60a5fa; }
+    .hist-tc-tipo.copa { background:rgba(167,139,250,.12); border:1px solid rgba(167,139,250,.25); color:#a78bfa; }
+    .hist-tc-name { font-size:0.82rem; font-weight:700; color:#e2e8f0; display:flex; align-items:center; gap:6px; }
+    .hist-tc-crown { font-size:0.95rem; }
+    /* position */
+    .hist-tc-pos { font-size:1.55rem; font-weight:900; color:#f1f5f9; margin-bottom:10px; line-height:1; }
+    .hist-tc-pos.campeon-txt  { background:linear-gradient(90deg,#f59e0b,#fbbf24); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
     .hist-tc-pos.subcampeon-txt { background:linear-gradient(90deg,#94a3b8,#cbd5e1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .hist-tc-record { display:flex; gap:6px; margin-bottom:8px; }
-    .hist-tc-badge { font-size:0.66rem; font-weight:700; border-radius:6px; padding:3px 7px; }
-    .hist-tc-v { background:rgba(34,197,94,.12);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }
-    .hist-tc-e { background:rgba(245,158,11,.12); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }
-    .hist-tc-d { background:rgba(239,68,68,.12);  color:#ef4444; border:1px solid rgba(239,68,68,.25); }
-    .hist-tc-meta { font-size:0.7rem; color:var(--gris-texto); display:flex; gap:10px; flex-wrap:wrap; }
+    /* record V|E|D inline */
+    .hist-tc-record { font-size:0.78rem; font-weight:700; margin-bottom:9px; display:flex; align-items:center; gap:0; }
+    .hist-tc-v { color:#22c55e; }
+    .hist-tc-e { color:#f59e0b; }
+    .hist-tc-d { color:#ef4444; }
+    .hist-tc-sep { color:rgba(255,255,255,.2); margin:0 7px; font-weight:300; }
+    /* meta row */
+    .hist-tc-meta { font-size:0.72rem; color:rgba(255,255,255,.5); display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+    .hist-tc-meta-sep { margin:0 6px; color:rgba(255,255,255,.15); }
     .hist-tc-arrow { position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#334155; font-size:1.1rem; transition:all .2s; }
     .hist-torneo-card:hover .hist-tc-arrow { color:var(--dorado); transform:translateY(-50%) translateX(2px); }
     .graf-section-title {
@@ -4975,19 +4989,30 @@ function renderGraficos() {
         const esSubc = isSubcampeon(t.pos);
         const posClass = esCamp ? 'campeon-txt' : esSubc ? 'subcampeon-txt' : '';
         const ef = t.gf - t.gc;
+        const esCopa = /recopa|copa/i.test(t.competencia);
+        const tipoLabel = esCopa ? 'Copa' : 'Liga';
+        const tipoClass = esCopa ? 'copa' : 'liga';
+        const efStr = (ef >= 0 ? '+' : '') + ef;
+        const metaPts = t.pts != null ? `<span>${t.pts} pts</span><span class="hist-tc-meta-sep">·</span>` : '';
+        const metaVI  = t.vi  ? `<span class="hist-tc-meta-sep">·</span><span>🔒 ${t.vi} VI</span>` : '';
         return `<div class="hist-torneo-card${esCamp ? ' campeon' : ''}" onclick="grafDetalle(${JSON.stringify(t).replace(/"/g,'&quot;')})">
-          <div class="hist-tc-name">${cardIcon(t)} ${t.competencia}</div>
+          <div class="hist-tc-header">
+            <span class="hist-tc-tipo ${tipoClass}">${tipoLabel}</span>
+            <span class="hist-tc-name">${cardIcon(t)} ${t.competencia}</span>
+          </div>
           <div class="hist-tc-pos ${posClass}">${posLabel(t.pos)}</div>
           <div class="hist-tc-record">
-            <span class="hist-tc-badge hist-tc-v">✅ ${t.pg}V</span>
-            <span class="hist-tc-badge hist-tc-e">🟡 ${t.pe}E</span>
-            <span class="hist-tc-badge hist-tc-d">❌ ${t.pp}D</span>
+            <span class="hist-tc-v">${t.pg}V</span>
+            <span class="hist-tc-sep">|</span>
+            <span class="hist-tc-e">${t.pe}E</span>
+            <span class="hist-tc-sep">|</span>
+            <span class="hist-tc-d">${t.pp}D</span>
           </div>
           <div class="hist-tc-meta">
-            <span>PJ ${t.pj}</span>
-            <span>${t.gf}GF · ${t.gc}GC · ${ef >= 0 ? '+' : ''}${ef}</span>
-            ${t.vi ? `<span>🔒 ${t.vi} VI</span>` : ''}
-            ${t.pts != null ? `<span>⭐ ${t.pts} pts</span>` : ''}
+            ${metaPts}<span>PJ ${t.pj}</span>
+            <span class="hist-tc-meta-sep">·</span>
+            <span>Goles: ${t.gf} - ${t.gc} (${efStr})</span>
+            ${metaVI}
           </div>
           <div class="hist-tc-arrow">›</div>
         </div>`;
