@@ -4467,29 +4467,23 @@ function renderJugAnualesYear(year) {
 
     <!-- BLOQUE 1: Resumen del equipo -->
     <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">📊 Resumen del equipo (Liga)</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:20px">
       ${[
         ['🎮','PJ', total.pj, '#94a3b8'],
         ['✅','Victorias', total.g, '#22c55e'],
         ['➡️','Empates', total.e, '#f59e0b'],
         ['❌','Derrotas', total.p, '#ef4444'],
-        ['⚽','GF', total.gf, '#22c55e'],
+        ['⚽','GF', total.gf, '#60a5fa'],
         ['🥅','GC', total.gc, '#94a3b8'],
         ['📊','Dif.', total.gf - total.gc >= 0 ? '+' + (total.gf - total.gc) : (total.gf - total.gc), total.gf >= total.gc ? '#22c55e' : '#ef4444'],
       ].map(([icon, label, val, color]) => `
-        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:9px 10px;display:flex;align-items:center;gap:8px">
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-left:3px solid ${color};border-radius:9px;padding:9px 10px;display:flex;align-items:center;gap:8px">
           <div style="font-size:1.1rem">${icon}</div>
           <div>
             <div style="font-size:1.1rem;font-weight:900;color:${color};line-height:1">${val}</div>
-            <div style="font-size:0.6rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.05em">${label}</div>
+            <div style="font-size:0.6rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">${label}</div>
           </div>
         </div>`).join('')}
-    </div>
-    <!-- Barra V/E/P -->
-    <div style="display:flex;border-radius:6px;overflow:hidden;height:8px;margin-bottom:20px;gap:2px">
-      <div style="flex:${pctG};background:#22c55e;border-radius:4px" title="Victorias ${pctG}%"></div>
-      <div style="flex:${pctE};background:#f59e0b;border-radius:4px" title="Empates ${pctE}%"></div>
-      <div style="flex:${pctP};background:#ef4444;border-radius:4px" title="Derrotas ${pctP}%"></div>
     </div>
 
     <!-- BLOQUE 2: Rendimiento por torneo -->
@@ -4497,22 +4491,28 @@ function renderJugAnualesYear(year) {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:20px">
       ${seed.torneos.map(t => {
         const isLeague = t.pts !== null;
-        const pct = isLeague ? Math.round(t.g / t.pj * 100) : null;
+        const posBg = parseInt(t.pos) <= 4 ? 'rgba(34,197,94,0.12)' : parseInt(t.pos) <= 7 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.10)';
+        const posBorder = parseInt(t.pos) <= 4 ? 'rgba(34,197,94,0.35)' : parseInt(t.pos) <= 7 ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.3)';
+        const posColor = posStyle(t.pos);
+        const posBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:999px;background:${posBg};border:1px solid ${posBorder};color:${posColor};font-size:0.75rem;font-weight:800">${t.pos}</span>`;
+        const statBadge = (val, label, color) => `<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,0.06);font-size:0.72rem;font-weight:700;color:${color}">${val}<span style="font-weight:400;color:rgba(255,255,255,0.4);font-size:0.65rem">&thinsp;${label}</span></span>`;
         return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <span style="font-size:0.8rem;font-weight:700;color:#fff">${t.icon} ${t.nombre} ${year}</span>
-            <span style="font-size:1rem;font-weight:900;color:${posStyle(t.pos)}">${t.pos}</span>
+            ${posBadge}
           </div>
           ${isLeague ? `
-          <div style="font-size:0.72rem;color:var(--gris-texto);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-            <span><strong style="color:#fff">${t.pts}</strong> pts</span>
-            <span><strong style="color:#22c55e">${t.g}G</strong> · <strong style="color:#f59e0b">${t.e}E</strong> · <strong style="color:#ef4444">${t.p}P</strong></span>
-            <span style="color:#94a3b8">${t.gf}:${t.gc}</span>
-          </div>
-          <div style="height:4px;border-radius:999px;background:rgba(255,255,255,0.07);overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${posStyle(t.pos)};border-radius:999px"></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+            ${statBadge(t.pts + ' pts', '', '#f1f5f9')}
+            ${statBadge(t.g, 'G', '#22c55e')}
+            ${statBadge(t.e, 'E', '#f59e0b')}
+            ${statBadge(t.p, 'P', '#ef4444')}
+            ${statBadge(t.gf + ':' + t.gc, '', '#94a3b8')}
           </div>` : `
-          <div style="font-size:0.72rem;color:var(--gris-texto)">${t.pj} partidos · ${t.gf}:${t.gc}</div>`}
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+            ${statBadge(t.pj, 'PJ', '#94a3b8')}
+            ${statBadge(t.gf + ':' + t.gc, '', '#94a3b8')}
+          </div>`}
           ${t.maxGol ? `<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:6px">⚽ ${t.maxGol}</div>` : ''}
         </div>`;
       }).join('')}
@@ -4586,31 +4586,34 @@ function _anualesBuildRankings(year) {
   if (!players.length) { el.innerHTML = '<div style="color:var(--gris-texto);font-size:0.82rem">Sin datos de jugadores.</div>'; return; }
 
   const top = (arr, key, n=5) => [...arr].sort((a,b) => b[key]-a[key]).slice(0,n).filter(p => p[key] > 0);
-  const rankBlock = (title, icon, color, items, key, suffix='') => {
+  const PODIUM_BG     = ['rgba(251,191,36,0.09)','rgba(148,163,184,0.07)','rgba(180,120,60,0.08)'];
+  const PODIUM_BORDER = ['rgba(251,191,36,0.30)','rgba(148,163,184,0.25)','rgba(180,120,60,0.25)'];
+  const PODIUM_COLOR  = ['#fbbf24','#94a3b8','#b47c3c'];
+  const PODIUM_ICON   = ['🥇','🥈','🥉'];
+  const rankBlock = (title, icon, items, key, suffix='') => {
     if (!items.length) return '';
     return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
       <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gris-texto);margin-bottom:8px">${icon} ${title}</div>
       ${items.map((p, i) => {
-        const medals = ['🥇','🥈','🥉','4.','5.'];
-        const pct = Math.round(p[key] / items[0][key] * 100);
-        return `<div style="margin-bottom:6px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
-            <span style="font-size:0.8rem;color:#fff">${medals[i]} ${p.nombre}</span>
-            <span style="font-size:0.85rem;font-weight:800;color:${color}">${p[key]}${suffix}</span>
-          </div>
-          <div style="height:3px;border-radius:999px;background:rgba(255,255,255,0.07)">
-            <div style="height:100%;width:${pct}%;background:${color};border-radius:999px;box-shadow:0 0 4px ${color}55"></div>
-          </div>
+        const isPodium = i < 3;
+        const rowBg     = isPodium ? PODIUM_BG[i]     : 'transparent';
+        const rowBorder = isPodium ? `1px solid ${PODIUM_BORDER[i]}` : '1px solid transparent';
+        const numColor  = isPodium ? PODIUM_COLOR[i]  : '#f1f5f9';
+        const nameColor = isPodium && i === 0 ? '#fff' : '#e2e8f0';
+        const prefix    = isPodium ? PODIUM_ICON[i]   : `<span style="color:rgba(255,255,255,0.3);font-size:0.72rem;min-width:16px;display:inline-block;text-align:center">${i+1}.</span>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:7px;margin-bottom:3px;background:${rowBg};border:${rowBorder}">
+          <span style="font-size:0.8rem;color:${nameColor};font-weight:${i===0?'700':'400'}">${prefix} ${p.nombre}</span>
+          <span style="font-size:0.9rem;font-weight:900;color:${numColor};margin-left:8px">${p[key]}${suffix}</span>
         </div>`;
       }).join('')}
     </div>`;
   };
 
   el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
-    ${rankBlock('Goleadores',       '⚽','#22c55e', top(players,'goles'),  'goles')}
-    ${rankBlock('Asistidores',      '🎯','#3b82f6', top(players,'asist'),  'asist')}
-    ${rankBlock('G+A',              '🔥','#a855f7', top(players,'gmas'),   'gmas')}
-    ${rankBlock('Más partidos',     '🎮','#94a3b8', top(players,'pj'),     'pj', ' PJ')}
+    ${rankBlock('Goleadores',   '⚽', top(players,'goles'), 'goles')}
+    ${rankBlock('Asistidores',  '🎯', top(players,'asist'), 'asist')}
+    ${rankBlock('G+A',          '🔥', top(players,'gmas'),  'gmas')}
+    ${rankBlock('Más partidos', '🎮', top(players,'pj'),    'pj', ' PJ')}
   </div>`;
 }
 
@@ -4640,14 +4643,9 @@ function _anualesBuildTable(year) {
 
   if (countEl) countEl.textContent = `${rows.length} jugador${rows.length !== 1 ? 'es' : ''}`;
 
-  const maxGoles = Math.max(...rows.map(r => r.goles), 1);
-  const maxAsist = Math.max(...rows.map(r => r.asist), 1);
-  const maxGmas  = Math.max(...rows.map(r => r.gmas),  1);
-  const maxPJ    = Math.max(...rows.map(r => r.pj),    1);
-
   const ths = COLS.map((c, i) => {
     const active = _anualesSortCol === i;
-    return `<th onclick="_anualesSort(${i})" style="cursor:pointer;user-select:none;padding:9px 10px;font-size:0.65rem;color:${active ? c.color : 'var(--gris-texto)'};text-align:${i===0?'left':'right'};white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
+    return `<th onclick="_anualesSort(${i})" style="cursor:pointer;user-select:none;padding:9px 10px;font-size:0.65rem;color:${active ? c.color : 'var(--gris-texto)'};text-align:${i===0?'left':'center'};white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
       ${c.label}${active ? `<span style="margin-left:2px;font-size:.7em">${_anualesSortAsc?'▲':'▼'}</span>` : ''}
     </th>`;
   }).join('');
@@ -4658,22 +4656,21 @@ function _anualesBuildTable(year) {
     const pos = p.pos || '';
     const pc = POS_COLOR[pos] || '#94a3b8';
     const pb = POS_BG[pos]   || 'rgba(255,255,255,0.08)';
-    const bar = (val, max, color) => `<div style="height:3px;border-radius:999px;background:rgba(255,255,255,0.07);margin-top:3px"><div style="height:100%;width:${Math.round(val/max*100)}%;background:${color};border-radius:999px"></div></div>`;
     return `<tr style="background:${bg};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${bg}'">
       <td style="padding:8px 10px;white-space:nowrap">
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:30px;height:30px;border-radius:50%;background:${pb};border:1.5px solid ${pc}44;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:900;color:${pc};flex-shrink:0">${initials}</div>
           <div>
             <div style="font-weight:700;color:#fff;font-size:0.85rem;line-height:1.1">${p.nombre}</div>
-            <span style="font-size:0.6rem;font-weight:800;color:${pc};background:${pb};padding:1px 5px;border-radius:3px">${pos}</span>
+            <span style="font-size:0.6rem;font-weight:800;color:${pc};background:${pb};padding:2px 7px;border-radius:999px;border:1px solid ${pc}33">${pos}</span>
           </div>
         </div>
       </td>
-      <td style="text-align:right;padding:8px 10px"><span style="color:#94a3b8;font-weight:700">${p.pj}</span>${bar(p.pj, maxPJ,'#94a3b8')}</td>
-      <td style="text-align:right;padding:8px 10px">${p.goles > 0 ? `<span style="color:#22c55e;font-weight:800">${p.goles}</span>${bar(p.goles, maxGoles,'#22c55e')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
-      <td style="text-align:right;padding:8px 10px">${p.asist > 0 ? `<span style="color:#3b82f6;font-weight:800">${p.asist}</span>${bar(p.asist, maxAsist,'#3b82f6')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
-      <td style="text-align:right;padding:8px 10px">${p.gmas  > 0 ? `<span style="color:#a855f7;font-weight:800">${p.gmas}</span>${bar(p.gmas, maxGmas,'#a855f7')}` : '<span style="color:rgba(255,255,255,0.18)">—</span>'}</td>
-      <td style="text-align:right;padding:8px 10px"><span style="color:#a855f7">${p.promGmas > 0 ? p.promGmas.toFixed(2).replace('.',',') : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:#94a3b8;font-weight:700">${p.pj || '<span style=\'color:rgba(255,255,255,0.18)\'>—</span>'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.goles>0?'#22c55e':'rgba(255,255,255,0.18)'};font-weight:${p.goles>0?'800':'400'}">${p.goles > 0 ? p.goles : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.asist>0?'#60a5fa':'rgba(255,255,255,0.18)'};font-weight:${p.asist>0?'800':'400'}">${p.asist > 0 ? p.asist : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.gmas>0?'#a855f7':'rgba(255,255,255,0.18)'};font-weight:${p.gmas>0?'800':'400'}">${p.gmas  > 0 ? p.gmas  : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.promGmas>0?'#a855f7':'rgba(255,255,255,0.18)'}">${p.promGmas > 0 ? p.promGmas.toFixed(2).replace('.',',') : '—'}</span></td>
     </tr>`;
   }).join('');
 
