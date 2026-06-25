@@ -1349,6 +1349,11 @@
     <div id="torneo-apertura-content"></div>
   </div>
 
+  <!-- TORNEO HISTÓRICO: APERTURA 2025 A -->
+  <div class="panel" id="tab-torneo-apertura-2025a">
+    <div id="torneo-apertura-2025a-content"></div>
+  </div>
+
   <!-- TORNEO: RECOPA -->
   <div class="panel" id="tab-torneo-recopa">
     <div id="torneo-recopa-content"></div>
@@ -2145,6 +2150,15 @@ const DATA_A = {
   apertura: SEED_APERTURA_A,
 };
 
+// ── Apertura 2025 A historical data (loaded dynamically from GSheet) ──
+const DATA_A_2025 = {
+  nombre:   'Primera A — Apertura 2025',
+  partidos: [],
+  apertura: [],
+  jugadores:[],
+  tabla:    [],
+};
+
 const DATA_B = {
   nombre: 'Primera B',
   badge: '10° EN LA TABLA',
@@ -2337,6 +2351,17 @@ function showJugSub(key) {
 function renderTorneosMenu() {
   const isA = currentData === DATA_A;
   const apertura = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
+  const historialA = isA ? `
+    <div style="margin-top:28px;">
+      <div class="section-title" style="margin-bottom:12px;font-size:1rem;opacity:.7">📁 Historial de Torneos – Primera A</div>
+      <div class="torneos-picker-grid">
+        <div class="torneo-card" onclick="showTorneo('apertura-2025a')" style="opacity:.85;">
+          <div class="torneo-card-icon">🏆</div>
+          <div class="torneo-card-name">Apertura AIFA A 2025</div>
+          <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2025</div>
+        </div>
+      </div>
+    </div>` : '';
   document.getElementById('torneos-picker-content').innerHTML = `
     <div class="section-title" style="margin-bottom:20px">🏆 Torneos Actuales – ${currentData.nombre}</div>
     <div class="torneos-picker-grid">
@@ -2350,7 +2375,8 @@ function renderTorneosMenu() {
         <div class="torneo-card-name">Recopa 2026</div>
         <div class="torneo-card-sub">Torneo copa · Temporada 2026</div>
       </div>
-    </div>`;
+    </div>
+    ${historialA}`;
 }
 
 function showTorneo(key) {
@@ -2358,13 +2384,12 @@ function showTorneo(key) {
     b.classList.toggle('active', i === 1);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-torneo-' + key).classList.add('active');
+  const panelId = key === 'apertura-2025a' ? 'tab-torneo-apertura-2025a' : 'tab-torneo-' + key;
+  document.getElementById(panelId).classList.add('active');
 
-  if (key === 'apertura') {
-    renderTorneoApertura();
-  } else {
-    renderRecopa();
-  }
+  if (key === 'apertura')       renderTorneoApertura();
+  else if (key === 'apertura-2025a') renderTorneoApertura2025A();
+  else                          renderRecopa();
 }
 
 // ── Position band for pitch rendering ──
@@ -3247,6 +3272,276 @@ function renderTorneoApertura() {
   if (tabla.length) {
     fetchAifaTabla(aifaSlug, isA, copaLegendItems, renderTablaRows);
   }
+}
+
+// ──────────────────────────────────────────────
+// RENDER: APERTURA 2025 A (histórico)
+// ──────────────────────────────────────────────
+function renderTorneoApertura2025A() {
+  const d    = DATA_A_2025;
+  const name = 'Apertura AIFA A 2025';
+  const CONTAINER = 'torneo-apertura-2025a-content';
+  const TAB_PREFIX = 'ap25-';
+  const FECHA_TARGET = 'ap25-fecha-detail';
+
+  const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
+  const played   = partidos.filter(m => m.resultado !== null);
+  const last     = played.length ? played[played.length - 1] : null;
+
+  const rc    = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
+  const badge = m => m.gf > m.gc ? '<span class="ap-mc-badge won">Victoria</span>'
+                   : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>'
+                   : '<span class="ap-mc-badge draw">Empate</span>';
+
+  // ── Tab 1: Plantel ──────────────────────────────────────────────────────
+  function buildPlantelTab() {
+    const jugs = d.jugadores || [];
+    if (!jugs.length) {
+      return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
+    }
+    const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
+    const posMap = {};
+    for (const match of (d.apertura || [])) {
+      for (const p of (match.jugadores || [])) {
+        if (p.nombre && p.pos && !posMap[p.nombre]) posMap[p.nombre] = p.pos;
+      }
+    }
+    const POS_GROUP = { ARQ:0, DFI:1, DFC:1, DFD:1, DEF:1, MI:2, MC:2, MCO:2, MD:2, DC:3, DEL:3 };
+    const posGroup = p => POS_GROUP[String(p||'').toUpperCase()] ?? 4;
+
+    const byGoles = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
+    const byAsist = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
+    const byGA    = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
+    const byPJ    = [...jugs].sort((a,b) => numVal(b.pj || numVal(b.titular)) - numVal(a.pj || numVal(a.titular)));
+    const topG = byGoles[0], topA = byAsist[0], topGA = byGA[0], topPJ = byPJ[0];
+
+    function kpiCard(icon, val, name, label) {
+      return `<div class="ap-plantel-kpi">
+        <div class="ap-plantel-kpi-icon">${icon}</div>
+        <div class="ap-plantel-kpi-label">${label}</div>
+        <div class="ap-plantel-kpi-val">${val}</div>
+        <div class="ap-plantel-kpi-name">${name}</div>
+      </div>`;
+    }
+    const kpisHtml = `<div class="ap-plantel-kpis">
+      ${kpiCard('⚽', numVal(topG?.goles),  topG?.nombre  || '—', 'Máximo Goleador')}
+      ${kpiCard('🎯', numVal(topA?.asist),  topA?.nombre  || '—', 'Máximo Asistidor')}
+      ${kpiCard('🌟', numVal(topGA?.goles)+numVal(topGA?.asist), topGA?.nombre || '—', 'Más Goles + Asistencias')}
+      ${kpiCard('🏃', numVal(topPJ?.pj) || numVal(topPJ?.titular), topPJ?.nombre || '—', 'Más Partidos Jugados')}
+    </div>`;
+
+    const tableId = TAB_PREFIX + 'plantel-tbl';
+    const rows = jugs.map(j => {
+      const g   = numVal(j.goles);
+      const a   = numVal(j.asist);
+      const tr  = numVal(j.rojas);
+      const tit = numVal(j.titular);
+      const sup = numVal(j.entro);
+      const pj  = numVal(j.pj) || (tit + sup);
+      const cit = numVal(j.citado);
+      const pg  = numVal(j.promGol);
+      const pa  = numVal(j.promAsist);
+      const pga = numVal(j.promGA);
+      const pos = posMap[j.nombre] || j.pos || '';
+      const grp = posGroup(pos);
+      return { j, g, a, tr, tit, sup, pj, cit, pg, pa, pga, pos, grp };
+    });
+
+    const z  = v => v > 0 ? v : `<span class="num-zero">0</span>`;
+    const zf = v => v > 0 ? v.toFixed(2) : `<span class="num-zero">—</span>`;
+    const defaultSorted = [...rows].sort((a,b) => a.grp !== b.grp ? a.grp - b.grp : b.pj - a.pj);
+
+    function renderRows(arr) {
+      return arr.map(({ j, g, a, tr, tit, sup, pj, cit, pg, pa, pga, pos }) => `<tr
+          data-nombre="${j.nombre.toLowerCase()}"
+          data-pj="${pj}" data-tit="${tit}" data-sup="${sup}" data-cit="${cit}"
+          data-goles="${g}" data-asist="${a}" data-ga="${g+a}" data-tr="${tr}"
+          data-pg="${pg}" data-pa="${pa}" data-pga="${pga}">
+        <td>${pos ? `<span class="pos-badge" style="margin-right:6px">${pos}</span>` : ''}${j.nombre}</td>
+        <td class="${pj>0?'':'num-zero'}">${z(pj)}</td>
+        <td class="${tit>0?'':'num-zero'}">${z(tit)}</td>
+        <td class="${sup>0?'':'num-zero'}">${z(sup)}</td>
+        <td class="${g>0?'num-goles':'num-zero'}">${z(g)}</td>
+        <td class="${a>0?'num-asist':'num-zero'}">${z(a)}</td>
+        <td class="${(g+a)>0?'num-ga':'num-zero'}">${z(g+a)}</td>
+        <td class="${tr>0?'num-rojas':'num-zero'}">${z(tr)}</td>
+        <td class="${cit>0?'':'num-zero'}">${z(cit)}</td>
+        <td class="${pg>0?'num-goles':'num-zero'}">${zf(pg)}</td>
+        <td class="${pa>0?'num-asist':'num-zero'}">${zf(pa)}</td>
+        <td class="${pga>0?'num-ga':'num-zero'}">${zf(pga)}</td>
+      </tr>`).join('');
+    }
+
+    const colDefs = [
+      { key:'nombre', label:'Jugador',       title:'Ordenar por nombre',          numeric:false },
+      { key:'pj',    label:'🎽 PJ',          title:'Partidos Jugados',            numeric:true },
+      { key:'tit',   label:'👕 TIT',         title:'Partidos como titular',       numeric:true },
+      { key:'sup',   label:'🔄 SUP',         title:'Partidos como suplente',      numeric:true },
+      { key:'goles', label:'⚽ GOL',          title:'Goles',                      numeric:true },
+      { key:'asist', label:'👟 AST',          title:'Asistencias',                numeric:true },
+      { key:'ga',    label:'🔥 G+A',          title:'Goles + Asistencias',        numeric:true },
+      { key:'tr',    label:'🟥 TR',           title:'Tarjetas rojas',             numeric:true },
+      { key:'cit',   label:'📋 CIT',          title:'Veces convocado',            numeric:true },
+      { key:'pg',    label:'📈 Prom.G',       title:'Promedio de goles',          numeric:true },
+      { key:'pa',    label:'📈 Prom.A',       title:'Promedio de asistencias',    numeric:true },
+      { key:'pga',   label:'📈 Prom.G+A',     title:'Promedio Goles + Asist.',    numeric:true },
+    ];
+
+    const thead = `<thead><tr>${colDefs.map((c,i) =>
+      `<th data-col="${c.key}" title="${c.title}" onclick="ap25PlantelSort('${tableId}','${c.key}',${c.numeric})"
+          style="cursor:pointer;user-select:none;${i===0?'text-align:left':''}">
+        ${c.label} <span class="ap-sort-arrow" data-col="${c.key}"></span>
+      </th>`
+    ).join('')}</tr></thead>`;
+
+    const tableHtml = `<div class="ap-plantel-table-wrap">
+      <table class="ap-plantel-table" id="${tableId}">
+        ${thead}<tbody>${renderRows(defaultSorted)}</tbody>
+      </table>
+    </div>`;
+
+    window._ap25PlantelSortState = { col: null, asc: false };
+    window.ap25PlantelSort = function(tid, col, numeric) {
+      const st = window._ap25PlantelSortState;
+      const asc = st.col === col ? !st.asc : col === 'nombre';
+      st.col = col; st.asc = asc;
+      const tbl = document.getElementById(tid);
+      if (!tbl) return;
+      const tbody = tbl.querySelector('tbody');
+      const trs = [...tbody.querySelectorAll('tr')];
+      trs.sort((a, b) => {
+        const av = a.dataset[col] ?? '', bv = b.dataset[col] ?? '';
+        const cmp = numeric ? (Number(av) - Number(bv)) : av.localeCompare(bv, 'es');
+        return asc ? cmp : -cmp;
+      });
+      tbody.innerHTML = trs.map(r => r.outerHTML).join('');
+      tbl.querySelectorAll('.ap-sort-arrow').forEach(el => {
+        el.textContent = el.dataset.col === col ? (asc ? '↑' : '↓') : '';
+      });
+      tbl.querySelectorAll('th[data-col]').forEach(el => {
+        el.classList.toggle('ap-sort-active', el.dataset.col === col);
+      });
+    };
+
+    return `${kpisHtml}${tableHtml}`;
+  }
+
+  // ── Tab 2: Tabla Completa ───────────────────────────────────────────────
+  const lastCard = last ? `
+    <div class="ap-match-card" onclick="ap25SwitchTab('fechas');ap25SelectFecha(${last.fecha})">
+      <div class="ap-card-title">⚽ Último Partido</div>
+      ${badge(last)}
+      <div class="ap-mc-rival">vs ${last.rival}</div>
+      <div class="ap-mc-score" style="color:${rc(last)}">${last.resultado}</div>
+      <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}</div>
+      ${last.posCSB ? `<div class="ap-mc-meta" style="color:var(--dorado)">🏅 Posición: ${last.posCSB}</div>` : ''}
+    </div>` : `<div class="ap-match-card"><div class="ap-card-title">⚽ Último Partido</div><div class="ap-mc-pending">Sin partidos jugados</div></div>`;
+
+  const tabla = d.tabla || [];
+  const copaLegendItems = [
+    { color:'#f59e0b', label:'Campeón / Supercopa' },
+    { color:'#22c55e', label:'Recopa / Promoción' },
+    { color:'#fb923c', label:'Copa de Honor' },
+    { color:'#ef4444', label:'Descenso' },
+  ];
+
+  function copaBadge(copa) {
+    if (!copa || copa === '-' || copa === '–') return '<span style="color:rgba(255,255,255,.15)">—</span>';
+    if (/campe[oó]n|supercopa/i.test(copa))    return `<span class="copa-badge copa-campeon">${copa}</span>`;
+    if (/recopa/i.test(copa))                   return `<span class="copa-badge copa-recopa">${copa}</span>`;
+    if (/promoci[oó]n/i.test(copa))             return `<span class="copa-badge copa-honor">${copa}</span>`;
+    if (/copa de honor/i.test(copa))            return `<span class="copa-badge copa-honor">${copa}</span>`;
+    if (/descenso/i.test(copa))                 return `<span class="copa-badge copa-descenso">${copa}</span>`;
+    return `<span style="color:rgba(255,255,255,.4);font-size:0.68rem">${copa}</span>`;
+  }
+
+  function renderTablaRows(rows) {
+    return rows.map((t, i) => {
+      const isLeader = i === 0;
+      const df = (t.df > 0 ? '+' : '') + (t.df ?? 0);
+      const dfColor = t.df > 0 ? 'color:#22c55e' : t.df < 0 ? 'color:#ef4444' : '';
+      return `<tr class="${isLeader ? 'leader-row' : t.csb ? 'csb-row' : ''}">
+        <td style="font-weight:700;color:${isLeader ? '#22c55e' : 'var(--gris-texto)'}">${t.pos}</td>
+        <td>${isLeader ? '🏆 ' : t.csb ? '⭐ ' : ''}${t.equipo}</td>
+        <td>${copaBadge(t.copas)}</td>
+        <td><strong style="color:${isLeader ? '#22c55e' : '#f1f5f9'}">${t.pts}</strong></td>
+        <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
+        <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
+        <td style="${dfColor}">${df}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const tablaHtml = tabla.length ? `
+    <div class="ap-standings-card">
+      <div class="ap-card-title">📊 Tabla de Posiciones Final</div>
+      <div style="overflow-x:auto">
+        <table class="ap-table">
+          <thead><tr>
+            <th>#</th><th>Equipo</th>
+            <th style="text-align:left;min-width:90px">Clasificación</th>
+            <th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th>
+            <th>GF</th><th>GC</th><th>DF</th>
+          </tr></thead>
+          <tbody>${renderTablaRows(tabla)}</tbody>
+        </table>
+      </div>
+      <div class="ap-copa-legend">
+        ${copaLegendItems.map(l => `<span class="ap-legend-item"><span class="ap-legend-dot" style="background:${l.color}"></span>${l.label}</span>`).join('')}
+      </div>
+    </div>` : `<div class="ap-standings-card"><div class="ap-card-title">📊 Tabla de Posiciones</div><div style="color:var(--gris-texto);font-size:0.82rem">Cargando…</div></div>`;
+
+  // ── Tab 3: Fecha a Fecha ────────────────────────────────────────────────
+  const allFechas = partidos.map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null })).sort((a,b) => a.n - b.n);
+  const fechaBtns = allFechas.map(f =>
+    `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="ap25SelectFecha(${f.n})">Fecha ${f.n}</button>`
+  ).join('');
+
+  // ── Render shell ────────────────────────────────────────────────────────
+  document.getElementById(CONTAINER).innerHTML = `
+    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos</button>
+    <div class="section-title" style="margin-bottom:20px">📁 ${name}</div>
+
+    <nav class="ap-tab-nav">
+      <button class="ap-tab-btn active" data-tab="plantel"  onclick="ap25SwitchTab('plantel')"> <span class="ap-tab-icon">🌟</span> Plantel</button>
+      <button class="ap-tab-btn"        data-tab="tabla"    onclick="ap25SwitchTab('tabla')">   <span class="ap-tab-icon">📊</span> Tabla Completa</button>
+      <button class="ap-tab-btn"        data-tab="fechas"   onclick="ap25SwitchTab('fechas')">  <span class="ap-tab-icon">📅</span> Fecha a Fecha</button>
+    </nav>
+
+    <div class="ap-tab-panel active" id="ap25-tab-plantel">
+      ${buildPlantelTab()}
+    </div>
+
+    <div class="ap-tab-panel" id="ap25-tab-tabla">
+      <div class="ap-overview">${tablaHtml}<div class="ap-match-cards">${lastCard}</div></div>
+    </div>
+
+    <div class="ap-tab-panel" id="ap25-tab-fechas">
+      <div class="ap-fechas-title">📅 Fechas del Torneo — Apertura 2025</div>
+      <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas disponibles</span>'}</div>
+      <div id="${FECHA_TARGET}"></div>
+    </div>`;
+
+  const autoFecha = last ? last.fecha : (allFechas.length ? allFechas[0].n : null);
+
+  window.ap25SwitchTab = function(tab) {
+    document.querySelectorAll(`#ap25-tab-plantel, #ap25-tab-tabla, #ap25-tab-fechas`).forEach(p => {
+      p.classList.toggle('active', p.id === 'ap25-tab-' + tab);
+    });
+    document.querySelectorAll('.ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    if (tab === 'fechas' && autoFecha !== null) ap25SelectFecha(autoFecha);
+  };
+
+  window.ap25SelectFecha = function(n) {
+    document.querySelectorAll('.ap-fecha-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.fecha === String(n));
+    });
+    const basic  = (d.partidos || []).find(m => String(m.fecha) === String(n));
+    const detail = (d.apertura  || []).find(m => String(m.fecha) === String(n));
+    renderFechaDetail(basic, detail, FECHA_TARGET);
+  };
+
+  if (autoFecha !== null) ap25SelectFecha(autoFecha);
 }
 
 async function fetchAifaTabla(slug, isA, copaLegendItems, renderTablaRows) {
@@ -5752,7 +6047,8 @@ async function loadLiveData() {
   if (statusEl) { statusEl.textContent = 'Actualizando…'; statusEl.className = 'loading'; }
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
-  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist, aGlobal, aTabla] = await Promise.allSettled([
+  const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist, aGlobal, aTabla,
+         a25Basic, a25Det, a25Global, a25Tabla] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + positions
@@ -5763,6 +6059,11 @@ async function loadLiveData() {
     fetchProxy('Estadisticas Historicas', null, GS.B_HIST),
     fetchProxy('Apertura 2026', 'L3:X33',  GS.A_MAIN),  // global player stats table
     fetchProxy('Apertura 2026', 'L37:V53', GS.A_MAIN),  // standings table
+    // ── Apertura 2025 A (historical) ──
+    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A1:J18'),    // basic match list
+    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A22:N524'),  // fecha-a-fecha detail
+    fetchProxy('Apertura 2025', 'K3:X30',  GS.A_MAIN), // player stats
+    fetchProxy('Apertura 2025', 'K32:T48', GS.A_MAIN), // standings
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -5832,8 +6133,26 @@ async function loadLiveData() {
     if (p.masPartidos.length)   DATA_B.topHist.partidos = p.masPartidos;
   }
 
+  // ── Apertura 2025 A ──
+  if (ok(a25Basic)) {
+    const m = parseMatches(ok(a25Basic));
+    if (m.length > 0) DATA_A_2025.partidos = m;
+  }
+  if (ok(a25Det)) try {
+    const det = parseDetailedMatches(ok(a25Det), true);
+    if (det.length > 0) DATA_A_2025.apertura = det;
+  } catch(e) { console.warn('parseDetailedMatches A25:', e); }
+  if (ok(a25Global)) {
+    const p = parseGlobalStats(ok(a25Global));
+    if (p.length > 0) DATA_A_2025.jugadores = p;
+  }
+  if (ok(a25Tabla)) {
+    const t = parseTablaSheet(ok(a25Tabla));
+    if (t.length >= 2) DATA_A_2025.tabla = t;
+  }
+
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
-  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_Basic:${s(bBasic)} B_Det:${s(bDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)}`);
+  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_Basic:${s(bBasic)} B_Det:${s(bDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Basic)}/${s(a25Global)}/${s(a25Tabla)}`);
 
   _refreshing = false;
   const now = new Date();
