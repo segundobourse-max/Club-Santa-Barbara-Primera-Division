@@ -4349,12 +4349,13 @@ function renderJugadoresTotalesB() {
   const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
   const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL_B.nombre] ?? '').toLowerCase().trim());
 
-  _fetchJugB('Jugadores Estadísticas')
-    .catch(() => _fetchJugB('Jugadores Estadisticas'))
+  // Sheet stores tab names without accents (same as 'Estadisticas Historicas' pattern)
+  _fetchJugB('Jugadores Estadisticas')
+    .catch(() => _fetchJugB('Jugadores Estadísticas'))
     .catch(e => {
       console.error('[B Totales] fetch failed:', e);
       const w = document.getElementById('jug-totales-wrap-b');
-      if (w) w.innerHTML = `<div style="color:var(--gris-texto);padding:24px;text-align:center">Error al cargar los datos.<br><span style="font-size:0.75rem;opacity:.6">${e?.message || e}</span></div>`;
+      if (w) w.innerHTML = `<div style="color:var(--gris-texto);padding:24px;text-align:center">Error al cargar los datos.<br><small style="opacity:.5">${e?.message || ''}</small></div>`;
     });
 }
 
