@@ -4349,25 +4349,36 @@ function renderJugadoresTotalesB() {
   const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
   const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL_B.nombre] ?? '').toLowerCase().trim());
 
-  fetchProxy('Jugadores Estadísticas', null, GS.B_HIST)
-    .then(rows => {
-      if (!rows || rows.length < 2) {
-        const w = document.getElementById('jug-totales-wrap-b');
-        if (w) w.innerHTML = '<div style="color:var(--gris-texto);padding:24px;text-align:center">No se pudieron cargar los datos.</div>';
-        return;
-      }
-      _jugBCols = rows[0].map(c => String(c).trim());
-      const esExcluidoB = r => EXCLUIR.includes(String(r[JUG_COL_B.nombre] ?? '').toLowerCase().trim());
-      _jugBData = rows.slice(1)
-        .filter(r => r.some(c => c !== '' && c !== null))
-        .map(r => _jugBCols.map((_, i) => String(r[i] ?? '').trim()))
-        .filter(r => !esExcluidoB(r));
-      _jugBSort = { col: JUG_COL.pj, asc: false };
-      _jugBRender();
-    })
-    .catch(() => {
+  // Sheet stores tab names without accents (same as 'Estadisticas Historicas' pattern)
+  _fetchJugB('Jugadores Estadisticas')
+    .catch(() => _fetchJugB('Jugadores Estadísticas'))
+    .catch(e => {
+      console.error('[B Totales] fetch failed:', e);
       const w = document.getElementById('jug-totales-wrap-b');
-      if (w) w.innerHTML = '<div style="color:var(--gris-texto);padding:24px;text-align:center">Error al cargar los datos.</div>';
+      if (w) w.innerHTML = `<div style="color:var(--gris-texto);padding:24px;text-align:center">Error al cargar los datos.<br><small style="opacity:.5">${e?.message || ''}</small></div>`;
+    });
+}
+
+function _fetchJugB(tabName) {
+  const EXCLUIR2 = ['jugador', 'team totals', 'totales', 'total'];
+  console.log('[B Totales] fetching tab:', tabName);
+  return fetch(`${PROXY_URL}?tab=${encodeURIComponent(tabName)}&sheetId=${encodeURIComponent(GS.B_HIST)}`)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(json => {
+      console.log('[B Totales] response:', Array.isArray(json) ? 'array[' + json.length + ']' : JSON.stringify(json).slice(0,120));
+      if (!Array.isArray(json)) throw new Error(json?.error || 'not-array');
+      const rows = json.filter(row => Array.isArray(row) && row.some(c => c !== '' && c !== null));
+      if (rows.length < 2) throw new Error('empty (' + rows.length + ' rows)');
+      _jugBCols = rows[0].map(c => String(c).trim());
+      _jugBData = rows.slice(1)
+        .map(r => _jugBCols.map((_, i) => String(r[i] ?? '').trim()))
+        .filter(r => !EXCLUIR2.includes(r[JUG_COL_B.nombre]?.toLowerCase().trim()));
+      _jugBSort = { col: JUG_COL_B.pj, asc: false };
+      console.log('[B Totales] loaded', _jugBData.length, 'players');
+      _jugBRender();
     });
 }
 
