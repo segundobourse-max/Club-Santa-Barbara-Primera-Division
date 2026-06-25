@@ -4280,9 +4280,48 @@ function _jugTotalBuild() {
 }
 
 // ── Estadísticas Totales — Primera B ────────────────────────────────────────
+// Column layout in "Jugadores Estadísticas" tab of B_HIST:
+// A=Pos B=Jugador C=PJ D=Goles E=Asist F=G+A G=Titular H=Suplente
+// I=Capitán J=Títulos K=Ascensos L=Rojas M=PromGol N=PromAsist O=PromG+A P=Vallas Q=%Vallas
+const JUG_COL_B = {
+  pos:0, nombre:1, pj:2, goles:3, asist:4,
+  gmas:5, titular:6, suplente:7,
+  capitan:8, titulos:9, ascensos:10, rojas:11,
+  promGol:12, promAsist:13, promGmas:14, vallas:15
+};
+
+const POS_COLOR_B = { ARQ:'#a855f7', LI:'#22c55e', DEF:'#3b82f6', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444' };
+const POS_BG_B    = { ARQ:'rgba(168,85,247,0.18)', LI:'rgba(34,197,94,0.15)', DEF:'rgba(59,130,246,0.18)', DFC:'rgba(59,130,246,0.18)', LD:'rgba(34,197,94,0.15)', MC:'rgba(245,158,11,0.18)', DEL:'rgba(239,68,68,0.18)' };
+
+const JUG_TABS_B = [
+  { key:'general',       label:'General',       cols:[JUG_COL_B.pj, JUG_COL_B.goles, JUG_COL_B.asist, JUG_COL_B.gmas] },
+  { key:'liderazgo',     label:'Liderazgo',     cols:[JUG_COL_B.pj, JUG_COL_B.capitan, JUG_COL_B.titulos, JUG_COL_B.ascensos] },
+  { key:'disciplina',    label:'Disciplina',    cols:[JUG_COL_B.pj, JUG_COL_B.rojas] },
+  { key:'participacion', label:'Participación', cols:[JUG_COL_B.pj, JUG_COL_B.titular, JUG_COL_B.suplente] },
+  { key:'rendimiento',   label:'Rendimiento',   cols:[JUG_COL_B.pj, JUG_COL_B.promGol, JUG_COL_B.promAsist, JUG_COL_B.promGmas] },
+  { key:'vallas',        label:'Vallas',        cols:[JUG_COL_B.pj, JUG_COL_B.vallas] },
+];
+
+const COL_META_B = {
+  [JUG_COL_B.pj]:       { label:'PJ',       icon:'🎮', color:'#94a3b8' },
+  [JUG_COL_B.goles]:    { label:'Goles',    icon:'⚽', color:'#22c55e' },
+  [JUG_COL_B.asist]:    { label:'Asist',    icon:'🎯', color:'#3b82f6' },
+  [JUG_COL_B.gmas]:     { label:'G+A',      icon:'🔥', color:'#a855f7' },
+  [JUG_COL_B.capitan]:  { label:'Cap.',     icon:'🧢', color:'#f97316' },
+  [JUG_COL_B.titulos]:  { label:'Títulos',  icon:'🏆', color:'#fbbf24' },
+  [JUG_COL_B.ascensos]: { label:'Asc.',     icon:'⬆️', color:'#fbbf24' },
+  [JUG_COL_B.rojas]:    { label:'Rojas',    icon:'🟥', color:'#ef4444' },
+  [JUG_COL_B.titular]:  { label:'Tit.',     icon:'⬛', color:'#94a3b8' },
+  [JUG_COL_B.suplente]: { label:'Sup.',     icon:'⬜', color:'#64748b' },
+  [JUG_COL_B.promGol]:  { label:'Prom ⚽',  icon:'📈', color:'#22c55e' },
+  [JUG_COL_B.promAsist]:{ label:'Prom 🎯',  icon:'📈', color:'#3b82f6' },
+  [JUG_COL_B.promGmas]: { label:'Prom G+A', icon:'📈', color:'#a855f7' },
+  [JUG_COL_B.vallas]:   { label:'Vallas',   icon:'🧤', color:'#60a5fa' },
+};
+
 let _jugBData = null;
 let _jugBCols = [];
-let _jugBSort = { col: 2, asc: false };
+let _jugBSort = { col: JUG_COL_B.pj, asc: false };
 let _jugBQuery = '';
 let _jugBTab = 'general';
 
@@ -4308,7 +4347,7 @@ function renderJugadoresTotalesB() {
   if (_jugBData) { _jugBRender(); return; }
 
   const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
-  const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL.nombre] ?? '').toLowerCase().trim());
+  const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL_B.nombre] ?? '').toLowerCase().trim());
 
   fetchProxy('Jugadores Estadísticas', null, GS.B_HIST)
     .then(rows => {
@@ -4318,10 +4357,11 @@ function renderJugadoresTotalesB() {
         return;
       }
       _jugBCols = rows[0].map(c => String(c).trim());
+      const esExcluidoB = r => EXCLUIR.includes(String(r[JUG_COL_B.nombre] ?? '').toLowerCase().trim());
       _jugBData = rows.slice(1)
         .filter(r => r.some(c => c !== '' && c !== null))
         .map(r => _jugBCols.map((_, i) => String(r[i] ?? '').trim()))
-        .filter(r => !esExcluido(r));
+        .filter(r => !esExcluidoB(r));
       _jugBSort = { col: JUG_COL.pj, asc: false };
       _jugBRender();
     })
@@ -4364,11 +4404,11 @@ function _jugBKpi() {
   const el = document.getElementById('jug-kpi-row-b');
   if (!el || !_jugBData) return;
   const n = v => { const x = _jugBNumeric(v); return x !== null && !isNaN(x) ? x : 0; };
-  const totalGoles = _jugBData.reduce((s,r) => s + n(r[JUG_COL.goles]), 0);
-  const totalAsist = _jugBData.reduce((s,r) => s + n(r[JUG_COL.asist]), 0);
-  const totalGmas  = _jugBData.reduce((s,r) => s + n(r[JUG_COL.gmas]), 0);
-  const maxPJ  = [..._jugBData].sort((a,b) => n(b[JUG_COL.pj]) - n(a[JUG_COL.pj]))[0];
-  const maxGol = [..._jugBData].sort((a,b) => n(b[JUG_COL.goles]) - n(a[JUG_COL.goles]))[0];
+  const totalGoles = _jugBData.reduce((s,r) => s + n(r[JUG_COL_B.goles]), 0);
+  const totalAsist = _jugBData.reduce((s,r) => s + n(r[JUG_COL_B.asist]), 0);
+  const totalGmas  = _jugBData.reduce((s,r) => s + n(r[JUG_COL_B.gmas]), 0);
+  const maxPJ  = [..._jugBData].sort((a,b) => n(b[JUG_COL_B.pj]) - n(a[JUG_COL_B.pj]))[0];
+  const maxGol = [..._jugBData].sort((a,b) => n(b[JUG_COL_B.goles]) - n(a[JUG_COL_B.goles]))[0];
   const kpiCard = (icon, label, val, sub, color) => `
     <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
       <div style="font-size:1.3rem;flex-shrink:0">${icon}</div>
@@ -4389,8 +4429,8 @@ function _jugBKpi() {
     kpiCard('⚽', 'Total Goles', totalGoles, '', '#22c55e') +
     kpiCard('🎯', 'Total Asist.', totalAsist, '', '#3b82f6') +
     kpiCard('🔥', 'Total G+A', totalGmas, '', '#a855f7') +
-    kpiLeader('🥇', 'Goleador histórico', maxGol ? maxGol[JUG_COL.nombre] : '—', maxGol ? `${maxGol[JUG_COL.goles]} goles` : '', '#fbbf24') +
-    kpiLeader('🎮', 'Más partidos', maxPJ ? maxPJ[JUG_COL.nombre] : '—', maxPJ ? `${maxPJ[JUG_COL.pj]} PJ` : '', '#f97316');
+    kpiLeader('🥇', 'Goleador histórico', maxGol ? maxGol[JUG_COL_B.nombre] : '—', maxGol ? `${maxGol[JUG_COL_B.goles]} goles` : '', '#fbbf24') +
+    kpiLeader('🎮', 'Más partidos', maxPJ ? maxPJ[JUG_COL_B.nombre] : '—', maxPJ ? `${maxPJ[JUG_COL_B.pj]} PJ` : '', '#f97316');
 }
 
 function _jugBBuild() {
@@ -4399,7 +4439,7 @@ function _jugBBuild() {
   if (!wrap || !_jugBData) return;
 
   if (tabRow) {
-    tabRow.innerHTML = JUG_TABS.map(t => {
+    tabRow.innerHTML = JUG_TABS_B.map(t => {
       const active = _jugBTab === t.key;
       return `<button onclick="_jugBSetTab('${t.key}')" style="padding:5px 14px;border-radius:20px;border:1px solid ${active?'rgba(249,115,22,0.6)':'rgba(255,255,255,0.09)'};background:${active?'#f97316':'rgba(255,255,255,0.06)'};color:${active?'#fff':'#94a3b8'};font-size:0.78rem;font-weight:${active?'700':'400'};cursor:pointer;white-space:nowrap;transition:all .15s">${t.label}</button>`;
     }).join('');
@@ -4408,11 +4448,11 @@ function _jugBBuild() {
   const searchEl = document.getElementById('jug-search-b');
   if (searchEl) searchEl.placeholder = `🔍 Buscar entre ${_jugBData.length} jugadores…`;
 
-  const activeCols = JUG_TABS.find(t => t.key === _jugBTab)?.cols || JUG_TABS[0].cols;
+  const activeCols = JUG_TABS_B.find(t => t.key === _jugBTab)?.cols || JUG_TABS_B[0].cols;
 
   const q = _jugBQuery;
   let rows = _jugBData;
-  if (q) rows = rows.filter(r => r[JUG_COL.nombre].toLowerCase().includes(q));
+  if (q) rows = rows.filter(r => r[JUG_COL_B.nombre].toLowerCase().includes(q));
 
   const { col, asc } = _jugBSort;
   const sortCol = activeCols.includes(col) ? col : activeCols[0];
@@ -4430,9 +4470,9 @@ function _jugBBuild() {
 
   const ths = `
     <th style="position:sticky;left:0;z-index:2;background:var(--azul-card);min-width:44px;width:44px;text-align:center;padding:10px 8px;font-size:0.65rem;color:var(--gris-texto);border-bottom:1px solid rgba(255,255,255,0.08)">#</th>
-    <th style="position:sticky;left:44px;z-index:2;background:var(--azul-card);min-width:200px;padding:10px 12px;font-size:0.65rem;color:var(--gris-texto);border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer" onclick="_jugBSortCol(${JUG_COL.nombre})">Jugador</th>
+    <th style="position:sticky;left:44px;z-index:2;background:var(--azul-card);min-width:200px;padding:10px 12px;font-size:0.65rem;color:var(--gris-texto);border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer" onclick="_jugBSortCol(${JUG_COL_B.nombre})">Jugador</th>
     ${activeCols.map(ci => {
-      const m = COL_META[ci] || { label: _jugBCols[ci], icon: '', color: '#94a3b8' };
+      const m = COL_META_B[ci] || { label: _jugBCols[ci], icon: '', color: '#94a3b8' };
       const active = _jugBSort.col === ci;
       return `<th onclick="_jugBSortCol(${ci})" style="cursor:pointer;user-select:none;min-width:72px;padding:10px 12px;font-size:0.65rem;color:${active ? m.color : 'var(--gris-texto)'};text-align:center;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
         ${m.icon} ${m.label}${active ? `<span style="font-size:0.7em;margin-left:3px">${_jugBSort.asc ? '▲' : '▼'}</span>` : ''}
@@ -4444,16 +4484,16 @@ function _jugBBuild() {
     const borderLeft = rank >= 0 ? `border-left:3px solid ${medalBorder[rank]}` : 'border-left:3px solid transparent';
     const bg = rank >= 0 ? medalBg[rank] : (i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)');
     const hoverBg = rank >= 0 ? medalBg[rank].replace(/[\d.]+\)$/, v => String(parseFloat(v)+0.06)+')') : 'rgba(255,255,255,0.05)';
-    const pos = r[JUG_COL.pos] || '';
-    const pc = POS_COLOR[pos] || '#94a3b8';
-    const pb = POS_BG[pos] || 'rgba(255,255,255,0.08)';
-    const nombre = r[JUG_COL.nombre] || '—';
+    const pos = r[JUG_COL_B.pos] || '';
+    const pc = POS_COLOR_B[pos] || '#94a3b8';
+    const pb = POS_BG_B[pos] || 'rgba(255,255,255,0.08)';
+    const nombre = r[JUG_COL_B.nombre] || '—';
     const initials = nombre.trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase();
 
     const dataCells = activeCols.map(ci => {
       const v = r[ci];
       const nv = _jugBNumeric(v);
-      const m = COL_META[ci] || { color: '#94a3b8' };
+      const m = COL_META_B[ci] || { color: '#94a3b8' };
       const isNull = nv === null || isNaN(nv) || nv === 0;
       const isDecimal = nv !== null && !isNaN(nv) && !Number.isInteger(nv);
       const display = isNull
