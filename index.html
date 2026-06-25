@@ -2331,7 +2331,7 @@ function showJugSub(key) {
   if (!target) return;
   target.style.display = 'block';
   target.classList.add('active');
-  if (key === 'totales')    renderJugadoresTotales();
+  if (key === 'totales')    currentData === DATA_B ? renderJugadoresTotalesB() : renderJugadoresTotales();
   if (key === 'anuales')    renderJugAnualesMenu();
   if (key === 'debuts')     renderDebuts();
   if (key === 'inferiores') renderInferiores();
@@ -4254,6 +4254,211 @@ function _jugTotalBuild() {
       const display = isNull
         ? `<span style="color:rgba(255,255,255,0.18)">—</span>`
         : `<span style="color:${m.color};font-weight:800;font-size:0.92rem">${isDecimal ? n.toFixed(2).replace('.',',') : n}</span>`;
+      return `<td style="text-align:center;padding:9px 14px;vertical-align:middle">${display}</td>`;
+    }).join('');
+
+    return `<tr style="background:${bg};${borderLeft};transition:background 0.15s,border-color 0.15s" onmouseover="this.style.background='${hoverBg}';this.querySelectorAll('td[data-sticky]').forEach(t=>t.style.background='${hoverBg}')" onmouseout="this.style.background='${bg}';this.querySelectorAll('td[data-sticky]').forEach(t=>t.style.background='${bg}')">
+      <td data-sticky="1" style="position:sticky;left:0;z-index:1;background:${bg};text-align:center;padding:9px 8px;font-size:0.82rem">${rank >= 0 ? medals[rank] : `<span style="color:rgba(255,255,255,0.25);font-size:0.72rem">${i+1}</span>`}</td>
+      <td data-sticky="1" style="position:sticky;left:44px;z-index:1;background:${bg};padding:8px 12px;min-width:200px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:34px;height:34px;border-radius:50%;background:${pb};border:1.5px solid ${pc}44;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:900;color:${pc};flex-shrink:0">${initials}</div>
+          <div>
+            <div style="font-weight:800;color:#fff;font-size:0.9rem;line-height:1.1">${nombre}</div>
+            <span style="display:inline-block;margin-top:2px;padding:2px 8px;border-radius:999px;font-size:0.6rem;font-weight:800;letter-spacing:.05em;color:${pc};background:${pb};border:1px solid ${pc}44">${pos}</span>
+          </div>
+        </div>
+      </td>
+      ${dataCells}
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+      <thead><tr>${ths}</tr></thead>
+      <tbody>${trs || `<tr><td colspan="${2 + activeCols.length}" style="text-align:center;color:var(--gris-texto);padding:32px">Sin resultados</td></tr>`}</tbody>
+    </table>`;
+}
+
+// ── Estadísticas Totales — Primera B ────────────────────────────────────────
+let _jugBData = null;
+let _jugBCols = [];
+let _jugBSort = { col: 2, asc: false };
+let _jugBQuery = '';
+let _jugBTab = 'general';
+
+function renderJugadoresTotalesB() {
+  const wrap = document.getElementById('jug-totales-content');
+  wrap.innerHTML = `
+    <button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:14px">← Estadísticas Jugadores</button>
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:2px">Club Santa Bárbara · Primera B</div>
+      <div style="font-size:1.25rem;font-weight:900;color:#fff;line-height:1.1">Estadísticas Históricas</div>
+      <div style="font-size:0.75rem;color:var(--gris-texto);margin-top:3px">Todas las temporadas</div>
+    </div>
+    <div id="jug-kpi-row-b" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <input id="jug-search-b" type="search" placeholder="🔍 Buscar jugador..." oninput="_jugBFilter(this.value)"
+        style="flex:1;min-width:160px;padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:0.85rem;outline:none">
+      <div id="jug-tab-row-b" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+    </div>
+    <div class="table-wrap" id="jug-totales-wrap-b" style="overflow-x:auto;position:relative">
+      <div style="color:var(--gris-texto);padding:24px;text-align:center">Cargando...</div>
+    </div>`;
+
+  if (_jugBData) { _jugBRender(); return; }
+
+  const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
+  const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL.nombre] ?? '').toLowerCase().trim());
+
+  fetchProxy('Jugadores Estadísticas', null, GS.B_HIST)
+    .then(rows => {
+      if (!rows || rows.length < 2) {
+        const w = document.getElementById('jug-totales-wrap-b');
+        if (w) w.innerHTML = '<div style="color:var(--gris-texto);padding:24px;text-align:center">No se pudieron cargar los datos.</div>';
+        return;
+      }
+      _jugBCols = rows[0].map(c => String(c).trim());
+      _jugBData = rows.slice(1)
+        .filter(r => r.some(c => c !== '' && c !== null))
+        .map(r => _jugBCols.map((_, i) => String(r[i] ?? '').trim()))
+        .filter(r => !esExcluido(r));
+      _jugBSort = { col: JUG_COL.pj, asc: false };
+      _jugBRender();
+    })
+    .catch(() => {
+      const w = document.getElementById('jug-totales-wrap-b');
+      if (w) w.innerHTML = '<div style="color:var(--gris-texto);padding:24px;text-align:center">Error al cargar los datos.</div>';
+    });
+}
+
+function _jugBFilter(q) {
+  _jugBQuery = q.toLowerCase().trim();
+  _jugBBuild();
+}
+
+function _jugBSortCol(colIdx) {
+  if (_jugBSort.col === colIdx) {
+    _jugBSort.asc = !_jugBSort.asc;
+  } else {
+    _jugBSort = { col: colIdx, asc: false };
+  }
+  _jugBBuild();
+}
+
+function _jugBSetTab(key) {
+  _jugBTab = key;
+  _jugBBuild();
+}
+
+function _jugBNumeric(v) {
+  if (!v || v === '-' || v === '\\-' || v === '#DIV/0!' || v === '') return null;
+  return parseFloat(v.replace(',', '.'));
+}
+
+function _jugBRender() {
+  _jugBKpi();
+  _jugBBuild();
+}
+
+function _jugBKpi() {
+  const el = document.getElementById('jug-kpi-row-b');
+  if (!el || !_jugBData) return;
+  const n = v => { const x = _jugBNumeric(v); return x !== null && !isNaN(x) ? x : 0; };
+  const totalGoles = _jugBData.reduce((s,r) => s + n(r[JUG_COL.goles]), 0);
+  const totalAsist = _jugBData.reduce((s,r) => s + n(r[JUG_COL.asist]), 0);
+  const totalGmas  = _jugBData.reduce((s,r) => s + n(r[JUG_COL.gmas]), 0);
+  const maxPJ  = [..._jugBData].sort((a,b) => n(b[JUG_COL.pj]) - n(a[JUG_COL.pj]))[0];
+  const maxGol = [..._jugBData].sort((a,b) => n(b[JUG_COL.goles]) - n(a[JUG_COL.goles]))[0];
+  const kpiCard = (icon, label, val, sub, color) => `
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:1.3rem;flex-shrink:0">${icon}</div>
+      <div>
+        <div style="font-size:1.15rem;font-weight:900;color:${color};line-height:1">${val}</div>
+        <div style="font-size:0.65rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.06em;margin-top:1px">${label}</div>
+        ${sub ? `<div style="font-size:0.7rem;color:rgba(255,255,255,0.4);margin-top:1px">${sub}</div>` : ''}
+      </div>
+    </div>`;
+  const kpiLeader = (icon, label, name, val, color) => `
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px">
+      <div style="font-size:0.6rem;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">${icon} ${label}</div>
+      <div style="font-size:0.9rem;font-weight:800;color:#fff;line-height:1.1">${name}</div>
+      <div style="font-size:1.05rem;font-weight:900;color:${color};margin-top:2px">${val}</div>
+    </div>`;
+  el.innerHTML =
+    kpiCard('👤', 'Jugadores', _jugBData.length, '', '#94a3b8') +
+    kpiCard('⚽', 'Total Goles', totalGoles, '', '#22c55e') +
+    kpiCard('🎯', 'Total Asist.', totalAsist, '', '#3b82f6') +
+    kpiCard('🔥', 'Total G+A', totalGmas, '', '#a855f7') +
+    kpiLeader('🥇', 'Goleador histórico', maxGol ? maxGol[JUG_COL.nombre] : '—', maxGol ? `${maxGol[JUG_COL.goles]} goles` : '', '#fbbf24') +
+    kpiLeader('🎮', 'Más partidos', maxPJ ? maxPJ[JUG_COL.nombre] : '—', maxPJ ? `${maxPJ[JUG_COL.pj]} PJ` : '', '#f97316');
+}
+
+function _jugBBuild() {
+  const wrap = document.getElementById('jug-totales-wrap-b');
+  const tabRow = document.getElementById('jug-tab-row-b');
+  if (!wrap || !_jugBData) return;
+
+  if (tabRow) {
+    tabRow.innerHTML = JUG_TABS.map(t => {
+      const active = _jugBTab === t.key;
+      return `<button onclick="_jugBSetTab('${t.key}')" style="padding:5px 14px;border-radius:20px;border:1px solid ${active?'rgba(249,115,22,0.6)':'rgba(255,255,255,0.09)'};background:${active?'#f97316':'rgba(255,255,255,0.06)'};color:${active?'#fff':'#94a3b8'};font-size:0.78rem;font-weight:${active?'700':'400'};cursor:pointer;white-space:nowrap;transition:all .15s">${t.label}</button>`;
+    }).join('');
+  }
+
+  const searchEl = document.getElementById('jug-search-b');
+  if (searchEl) searchEl.placeholder = `🔍 Buscar entre ${_jugBData.length} jugadores…`;
+
+  const activeCols = JUG_TABS.find(t => t.key === _jugBTab)?.cols || JUG_TABS[0].cols;
+
+  const q = _jugBQuery;
+  let rows = _jugBData;
+  if (q) rows = rows.filter(r => r[JUG_COL.nombre].toLowerCase().includes(q));
+
+  const { col, asc } = _jugBSort;
+  const sortCol = activeCols.includes(col) ? col : activeCols[0];
+  rows = [...rows].sort((a, b) => {
+    const na = _jugBNumeric(a[sortCol]), nb = _jugBNumeric(b[sortCol]);
+    const cmp = (na !== null && nb !== null && !isNaN(na) && !isNaN(nb))
+      ? na - nb : (a[sortCol] || '').localeCompare(b[sortCol] || '', 'es', { numeric: true });
+    return asc ? cmp : -cmp;
+  });
+  if (_jugBSort.col !== sortCol) _jugBSort = { col: sortCol, asc: false };
+
+  const medalBorder = ['#fbbf24', '#94a3b8', '#b47c3c'];
+  const medalBg     = ['rgba(251,191,36,0.08)', 'rgba(148,163,184,0.06)', 'rgba(180,120,60,0.06)'];
+  const medals      = ['🥇', '🥈', '🥉'];
+
+  const ths = `
+    <th style="position:sticky;left:0;z-index:2;background:var(--azul-card);min-width:44px;width:44px;text-align:center;padding:10px 8px;font-size:0.65rem;color:var(--gris-texto);border-bottom:1px solid rgba(255,255,255,0.08)">#</th>
+    <th style="position:sticky;left:44px;z-index:2;background:var(--azul-card);min-width:200px;padding:10px 12px;font-size:0.65rem;color:var(--gris-texto);border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer" onclick="_jugBSortCol(${JUG_COL.nombre})">Jugador</th>
+    ${activeCols.map(ci => {
+      const m = COL_META[ci] || { label: _jugBCols[ci], icon: '', color: '#94a3b8' };
+      const active = _jugBSort.col === ci;
+      return `<th onclick="_jugBSortCol(${ci})" style="cursor:pointer;user-select:none;min-width:72px;padding:10px 12px;font-size:0.65rem;color:${active ? m.color : 'var(--gris-texto)'};text-align:center;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
+        ${m.icon} ${m.label}${active ? `<span style="font-size:0.7em;margin-left:3px">${_jugBSort.asc ? '▲' : '▼'}</span>` : ''}
+      </th>`;
+    }).join('')}`;
+
+  const trs = rows.map((r, i) => {
+    const rank = i < 3 ? i : -1;
+    const borderLeft = rank >= 0 ? `border-left:3px solid ${medalBorder[rank]}` : 'border-left:3px solid transparent';
+    const bg = rank >= 0 ? medalBg[rank] : (i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)');
+    const hoverBg = rank >= 0 ? medalBg[rank].replace(/[\d.]+\)$/, v => String(parseFloat(v)+0.06)+')') : 'rgba(255,255,255,0.05)';
+    const pos = r[JUG_COL.pos] || '';
+    const pc = POS_COLOR[pos] || '#94a3b8';
+    const pb = POS_BG[pos] || 'rgba(255,255,255,0.08)';
+    const nombre = r[JUG_COL.nombre] || '—';
+    const initials = nombre.trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase();
+
+    const dataCells = activeCols.map(ci => {
+      const v = r[ci];
+      const nv = _jugBNumeric(v);
+      const m = COL_META[ci] || { color: '#94a3b8' };
+      const isNull = nv === null || isNaN(nv) || nv === 0;
+      const isDecimal = nv !== null && !isNaN(nv) && !Number.isInteger(nv);
+      const display = isNull
+        ? `<span style="color:rgba(255,255,255,0.18)">—</span>`
+        : `<span style="color:${m.color};font-weight:800;font-size:0.92rem">${isDecimal ? nv.toFixed(2).replace('.',',') : nv}</span>`;
       return `<td style="text-align:center;padding:9px 14px;vertical-align:middle">${display}</td>`;
     }).join('');
 
