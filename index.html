@@ -1392,11 +1392,7 @@
 
   <!-- EL NIDO -->
   <div class="panel" id="tab-nido" style="display:none">
-    <div class="nido-container">
-      <div class="nido-icon">🏟️</div>
-      <div class="nido-title">El Nido</div>
-      <div class="nido-sub">Información sobre el estadio y la cancha del Club Santa Bárbara. Próximamente.</div>
-    </div>
+    <div id="nido-content" style="padding:16px 8px;max-width:960px;margin:0 auto;"></div>
   </div>
 
   <footer>Club Santa Bárbara &nbsp;|&nbsp; Temporada 2026 &nbsp;|&nbsp; Datos desde Google Sheets</footer>
@@ -2282,6 +2278,7 @@ function openSection(section) {
     document.getElementById('section-badge').textContent = 'El Nido';
     document.getElementById('section-badge').className = 'header-section-badge badge-green';
     currentData = null;
+    renderNido();
     return;
   }
 
@@ -5846,6 +5843,297 @@ async function loadLiveData() {
   if (statusEl) { statusEl.textContent = ''; statusEl.className = ''; }
   refreshCurrentView();
 }
+
+// ──────────────────────────────────────────────
+// EL NIDO — COMBINED PLAYER DATABASE
+// ──────────────────────────────────────────────
+(function() {
+  const EXCLUIR = ['jugador', 'team totals', 'totales', 'total', ''];
+
+  // state
+  let _nidoMerged = null;
+  let _nidoTeam   = 'todos'; // 'todos' | 'a' | 'b'
+  let _nidoSort   = { col: 'pj', asc: false };
+  let _nidoQuery  = '';
+  let _nidoRankMetric = 'goles';
+  let _nidoLoading = false;
+
+  const RANK_METRICS = [
+    { key: 'goles',     label: 'Goleadores',      suffix: 'goles' },
+    { key: 'asist',     label: 'Asistidores',      suffix: 'asist' },
+    { key: 'gmas',      label: 'G + A',            suffix: 'G+A' },
+    { key: 'pj',        label: 'Más presencias',   suffix: 'PJ' },
+    { key: 'titulos',   label: 'Más títulos',      suffix: 'títulos' },
+  ];
+
+  // normalise a row from Primera A into a unified object
+  function normA(row) {
+    const n = String(row[JUG_COL.nombre] || '').trim();
+    if (!n || EXCLUIR.includes(n.toLowerCase())) return null;
+    const pj     = parseInt(row[JUG_COL.pj])    || 0;
+    const goles  = parseInt(row[JUG_COL.goles])  || 0;
+    const asist  = parseInt(row[JUG_COL.asist])  || 0;
+    const titulos= parseInt(row[JUG_COL.titulos]) || 0;
+    return { nombre: n, pos: String(row[JUG_COL.pos] || '').trim(),
+             pj, goles, asist, gmas: goles + asist, titulos,
+             teams: ['a'], pjA: pj, golesA: goles, asistA: asist };
+  }
+
+  // normalise a row from Primera B into a unified object
+  function normB(row) {
+    const n = String(row[JUG_COL_B.nombre] || '').trim();
+    if (!n || EXCLUIR.includes(n.toLowerCase())) return null;
+    const pj     = parseInt(row[JUG_COL_B.pj])     || 0;
+    const goles  = parseInt(row[JUG_COL_B.goles])   || 0;
+    const asist  = parseInt(row[JUG_COL_B.asist])   || 0;
+    const titulos= parseInt(row[JUG_COL_B.titulos])  || 0;
+    return { nombre: n, pos: String(row[JUG_COL_B.pos] || '').trim(),
+             pj, goles, asist, gmas: goles + asist, titulos,
+             teams: ['b'], pjB: pj, golesB: goles, asistB: asist };
+  }
+
+  function normName(s) { return s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function mergeAB(listA, listB) {
+    const map = new Map();
+    listA.forEach(p => { if (p) map.set(normName(p.nombre), p); });
+    listB.forEach(p => {
+      if (!p) return;
+      const key = normName(p.nombre);
+      if (map.has(key)) {
+        const a = map.get(key);
+        a.teams = ['a', 'b'];
+        a.pj    += p.pj;
+        a.goles += p.goles;
+        a.asist += p.asist;
+        a.gmas   = a.goles + a.asist;
+        a.titulos += p.titulos;
+        a.pjB = p.pj; a.golesB = p.goles; a.asistB = p.asist;
+      } else {
+        map.set(key, p);
+      }
+    });
+    return Array.from(map.values());
+  }
+
+  function posColor(pos) {
+    const C = { ARQ:'#a855f7', LI:'#22c55e', DEF:'#3b82f6', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444' };
+    return C[pos] || '#6b7280';
+  }
+
+  function teamBadge(t) {
+    const lbl = t === 'a' ? '1ra A' : '1ra B';
+    const bg  = t === 'a' ? 'rgba(234,179,8,0.18)' : 'rgba(59,130,246,0.18)';
+    const cl  = t === 'a' ? '#eab308' : '#60a5fa';
+    return `<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:${bg};color:${cl};font-size:10px;font-weight:700;border:1px solid ${cl}33;margin-right:2px;">${lbl}</span>`;
+  }
+
+  function sortData(data) {
+    const col = _nidoSort.col;
+    const numeric = ['pj','goles','asist','gmas','titulos'];
+    return [...data].sort((a, b) => {
+      let va = a[col]; let vb = b[col];
+      if (numeric.includes(col)) { va = va || 0; vb = vb || 0; }
+      else { va = String(va || '').toLowerCase(); vb = String(vb || '').toLowerCase(); }
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return _nidoSort.asc ? cmp : -cmp;
+    });
+  }
+
+  function filteredData() {
+    let data = _nidoMerged || [];
+    if (_nidoTeam === 'a') data = data.filter(p => p.teams.includes('a'));
+    if (_nidoTeam === 'b') data = data.filter(p => p.teams.includes('b'));
+    if (_nidoQuery) {
+      const q = normName(_nidoQuery);
+      data = data.filter(p => normName(p.nombre).includes(q));
+    }
+    return sortData(data);
+  }
+
+  function thArrow(col) {
+    if (_nidoSort.col !== col) return '<span style="opacity:0.3;font-size:9px;">⇅</span>';
+    return _nidoSort.asc ? '<span style="font-size:9px;">▲</span>' : '<span style="font-size:9px;">▼</span>';
+  }
+
+  function renderTable() {
+    const rows = filteredData();
+    const cols = [
+      { key: 'nombre',  label: 'JUGADOR' },
+      { key: 'pos',     label: 'POS' },
+      { key: 'teams',   label: 'EQUIPO',  noSort: true },
+      { key: 'pj',      label: 'PJ' },
+      { key: 'goles',   label: 'GOLES' },
+      { key: 'asist',   label: 'ASIST' },
+      { key: 'gmas',    label: 'G+A' },
+      { key: 'titulos', label: 'TÍTULOS' },
+    ];
+
+    const thStyle = `style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;white-space:nowrap;cursor:pointer;user-select:none;"`;
+    const thCStyle = `style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;white-space:nowrap;"`;
+
+    let thead = `<thead><tr>${cols.map(c => {
+      if (c.noSort) return `<th ${thCStyle}>${c.label}</th>`;
+      return `<th ${thStyle} onclick="window._nidoSort('${c.key}')">${c.label} ${thArrow(c.key)}</th>`;
+    }).join('')}</tr></thead>`;
+
+    let tbody = rows.map((p, i) => {
+      const bg = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)';
+      const pColor = posColor(p.pos);
+      const pBg    = pColor + '22';
+      const teamBadges = p.teams.map(teamBadge).join('');
+      const golesP = p.pj > 0 ? (p.goles / p.pj).toFixed(2) : '-';
+      const asistP = p.pj > 0 ? (p.asist / p.pj).toFixed(2) : '-';
+      return `<tr style="background:${bg};border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 10px;font-size:13px;color:#f3f4f6;white-space:nowrap;">${p.nombre}</td>
+        <td style="padding:8px 10px;"><span style="padding:2px 7px;border-radius:4px;background:${pBg};color:${pColor};font-size:11px;font-weight:700;">${p.pos || '-'}</span></td>
+        <td style="padding:8px 10px;white-space:nowrap;">${teamBadges}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#d1d5db;">${p.pj}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#f87171;">${p.goles}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#60a5fa;">${p.asist}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#a78bfa;">${p.gmas}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:13px;color:#fbbf24;">${p.titulos || 0}</td>
+      </tr>`;
+    }).join('');
+
+    const total = (_nidoMerged || []).length;
+    const showing = rows.length;
+
+    return `<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.08);">
+      <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;color:#6b7280;">
+        Mostrando <strong style="color:#d1d5db;">${showing}</strong> de <strong style="color:#d1d5db;">${total}</strong> jugadores
+      </div>
+      <table style="width:100%;border-collapse:collapse;">${thead}<tbody>${tbody || '<tr><td colspan="8" style="padding:24px;text-align:center;color:#6b7280;">Sin resultados</td></tr>'}</tbody></table>
+    </div>`;
+  }
+
+  function renderRankings() {
+    if (!_nidoMerged) return '';
+    const metric = RANK_METRICS.find(m => m.key === _nidoRankMetric) || RANK_METRICS[0];
+    const sorted = [..._nidoMerged].sort((a, b) => (b[metric.key] || 0) - (a[metric.key] || 0)).slice(0, 10);
+
+    const btns = RANK_METRICS.map(m => {
+      const active = m.key === _nidoRankMetric;
+      const bg = active ? 'rgba(234,179,8,0.25)' : 'rgba(255,255,255,0.06)';
+      const cl = active ? '#eab308' : '#9ca3af';
+      const bd = active ? '1px solid #eab30855' : '1px solid rgba(255,255,255,0.1)';
+      return `<button onclick="window._nidoRank('${m.key}')" style="padding:5px 13px;border-radius:20px;background:${bg};color:${cl};border:${bd};font-size:12px;font-weight:600;cursor:pointer;margin:2px;">${m.label}</button>`;
+    }).join('');
+
+    const maxVal = sorted[0] ? (sorted[0][metric.key] || 0) : 1;
+    const items = sorted.map((p, i) => {
+      const val = p[metric.key] || 0;
+      const pct = maxVal > 0 ? Math.round(val / maxVal * 100) : 0;
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span style="color:#6b7280;font-weight:700;font-size:13px;">${i+1}</span>`;
+      const teamBadges = p.teams.map(teamBadge).join('');
+      const barColor = i === 0 ? '#eab308' : i === 1 ? '#9ca3af' : i === 2 ? '#cd7f32' : '#3b82f6';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="width:24px;text-align:center;">${medal}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:13px;color:#f3f4f6;font-weight:600;">${p.nombre}</span>
+            <span style="font-size:11px;color:#6b7280;">${p.pos}</span>
+            ${teamBadges}
+          </div>
+          <div style="background:rgba(255,255,255,0.07);border-radius:3px;height:5px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.3s;"></div>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:40px;">
+          <span style="font-size:16px;font-weight:700;color:#f3f4f6;">${val}</span>
+          <div style="font-size:10px;color:#6b7280;">${metric.suffix}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-top:28px;">
+      <div style="font-size:16px;font-weight:700;color:#f3f4f6;margin-bottom:12px;">Rankings</div>
+      <div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;">${btns}</div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;">
+        ${items || '<div style="color:#6b7280;text-align:center;padding:16px;">Sin datos</div>'}
+      </div>
+    </div>`;
+  }
+
+  function _renderNidoContent() {
+    const el = document.getElementById('nido-content');
+    if (!el) return;
+
+    if (!_nidoMerged) {
+      el.innerHTML = `<div style="text-align:center;padding:60px 0;color:#6b7280;">
+        <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+        <div>Cargando base de datos de jugadores…</div>
+      </div>`;
+      return;
+    }
+
+    // filter buttons
+    const teamFilters = [
+      { key: 'todos', label: 'Todos' },
+      { key: 'a',     label: 'Primera A' },
+      { key: 'b',     label: 'Primera B' },
+    ].map(f => {
+      const active = f.key === _nidoTeam;
+      const bg = active ? 'rgba(234,179,8,0.25)' : 'rgba(255,255,255,0.06)';
+      const cl = active ? '#eab308' : '#9ca3af';
+      const bd = active ? '1px solid #eab30855' : '1px solid rgba(255,255,255,0.1)';
+      return `<button onclick="window._nidoTeam('${f.key}')" style="padding:6px 16px;border-radius:20px;background:${bg};color:${cl};border:${bd};font-size:13px;font-weight:600;cursor:pointer;margin-right:6px;">${f.label}</button>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="font-size:22px;font-weight:800;color:#f3f4f6;margin-bottom:4px;">Base de Datos de Jugadores</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">Club Santa Bárbara — Primera A &amp; Primera B</div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px;">
+        <div>${teamFilters}</div>
+        <input id="nido-search" type="text" placeholder="Buscar jugador…" value="${_nidoQuery}"
+          oninput="window._nidoSearch(this.value)"
+          style="flex:1;min-width:160px;max-width:300px;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#f3f4f6;font-size:13px;outline:none;" />
+      </div>
+      ${renderTable()}
+      ${renderRankings()}
+    `;
+  }
+
+  window.renderNido = function() {
+    const el = document.getElementById('nido-content');
+    if (!el) return;
+
+    if (_nidoMerged !== null) { _renderNidoContent(); return; }
+    if (_nidoLoading) { _renderNidoContent(); return; }
+
+    _nidoLoading = true;
+    _renderNidoContent(); // show loading state
+
+    const fetchA = fetchProxy('Jugadores Estadisticas', null, GS.A_MAIN)
+      .catch(() => fetchProxy('Jugadores Estadisticas', null, GS.A_MAIN));
+
+    const fetchB = fetchProxy('Jugadores Estadisticas', null, GS.B_HIST)
+      .catch(() => fetchProxy('Jugadores Estadisticas', null, GS.B_HIST));
+
+    Promise.allSettled([fetchA, fetchB]).then(([resA, resB]) => {
+      const rowsA = resA.status === 'fulfilled' ? resA.value : [];
+      const rowsB = resB.status === 'fulfilled' ? resB.value : [];
+
+      const hdrA = rowsA.length > 0 ? rowsA[0] : [];
+      const hdrB = rowsB.length > 0 ? rowsB[0] : [];
+      const dataA = rowsA.slice(1).map(r => hdrA.map((_, i) => String(r[i] ?? '').trim())).map(normA).filter(Boolean);
+      const dataB = rowsB.slice(1).map(r => hdrB.map((_, i) => String(r[i] ?? '').trim())).map(normB).filter(Boolean);
+
+      _nidoMerged = mergeAB(dataA, dataB);
+      _nidoLoading = false;
+      _renderNidoContent();
+    });
+  };
+
+  window._nidoTeam = function(t) { _nidoTeam = t; _renderNidoContent(); };
+  window._nidoSearch = function(q) { _nidoQuery = q; _renderNidoContent(); };
+  window._nidoSort = function(col) {
+    if (_nidoSort.col === col) _nidoSort.asc = !_nidoSort.asc;
+    else { _nidoSort.col = col; _nidoSort.asc = false; }
+    _renderNidoContent();
+  };
+  window._nidoRank = function(m) { _nidoRankMetric = m; _renderNidoContent(); };
+})();
 
 loadLiveData();
 setInterval(loadLiveData, 60 * 1000); // auto-refresh every 60s
