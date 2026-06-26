@@ -6349,7 +6349,7 @@ async function loadLiveData() {
         if (c.noSort) return `<th style="${TH}${align}">${c.label}</th>`;
         const isActive = activeColKey === c.key;
         const hl = isActive && isRankMode
-          ? `color:#a5b4fc;background:rgba(99,102,241,0.12);border-bottom:2px solid rgba(99,102,241,0.5);`
+          ? `color:#a5b4fc;border-bottom:2px solid rgba(99,102,241,0.6);`
           : isActive ? 'color:#d1d5db;' : '';
         return `<th style="${THS}${align}${hl}" onclick="window._nidoSort('${c.key}')">${c.label}${thArrow(c.key)}</th>`;
       }).join('')
@@ -6370,10 +6370,9 @@ async function loadLiveData() {
         ? (i === 0 ? '#fde68a' : i === 1 ? '#cbd5e1' : '#d6a87c')
         : '#ffffff';
 
-      // Active column gets a tinted background + slightly bolder value color
-      const cellBg   = isRankMode ? 'rgba(99,102,241,0.07)' : 'transparent';
+      // Active column: highlight the value only (no cell background)
       const cellColor = isRankMode
-        ? (podio ? statColor : '#c7d2fe')  // indigo-200 for non-podio active cells
+        ? (podio ? statColor : '#c7d2fe')  // indigo-200 for non-podio rows
         : statColor;
 
       let posCell = '';
@@ -6389,13 +6388,16 @@ async function loadLiveData() {
         ? `<span style="font-weight:700;">${p.nombre}</span>`
         : p.nombre;
 
-      // Helper: td style — highlight if this is the active ranking column
+      // Helper: td — active ranking column highlights the value text only (no bg)
       const td = (colKey, value) => {
         const isActiveCol = isRankMode && activeColKey === colKey;
-        const bg2  = isActiveCol ? cellBg : 'transparent';
         const col2 = isActiveCol ? cellColor : statColor;
         const fw   = isActiveCol ? '700' : '600';
-        return `<td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:${fw};color:${col2};background:${bg2};">${value}</td>`;
+        const fs   = isActiveCol ? '14px' : '13px';
+        const wrap = isActiveCol
+          ? `<span style="color:${col2};font-weight:${fw};font-size:${fs};">${value}</span>`
+          : value;
+        return `<td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${wrap}</td>`;
       };
 
       // For prom-rank mode: show prom value in the swapped column, raw in others
