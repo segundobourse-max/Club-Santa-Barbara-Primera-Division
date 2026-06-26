@@ -6394,7 +6394,7 @@ async function loadLiveData() {
         const col2 = isActiveCol ? cellColor : statColor;
         const fw   = isActiveCol ? '700' : '600';
         const wrap = isActiveCol
-          ? `<span style="color:${col2};font-weight:${fw};text-shadow:0 0 0 rgba(255,255,255,1),0 0 4px rgba(255,255,255,0.5);">${value}</span>`
+          ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(99,102,241,0.18);border:1px solid rgba(99,102,241,0.35);color:${col2};font-weight:${fw};">${value}</span>`
           : value;
         return `<td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${wrap}</td>`;
       };
