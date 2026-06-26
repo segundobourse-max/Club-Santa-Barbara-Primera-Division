@@ -1305,8 +1305,8 @@
     <div class="landing-card" onclick="openSection('nido')">
       <div class="card-icon">🏟️</div>
       <div class="card-name">El Nido</div>
-      <div class="card-desc">Estadio & Cancha<br>Club Santa Bárbara</div>
-      <span class="card-badge badge-green">NUESTRO HOGAR</span>
+      <div class="card-desc">Jugadores de la Primera División A y B del club</div>
+      <span class="card-badge badge-green">NUESTROS JUGADORES</span>
     </div>
   </div>
 </div>
@@ -6170,19 +6170,26 @@ async function loadLiveData() {
   const EXCLUIR = ['jugador', 'team totals', 'totales', 'total', ''];
 
   // state
-  let _nidoMerged  = null;
-  let _nidoTeam    = 'todos'; // 'todos' | 'a' | 'b'
+  let _nidoMerged  = null;   // combined A+B (stats summed for players in both)
+  let _nidoDataA   = [];     // raw Primera A players (individual stats)
+  let _nidoDataB   = [];     // raw Primera B players (individual stats)
+  let _nidoTeam    = 'todos';
   let _nidoSort    = { col: 'pj', asc: false };
   let _nidoQuery   = '';
-  let _nidoRank    = null;   // null = normal mode | metric key = ranking mode
+  let _nidoRank    = null;
   let _nidoLoading = false;
 
+  const pf = v => { const n = parseFloat(String(v || '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+
   const RANK_METRICS = [
-    { key: 'goles',   label: 'Goleadores',    sortCol: 'goles'   },
-    { key: 'asist',   label: 'Asistidores',   sortCol: 'asist'   },
-    { key: 'gmas',    label: 'G+A',           sortCol: 'gmas'    },
-    { key: 'pj',      label: 'Más Presencias', sortCol: 'pj'     },
-    { key: 'titulos', label: 'Más Títulos',   sortCol: 'titulos' },
+    { key: 'goles',    label: 'Goleadores',      isFloat: false },
+    { key: 'asist',    label: 'Asistidores',      isFloat: false },
+    { key: 'gmas',     label: 'G+A',              isFloat: false },
+    { key: 'pj',       label: 'Más Presencias',   isFloat: false },
+    { key: 'titulos',  label: 'Más Títulos',      isFloat: false },
+    { key: 'promGol',  label: 'Prom. Goles',      isFloat: true  },
+    { key: 'promAsist',label: 'Prom. Asistencias',isFloat: true  },
+    { key: 'promGmas', label: 'Prom. G+A',         isFloat: true  },
   ];
 
   function normA(row) {
@@ -6192,9 +6199,12 @@ async function loadLiveData() {
     const goles = parseInt(row[JUG_COL.goles]) || 0;
     const asist = parseInt(row[JUG_COL.asist]) || 0;
     const titulos = parseInt(row[JUG_COL.titulos]) || 0;
+    const promGol  = pf(row[JUG_COL.promGol]);
+    const promAsist= pf(row[JUG_COL.promAsist]);
+    const promGmas = pf(row[JUG_COL.promGmas]);
     return { nombre: n, pos: String(row[JUG_COL.pos] || '').trim(),
              pj, goles, asist, gmas: goles + asist, titulos,
-             teams: ['a'] };
+             promGol, promAsist, promGmas, teams: ['a'] };
   }
 
   function normB(row) {
@@ -6204,29 +6214,46 @@ async function loadLiveData() {
     const goles = parseInt(row[JUG_COL_B.goles]) || 0;
     const asist = parseInt(row[JUG_COL_B.asist]) || 0;
     const titulos = parseInt(row[JUG_COL_B.titulos]) || 0;
+    const promGol  = pf(row[JUG_COL_B.promGol]);
+    const promAsist= pf(row[JUG_COL_B.promAsist]);
+    const promGmas = pf(row[JUG_COL_B.promGmas]);
     return { nombre: n, pos: String(row[JUG_COL_B.pos] || '').trim(),
              pj, goles, asist, gmas: goles + asist, titulos,
-             teams: ['b'] };
+             promGol, promAsist, promGmas, teams: ['b'] };
   }
 
   function normName(s) { return s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
   function mergeAB(listA, listB) {
     const map = new Map();
-    listA.forEach(p => { if (p) map.set(normName(p.nombre), p); });
+    listA.forEach(p => { if (p) map.set(normName(p.nombre), { ...p }); });
     listB.forEach(p => {
       if (!p) return;
       const k = normName(p.nombre);
       if (map.has(k)) {
         const a = map.get(k);
         a.teams = ['a', 'b'];
-        a.pj += p.pj; a.goles += p.goles; a.asist += p.asist;
-        a.gmas = a.goles + a.asist; a.titulos += p.titulos;
+        a.pj    += p.pj;
+        a.goles += p.goles;
+        a.asist += p.asist;
+        a.gmas   = a.goles + a.asist;
+        a.titulos += p.titulos;
+        // recalculate averages from totals
+        a.promGol   = a.pj > 0 ? parseFloat((a.goles  / a.pj).toFixed(2)) : 0;
+        a.promAsist = a.pj > 0 ? parseFloat((a.asist  / a.pj).toFixed(2)) : 0;
+        a.promGmas  = a.pj > 0 ? parseFloat((a.gmas   / a.pj).toFixed(2)) : 0;
       } else {
         map.set(k, p);
       }
     });
     return Array.from(map.values());
+  }
+
+  // Returns the dataset to display based on current team filter
+  function activeDataset() {
+    if (_nidoTeam === 'a') return _nidoDataA;
+    if (_nidoTeam === 'b') return _nidoDataB;
+    return _nidoMerged || [];
   }
 
   function posColor(pos) {
@@ -6241,13 +6268,14 @@ async function loadLiveData() {
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:${bg};color:${cl};font-size:10px;font-weight:700;border:1px solid ${cl}40;white-space:nowrap;">${lbl}</span>`;
   }
 
+  const NUMERIC_COLS = ['pj','goles','asist','gmas','titulos','promGol','promAsist','promGmas'];
+
   function sortData(data) {
     const col = _nidoRank || _nidoSort.col;
     const asc  = _nidoRank ? false : _nidoSort.asc;
-    const numeric = ['pj','goles','asist','gmas','titulos'];
     return [...data].sort((a, b) => {
       let va = a[col], vb = b[col];
-      if (numeric.includes(col)) { va = va || 0; vb = vb || 0; }
+      if (NUMERIC_COLS.includes(col)) { va = va || 0; vb = vb || 0; }
       else { va = String(va || '').toLowerCase(); vb = String(vb || '').toLowerCase(); }
       const cmp = va < vb ? -1 : va > vb ? 1 : 0;
       return asc ? cmp : -cmp;
@@ -6255,9 +6283,7 @@ async function loadLiveData() {
   }
 
   function filteredData() {
-    let data = _nidoMerged || [];
-    if (_nidoTeam === 'a') data = data.filter(p => p.teams.includes('a'));
-    if (_nidoTeam === 'b') data = data.filter(p => p.teams.includes('b'));
+    let data = activeDataset();
     if (_nidoQuery) {
       const q = normName(_nidoQuery);
       data = data.filter(p => normName(p.nombre).includes(q));
@@ -6272,38 +6298,47 @@ async function loadLiveData() {
     return `<span style="font-size:9px;margin-left:3px;color:#eab308;">${isAsc ? '▲' : '▼'}</span>`;
   }
 
-  // podio row styles
   const PODIO = [
-    { bg: 'rgba(234,179,8,0.10)',  border: 'rgba(234,179,8,0.25)',  medal: '🥇' },
-    { bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.2)', medal: '🥈' },
-    { bg: 'rgba(180,120,60,0.10)', border: 'rgba(180,120,60,0.2)',  medal: '🥉' },
+    { bg: 'rgba(234,179,8,0.10)',   border: 'rgba(234,179,8,0.25)',   medal: '🥇' },
+    { bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.20)', medal: '🥈' },
+    { bg: 'rgba(180,120,60,0.10)',  border: 'rgba(180,120,60,0.20)',  medal: '🥉' },
   ];
+
+  function fmtStat(v, isFloat) {
+    if (isFloat) return v > 0 ? v.toFixed(2) : '—';
+    return v;
+  }
 
   function renderTable() {
     const rows = filteredData();
     const isRankMode = !!_nidoRank;
+    const rankMeta   = isRankMode ? RANK_METRICS.find(m => m.key === _nidoRank) : null;
 
-    const TH = `padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;white-space:nowrap;letter-spacing:.06em;`;
+    const TH  = `padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;white-space:nowrap;letter-spacing:.06em;`;
     const THS = TH + `cursor:pointer;user-select:none;`;
 
     const cols = [
       { key: 'nombre',  label: 'JUGADOR' },
-      { key: 'pos',     label: 'POS',    center: true },
-      { key: 'teams',   label: 'EQUIPO', noSort: true },
-      { key: 'pj',      label: 'PJ',     center: true },
-      { key: 'goles',   label: 'GOLES',  center: true },
-      { key: 'asist',   label: 'ASIST',  center: true },
-      { key: 'gmas',    label: 'G+A',    center: true },
-      { key: 'titulos', label: 'TÍTULOS',center: true },
+      { key: 'pos',     label: 'POS',     center: true },
+      { key: 'teams',   label: 'EQUIPO',  noSort: true },
+      { key: 'pj',      label: 'PJ',      center: true },
+      { key: 'goles',   label: 'GOLES',   center: true },
+      { key: 'asist',   label: 'ASIST',   center: true },
+      { key: 'gmas',    label: 'G+A',     center: true },
+      { key: 'titulos', label: 'TÍTULOS', center: true },
     ];
 
-    const thead = `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);">${cols.map(c => {
-      const align = c.center ? 'text-align:center;' : '';
-      if (c.noSort) return `<th style="${TH}${align}">${c.label}</th>`;
-      const isActive = (_nidoRank || _nidoSort.col) === c.key;
-      const hl = isActive ? 'color:#d1d5db;' : '';
-      return `<th style="${THS}${align}${hl}" onclick="window._nidoSort('${c.key}')">${c.label}${thArrow(c.key)}</th>`;
-    }).join('')}</tr></thead>`;
+    const thead = `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);">${
+      // position column header only in rank mode
+      (isRankMode ? `<th style="${TH}text-align:center;">#</th>` : '') +
+      cols.map(c => {
+        const align = c.center ? 'text-align:center;' : '';
+        if (c.noSort) return `<th style="${TH}${align}">${c.label}</th>`;
+        const isActive = (_nidoRank || _nidoSort.col) === c.key;
+        const hl = isActive ? 'color:#d1d5db;' : '';
+        return `<th style="${THS}${align}${hl}" onclick="window._nidoSort('${c.key}')">${c.label}${thArrow(c.key)}</th>`;
+      }).join('')
+    }</tr></thead>`;
 
     const tbody = rows.map((p, i) => {
       const podio = isRankMode && i < 3 ? PODIO[i] : null;
@@ -6314,14 +6349,29 @@ async function loadLiveData() {
         ? `1px solid ${podio.border}`
         : '1px solid rgba(255,255,255,0.04)';
       const pColor = posColor(p.pos);
-      const pBg = pColor + '1a';
+      const pBg    = pColor + '1a';
       const teamBadges = p.teams.map(teamBadge).join('<span style="display:inline-block;width:4px;"></span>');
-      const statColor = podio ? (i === 0 ? '#fde68a' : i === 1 ? '#cbd5e1' : '#d6a87c') : '#ffffff';
+      const statColor = podio
+        ? (i === 0 ? '#fde68a' : i === 1 ? '#cbd5e1' : '#d6a87c')
+        : '#ffffff';
+
+      // position cell in rank mode
+      let posCell = '';
+      if (isRankMode) {
+        if (podio) {
+          posCell = `<td style="padding:9px 10px;text-align:center;font-size:18px;width:36px;">${podio.medal}</td>`;
+        } else {
+          posCell = `<td style="padding:9px 10px;text-align:center;font-size:13px;font-weight:700;color:#ffffff;width:36px;opacity:.8;">${i + 1}°</td>`;
+        }
+      }
+
       const nombreCell = podio
-        ? `<span style="margin-right:6px;">${podio.medal}</span><span style="font-weight:700;">${p.nombre}</span>`
+        ? `<span style="font-weight:700;">${p.nombre}</span>`
         : p.nombre;
 
+      const isFloat = rankMeta?.isFloat || false;
       return `<tr style="background:${bg};border-bottom:${borderBottom};transition:background .15s;">
+        ${posCell}
         <td style="padding:9px 14px;font-size:13px;color:#f3f4f6;white-space:nowrap;">${nombreCell}</td>
         <td style="padding:9px 14px;text-align:center;"><span style="padding:3px 8px;border-radius:6px;background:${pBg};color:${pColor};font-size:11px;font-weight:700;letter-spacing:.04em;">${p.pos || '—'}</span></td>
         <td style="padding:9px 14px;white-space:nowrap;">${teamBadges}</td>
@@ -6333,18 +6383,19 @@ async function loadLiveData() {
       </tr>`;
     }).join('');
 
-    const total = (_nidoMerged || []).length;
-    const showing = rows.length;
+    const totalDs = activeDataset().length;
+    const showing  = rows.length;
+    const colspan  = isRankMode ? 9 : 8;
 
     return `<div style="border-radius:12px;border:1px solid rgba(255,255,255,0.09);overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);">
         <span style="font-size:12px;color:#6b7280;">
-          Mostrando <strong style="color:#c0c8d8;font-weight:600;">${showing}</strong> de <strong style="color:#c0c8d8;font-weight:600;">${total}</strong> jugadores
+          Mostrando <strong style="color:#c0c8d8;font-weight:600;">${showing}</strong> de <strong style="color:#c0c8d8;font-weight:600;">${totalDs}</strong> jugadores
         </span>
-        ${isRankMode ? `<span style="font-size:11px;color:#eab308;font-weight:600;letter-spacing:.05em;">MODO RANKING — ${RANK_METRICS.find(m=>m.key===_nidoRank)?.label || ''}</span>` : ''}
+        ${isRankMode ? `<span style="font-size:11px;color:#eab308;font-weight:600;letter-spacing:.05em;">RANKING — ${rankMeta?.label || ''}</span>` : ''}
       </div>
       <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;">${thead}<tbody>${tbody || '<tr><td colspan="8" style="padding:32px;text-align:center;color:#4b5563;">Sin resultados</td></tr>'}</tbody></table>
+        <table style="width:100%;border-collapse:collapse;">${thead}<tbody>${tbody || `<tr><td colspan="${colspan}" style="padding:32px;text-align:center;color:#4b5563;">Sin resultados</td></tr>`}</tbody></table>
       </div>
     </div>`;
   }
@@ -6361,13 +6412,12 @@ async function loadLiveData() {
       return;
     }
 
-    // Team filter buttons
     const teamBtns = [
       { key: 'todos', label: 'Todos' },
       { key: 'a',     label: 'Primera A' },
       { key: 'b',     label: 'Primera B' },
     ].map(f => {
-      const active = f.key === _nidoTeam && !_nidoRank;
+      const active = f.key === _nidoTeam;
       const bg = active ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)';
       const cl = active ? '#eab308' : '#9ca3af';
       const bd = active ? '1px solid rgba(234,179,8,0.4)' : '1px solid rgba(255,255,255,0.08)';
@@ -6375,7 +6425,6 @@ async function loadLiveData() {
       return `<button onclick="window._nidoTeam('${f.key}')" style="padding:6px 15px;border-radius:20px;background:${bg};color:${cl};border:${bd};font-size:12px;font-weight:${fw};cursor:pointer;transition:all .15s;">${f.label}</button>`;
     }).join('');
 
-    // Ranking mode buttons
     const rankBtns = RANK_METRICS.map(m => {
       const active = _nidoRank === m.key;
       const bg = active ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.05)';
@@ -6396,7 +6445,7 @@ async function loadLiveData() {
           <span style="font-size:11px;color:#4b5563;font-weight:600;letter-spacing:.05em;white-space:nowrap;">PLANTEL</span>
           ${teamBtns}
         </div>
-        <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);"></div>
+        <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
           <span style="font-size:11px;color:#4b5563;font-weight:600;letter-spacing:.05em;white-space:nowrap;">RANKING</span>
           ${rankBtns}
@@ -6427,17 +6476,17 @@ async function loadLiveData() {
     ]).then(([resA, resB]) => {
       const rowsA = resA.status === 'fulfilled' ? resA.value : [];
       const rowsB = resB.status === 'fulfilled' ? resB.value : [];
-      const hdrA = rowsA[0] || [];
-      const hdrB = rowsB[0] || [];
-      const dataA = rowsA.slice(1).map(r => hdrA.map((_, i) => String(r[i] ?? '').trim())).map(normA).filter(Boolean);
-      const dataB = rowsB.slice(1).map(r => hdrB.map((_, i) => String(r[i] ?? '').trim())).map(normB).filter(Boolean);
-      _nidoMerged = mergeAB(dataA, dataB);
+      const hdrA  = rowsA[0] || [];
+      const hdrB  = rowsB[0] || [];
+      _nidoDataA  = rowsA.slice(1).map(r => hdrA.map((_, i) => String(r[i] ?? '').trim())).map(normA).filter(Boolean);
+      _nidoDataB  = rowsB.slice(1).map(r => hdrB.map((_, i) => String(r[i] ?? '').trim())).map(normB).filter(Boolean);
+      _nidoMerged = mergeAB(_nidoDataA, _nidoDataB);
       _nidoLoading = false;
       _renderNidoContent();
     });
   };
 
-  window._nidoTeam = function(t) { _nidoTeam = t; _nidoRank = null; _renderNidoContent(); };
+  window._nidoTeam = function(t) { _nidoTeam = t; _renderNidoContent(); };
   window._nidoSearch = function(q) { _nidoQuery = q; _renderNidoContent(); };
   window._nidoSort = function(col) {
     _nidoRank = null;
