@@ -6309,27 +6309,35 @@ async function loadLiveData() {
     return v;
   }
 
+  // Map prom-ranking key → which base column it replaces and how to display it
+  const PROM_MAP = {
+    promGol:   { replaces: 'goles',  header: 'PROM.G',   field: 'promGol'   },
+    promAsist: { replaces: 'asist',  header: 'PROM.A',   field: 'promAsist' },
+    promGmas:  { replaces: 'gmas',   header: 'PROM.G+A', field: 'promGmas'  },
+  };
+
   function renderTable() {
     const rows = filteredData();
     const isRankMode = !!_nidoRank;
     const rankMeta   = isRankMode ? RANK_METRICS.find(m => m.key === _nidoRank) : null;
+    const promSwap   = isRankMode ? PROM_MAP[_nidoRank] : null; // non-null only for prom rankings
 
     const TH  = `padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;white-space:nowrap;letter-spacing:.06em;`;
     const THS = TH + `cursor:pointer;user-select:none;`;
 
+    // Build column list, swapping the affected column header when in prom-rank mode
     const cols = [
       { key: 'nombre',  label: 'JUGADOR' },
       { key: 'pos',     label: 'POS',     center: true },
       { key: 'teams',   label: 'EQUIPO',  noSort: true },
       { key: 'pj',      label: 'PJ',      center: true },
-      { key: 'goles',   label: 'GOLES',   center: true },
-      { key: 'asist',   label: 'ASIST',   center: true },
-      { key: 'gmas',    label: 'G+A',     center: true },
+      { key: 'goles',   label: promSwap?.replaces === 'goles' ? promSwap.header : 'GOLES',  center: true },
+      { key: 'asist',   label: promSwap?.replaces === 'asist' ? promSwap.header : 'ASIST',  center: true },
+      { key: 'gmas',    label: promSwap?.replaces === 'gmas'  ? promSwap.header : 'G+A',    center: true },
       { key: 'titulos', label: 'TÍTULOS', center: true },
     ];
 
     const thead = `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);">${
-      // position column header only in rank mode
       (isRankMode ? `<th style="${TH}text-align:center;">#</th>` : '') +
       cols.map(c => {
         const align = c.center ? 'text-align:center;' : '';
@@ -6355,7 +6363,6 @@ async function loadLiveData() {
         ? (i === 0 ? '#fde68a' : i === 1 ? '#cbd5e1' : '#d6a87c')
         : '#ffffff';
 
-      // position cell in rank mode
       let posCell = '';
       if (isRankMode) {
         if (podio) {
@@ -6369,16 +6376,24 @@ async function loadLiveData() {
         ? `<span style="font-weight:700;">${p.nombre}</span>`
         : p.nombre;
 
-      const isFloat = rankMeta?.isFloat || false;
+      // For prom-rank mode: show prom value in the swapped column, raw in others
+      const fmt = (raw, promField) => {
+        if (promSwap && promSwap.field === promField) {
+          const v = p[promField] || 0;
+          return v > 0 ? v.toFixed(2) : '—';
+        }
+        return raw;
+      };
+
       return `<tr style="background:${bg};border-bottom:${borderBottom};transition:background .15s;">
         ${posCell}
         <td style="padding:9px 14px;font-size:13px;color:#f3f4f6;white-space:nowrap;">${nombreCell}</td>
         <td style="padding:9px 14px;text-align:center;"><span style="padding:3px 8px;border-radius:6px;background:${pBg};color:${pColor};font-size:11px;font-weight:700;letter-spacing:.04em;">${p.pos || '—'}</span></td>
         <td style="padding:9px 14px;white-space:nowrap;">${teamBadges}</td>
         <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${p.pj}</td>
-        <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${p.goles}</td>
-        <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${p.asist}</td>
-        <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${p.gmas}</td>
+        <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${fmt(p.goles, 'promGol')}</td>
+        <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${fmt(p.asist, 'promAsist')}</td>
+        <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${fmt(p.gmas, 'promGmas')}</td>
         <td style="padding:9px 14px;text-align:center;font-size:13px;font-weight:600;color:${statColor};">${p.titulos || 0}</td>
       </tr>`;
     }).join('');
