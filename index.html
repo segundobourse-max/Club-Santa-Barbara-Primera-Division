@@ -6048,7 +6048,7 @@ async function loadLiveData() {
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
   const [aSim, aBasic, aDet, bSim, bBasic, bDet, aHist, bHist, aGlobal, aTabla,
-         a25Basic, a25Det, a25Global, a25Tabla] = await Promise.allSettled([
+         a25Basic, a25Det, a25Global, a25Tabla, bGlobal, bTablaSheet] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + positions
@@ -6064,6 +6064,9 @@ async function loadLiveData() {
     fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A22:N524'),  // fecha-a-fecha detail
     fetchProxy('Apertura 2025', 'K3:X30',  GS.A_MAIN), // player stats
     fetchProxy('Apertura 2025', 'K32:T48', GS.A_MAIN), // standings
+    // ── Apertura 2026 B — global stats + standings from B_HIST ──
+    fetchProxy('APERTURA 2026 AIFA B', 'K3:X35',  GS.B_HIST), // player stats
+    fetchProxy('APERTURA 2026 AIFA B', 'K37:T55', GS.B_HIST), // standings
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -6114,6 +6117,17 @@ async function loadLiveData() {
     if (p.length > 0)   DATA_B.jugadores = p;
     if (det.length > 0) DATA_B.apertura  = det;
   } catch(e) { console.warn('parseDetailedMatches B:', e); }
+
+  // PRIMERA B global player stats from B_HIST (overrides parsePlayers if available)
+  if (ok(bGlobal)) {
+    const p = parseGlobalStats(ok(bGlobal));
+    if (p.length > 0) DATA_B.jugadores = p;
+  }
+  // PRIMERA B standings from B_HIST sheet (overrides sim standings if available)
+  if (ok(bTablaSheet)) {
+    const t = parseTablaSheet(ok(bTablaSheet));
+    if (t.length >= 5) DATA_B.tabla = t;
+  }
 
   // Estadisticas Historicas
   if (aHist.status === 'fulfilled' && aHist.value?.length > 3) {
