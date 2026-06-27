@@ -986,18 +986,12 @@
     .ap-fecha-btn.played { border-color:rgba(34,197,94,0.35); }
     .ap-fecha-btn.pending { color:var(--dorado); border-color:rgba(245,158,11,0.25); }
 
-    /* ── Torneos Antiguos timeline ── */
-    .hist-timeline { display:grid; grid-template-columns:56px 1fr; gap:0 20px; }
-    .hist-year-col { display:flex; flex-direction:column; align-items:center; padding-top:6px; }
-    .hist-year-badge {
-      background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.06));
-      border:1px solid rgba(245,158,11,.3); color:var(--dorado);
-      font-size:0.78rem; font-weight:800; border-radius:10px; padding:6px 8px;
-      text-align:center; writing-mode:vertical-rl; letter-spacing:.05em;
-      white-space:nowrap; line-height:1;
-    }
-    .hist-year-line { flex:1; width:2px; background:linear-gradient(to bottom,rgba(245,158,11,.25),transparent); margin-top:8px; min-height:20px; }
-    .hist-year-group { padding-bottom:28px; }
+    /* ── Torneos Antiguos — horizontal year nav ── */
+    .hist-year-nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .hist-year-pill { padding:5px 16px; border-radius:999px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.09); cursor:pointer; font-size:.85rem; font-weight:700; color:#64748b; transition:background .15s,color .15s,border-color .15s; }
+    .hist-year-pill:hover { background:rgba(255,255,255,0.09); color:#cbd5e1; }
+    .hist-year-pill.active { background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.35); color:#fbbf24; }
+    .hist-tc-detail-badge { display:inline-block; margin-top:6px; padding:2px 8px; border-radius:999px; background:rgba(99,102,241,0.18); border:1px solid rgba(99,102,241,0.30); color:#a5b4fc; font-size:.7rem; font-weight:600; }
     .hist-year-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
     .hist-torneo-card {
       background:linear-gradient(160deg,#1a2236,#131825);
@@ -2351,17 +2345,6 @@ function showJugSub(key) {
 function renderTorneosMenu() {
   const isA = currentData === DATA_A;
   const apertura = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
-  const historialA = isA ? `
-    <div style="margin-top:28px;">
-      <div class="section-title" style="margin-bottom:12px;font-size:1rem;opacity:.7">📁 Historial de Torneos – Primera A</div>
-      <div class="torneos-picker-grid">
-        <div class="torneo-card" onclick="showTorneo('apertura-2025a')" style="opacity:.85;">
-          <div class="torneo-card-icon">🏆</div>
-          <div class="torneo-card-name">Apertura AIFA A 2025</div>
-          <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2025</div>
-        </div>
-      </div>
-    </div>` : '';
   document.getElementById('torneos-picker-content').innerHTML = `
     <div class="section-title" style="margin-bottom:20px">🏆 Torneos Actuales – ${currentData.nombre}</div>
     <div class="torneos-picker-grid">
@@ -2375,8 +2358,7 @@ function renderTorneosMenu() {
         <div class="torneo-card-name">Recopa 2026</div>
         <div class="torneo-card-sub">Torneo copa · Temporada 2026</div>
       </div>
-    </div>
-    ${historialA}`;
+    </div>`;
 }
 
 function showTorneo(key) {
@@ -2384,13 +2366,22 @@ function showTorneo(key) {
     b.classList.toggle('active', i === 1);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const panelId = key === 'apertura-2025a' ? 'tab-torneo-apertura-2025a' : 'tab-torneo-' + key;
-  document.getElementById(panelId).classList.add('active');
-
-  if (key === 'apertura')       renderTorneoApertura();
-  else if (key === 'apertura-2025a') renderTorneoApertura2025A();
-  else                          renderRecopa();
+  document.getElementById('tab-torneo-' + key).classList.add('active');
+  if (key === 'apertura') renderTorneoApertura();
+  else                    renderRecopa();
 }
+
+// Navigate to a historical tournament from Torneos Antiguos context
+function showHistoricoTorneo(key) {
+  document.querySelectorAll('#main-nav button').forEach((b, i) => {
+    b.classList.toggle('active', i === 4); // "Torneos Antiguos"
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panelId = key === 'apertura-2025a' ? 'tab-torneo-apertura-2025a' : 'tab-torneo-historico-' + key;
+  document.getElementById(panelId).classList.add('active');
+  if (key === 'apertura-2025a') renderTorneoApertura2025A();
+}
+window.showHistoricoTorneo = showHistoricoTorneo;
 
 // ── Position band for pitch rendering ──
 const AP_BAND_Y  = [87, 70, 56, 40, 20];
@@ -5553,83 +5544,89 @@ const SEED_GRAFICOS = [
 
 function renderGraficos() {
   const container = document.getElementById('graf-content');
-  container.innerHTML = '';
 
   // Group by year (already sorted newest first in SEED_GRAFICOS)
   const byYear = [];
   SEED_GRAFICOS.forEach(t => {
     const last = byYear[byYear.length - 1];
-    if (last && last.anio === t.anio) { last.torneos.push(t); }
-    else { byYear.push({ anio: t.anio, torneos: [t] }); }
+    if (last && last.anio === t.anio) last.torneos.push(t);
+    else byYear.push({ anio: t.anio, torneos: [t] });
   });
 
-  const isCampeon   = pos => /campe[oó]n/i.test(pos);
+  // Tournaments that have full interactive detail views
+  const RICH = {
+    '2025|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2025a')" }
+  };
+
+  const isCampeon    = pos => /campe[oó]n/i.test(pos);
   const isSubcampeon = pos => /subcampe[oó]n/i.test(pos);
 
   function posLabel(pos) {
-    if (isCampeon(pos))   return '🏆 Campeón';
+    if (isCampeon(pos))    return '🏆 Campeón';
     if (isSubcampeon(pos)) return '🥈 Subcampeón';
     if (!pos || pos === '?') return '—';
     return pos;
   }
 
   function cardIcon(t) {
-    if (isCampeon(t.pos)) return '🏆';
+    if (isCampeon(t.pos))    return '🏆';
     if (isSubcampeon(t.pos)) return '🥈';
     if (/recopa|copa/i.test(t.competencia)) return '🏅';
     return '📋';
   }
 
-  function buildTimeline() {
-    const rows = byYear.map(({ anio, torneos }) => {
-      const cards = torneos.map(t => {
-        const esCamp = isCampeon(t.pos);
-        const esSubc = isSubcampeon(t.pos);
-        const posClass = esCamp ? 'campeon-txt' : esSubc ? 'subcampeon-txt' : '';
-        const ef = t.gf - t.gc;
-        const esCopa = /recopa|copa/i.test(t.competencia);
-        const tipoLabel = esCopa ? 'Copa' : 'Liga';
-        const tipoClass = esCopa ? 'copa' : 'liga';
-        const efStr = (ef >= 0 ? '+' : '') + ef;
-        const metaPts = t.pts != null ? `<span>${t.pts} pts</span><span class="hist-tc-meta-sep">·</span>` : '';
-        const metaVI  = t.vi  ? `<span class="hist-tc-meta-sep">·</span><span>🔒 ${t.vi} VI</span>` : '';
-        return `<div class="hist-torneo-card${esCamp ? ' campeon' : ''}" onclick="grafDetalle(${JSON.stringify(t).replace(/"/g,'&quot;')})">
-          <div class="hist-tc-header">
-            <span class="hist-tc-tipo ${tipoClass}">${tipoLabel}</span>
-            <span class="hist-tc-name">${cardIcon(t)} ${t.competencia}</span>
-          </div>
-          <div class="hist-tc-pos ${posClass}">${posLabel(t.pos)}</div>
-          <div class="hist-tc-record">
-            <span class="hist-tc-v">${t.pg}V</span>
-            <span class="hist-tc-sep">|</span>
-            <span class="hist-tc-e">${t.pe}E</span>
-            <span class="hist-tc-sep">|</span>
-            <span class="hist-tc-d">${t.pp}D</span>
-          </div>
-          <div class="hist-tc-meta">
-            ${metaPts}<span>PJ ${t.pj}</span>
-            <span class="hist-tc-meta-sep">·</span>
-            <span>Goles: ${t.gf} - ${t.gc} (${efStr})</span>
-            ${metaVI}
-          </div>
-          <div class="hist-tc-arrow">›</div>
-        </div>`;
-      }).join('');
+  let selectedYear = byYear[0]?.anio;
 
-      return `<div class="hist-timeline">
-        <div class="hist-year-col">
-          <div class="hist-year-badge">${anio}</div>
-          <div class="hist-year-line"></div>
+  function render() {
+    const yearGroup = byYear.find(y => y.anio === selectedYear);
+
+    const yearNav = byYear.map(y =>
+      `<button class="hist-year-pill${y.anio === selectedYear ? ' active' : ''}"
+               onclick="window._grafYear(${y.anio})">${y.anio}</button>`
+    ).join('');
+
+    const cards = (yearGroup?.torneos || []).map(t => {
+      const rich    = RICH[`${t.anio}|${t.competencia}`];
+      const esCamp  = isCampeon(t.pos);
+      const esSubc  = isSubcampeon(t.pos);
+      const posClass = esCamp ? 'campeon-txt' : esSubc ? 'subcampeon-txt' : '';
+      const ef      = t.gf - t.gc;
+      const esCopa  = /recopa|copa/i.test(t.competencia);
+      const efStr   = (ef >= 0 ? '+' : '') + ef;
+      const metaPts = t.pts != null ? `<span>${t.pts} pts</span><span class="hist-tc-meta-sep">·</span>` : '';
+      const metaVI  = t.vi  ? `<span class="hist-tc-meta-sep">·</span><span>🔒 ${t.vi} VI</span>` : '';
+      const richBadge = rich ? `<div class="hist-tc-detail-badge">📊 Estadísticas completas</div>` : '';
+      const clickFn = rich
+        ? rich.fn
+        : `grafDetalle(${JSON.stringify(t).replace(/"/g,'&quot;')})`;
+      return `<div class="hist-torneo-card${esCamp ? ' campeon' : ''}" onclick="${clickFn}">
+        <div class="hist-tc-header">
+          <span class="hist-tc-tipo ${esCopa ? 'copa' : 'liga'}">${esCopa ? 'Copa' : 'Liga'}</span>
+          <span class="hist-tc-name">${cardIcon(t)} ${t.competencia}</span>
         </div>
-        <div class="hist-year-group">
-          <div class="hist-year-cards">${cards}</div>
+        <div class="hist-tc-pos ${posClass}">${posLabel(t.pos)}</div>
+        <div class="hist-tc-record">
+          <span class="hist-tc-v">${t.pg}V</span>
+          <span class="hist-tc-sep">|</span>
+          <span class="hist-tc-e">${t.pe}E</span>
+          <span class="hist-tc-sep">|</span>
+          <span class="hist-tc-d">${t.pp}D</span>
         </div>
+        <div class="hist-tc-meta">
+          ${metaPts}<span>PJ ${t.pj}</span>
+          <span class="hist-tc-meta-sep">·</span>
+          <span>Goles: ${t.gf} - ${t.gc} (${efStr})</span>
+          ${metaVI}
+        </div>
+        ${richBadge}
+        <div class="hist-tc-arrow">›</div>
       </div>`;
     }).join('');
 
     container.innerHTML = `
       <div class="graf-section-title">📅 Historial de Torneos</div>
-      ${rows}`;
+      <div class="hist-year-nav">${yearNav}</div>
+      <div class="hist-year-cards">${cards || '<div style="color:#475569;padding:32px;text-align:center">Sin torneos registrados para este año.</div>'}</div>`;
   }
 
   function grafDetalle(t) {
@@ -5662,7 +5659,8 @@ function renderGraficos() {
   }
 
   window.grafDetalle = grafDetalle;
-  buildTimeline();
+  window._grafYear   = anio => { selectedYear = anio; render(); };
+  render();
 }
 
 // ──────────────────────────────────────────────
@@ -6053,8 +6051,8 @@ async function loadLiveData() {
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + positions
     fetchCSV(GS.B_SIM),
-    fetchCSV(GS.B_MAIN, null, 'A1:J18'),
-    fetchCSV(GS.B_MAIN, null, 'A22:J524'),
+    fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A1:J18'),
+    fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A21:J550'),
     fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
     fetchProxy('Estadisticas Historicas', null, GS.B_HIST),
     fetchProxy('Apertura 2026', 'L3:X33',  GS.A_MAIN),  // global player stats table
@@ -6065,8 +6063,8 @@ async function loadLiveData() {
     fetchProxy('Apertura 2025', 'K3:X30',  GS.A_MAIN), // player stats
     fetchProxy('Apertura 2025', 'K32:T48', GS.A_MAIN), // standings
     // ── Apertura 2026 B — global stats + standings from B_HIST ──
-    fetchProxy('APERTURA 2026 AIFA B', 'K3:X35',  GS.B_HIST), // player stats
-    fetchProxy('APERTURA 2026 AIFA B', 'K37:T55', GS.B_HIST), // standings
+    fetchProxy('APERTURA 2026 AIFA B', 'L1:X35',  GS.B_HIST), // player stats
+    fetchProxy('APERTURA 2026 AIFA B', 'L37:V55', GS.B_HIST), // standings
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -6110,7 +6108,7 @@ async function loadLiveData() {
     if (m.length > 0) DATA_B.partidos = m;
   }
 
-  // PRIMERA B detailed match data + cumulative player stats (A22:J524)
+  // PRIMERA B detailed match data + cumulative player stats (A21:J550)
   if (ok(bDet)) try {
     const p   = parsePlayers(ok(bDet));
     const det = parseDetailedMatches(ok(bDet), true);
