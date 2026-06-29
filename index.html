@@ -1348,6 +1348,11 @@
     <div id="torneo-apertura-2025a-content"></div>
   </div>
 
+  <!-- TORNEO HISTÓRICO: APERTURA AIFA D 2024 (Primera B) -->
+  <div class="panel" id="tab-torneo-apertura-2024d-b">
+    <div id="torneo-apertura-2024d-b-content"></div>
+  </div>
+
   <!-- TORNEO: RECOPA -->
   <div class="panel" id="tab-torneo-recopa">
     <div id="torneo-recopa-content"></div>
@@ -2153,6 +2158,14 @@ const DATA_A_2025 = {
   tabla:    [],
 };
 
+const DATA_B_2024D = {
+  nombre:   'Primera B — Apertura AIFA D 2024',
+  partidos: [],
+  apertura: [],
+  jugadores:[],
+  tabla:    [],
+};
+
 const DATA_B = {
   nombre: 'Primera B',
   badge: '10° EN LA TABLA',
@@ -2378,9 +2391,16 @@ function showHistoricoTorneo(key) {
     b.classList.toggle('active', i === 4); // "Torneos Antiguos"
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const panelId = key === 'apertura-2025a' ? 'tab-torneo-apertura-2025a' : 'tab-torneo-historico-' + key;
-  document.getElementById(panelId).classList.add('active');
-  if (key === 'apertura-2025a') renderTorneoApertura2025A();
+  if (key === 'apertura-2025a') {
+    document.getElementById('tab-torneo-apertura-2025a').classList.add('active');
+    renderTorneoApertura2025A();
+  } else if (key === 'apertura-2024d-b') {
+    document.getElementById('tab-torneo-apertura-2024d-b').classList.add('active');
+    renderTorneoApt2024DB();
+  } else {
+    const el = document.getElementById('tab-torneo-historico-' + key);
+    if (el) el.classList.add('active');
+  }
 }
 window.showHistoricoTorneo = showHistoricoTorneo;
 
@@ -3534,6 +3554,279 @@ function renderTorneoApertura2025A() {
   };
 
   if (autoFecha !== null) ap25SelectFecha(autoFecha);
+}
+
+// ── Apertura AIFA D 2024 (Primera B) — lazy loader ───────────────────────
+let _bApt2024dLoaded = false;
+async function _loadBApt2024d() {
+  if (_bApt2024dLoaded) return;
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${GS.B_HIST}/gviz/tq?tqx=out:csv&gid=1543882063`;
+    console.log('[Apt2024D] Fetching by gid:', url);
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const raw = parseCSV(await r.text());
+    if (!raw || raw.length < 5) throw new Error('empty: ' + (raw?.length ?? 0));
+    // Pad all rows to 24 cols for safe slicing (spreadsheet goes up to col X)
+    const rows = raw.map(row => { const c = [...row]; while (c.length < 24) c.push(''); return c; });
+    const basicRows  = rows.slice(0, 18).map(r => r.slice(0, 10));
+    const detRows    = rows.slice(20).map(r => r.slice(0, 10));
+    const globalRows = rows.slice(0, 35).map(r => r.slice(11, 24));
+    const tablaRows  = rows.slice(36, 55).map(r => r.slice(11, 22));
+
+    try { const m = parseMatches(basicRows);           if (m.length > 0)  DATA_B_2024D.partidos  = m;  } catch(e) { console.warn('Apt2024D parseMatches:', e); }
+    try {
+      const det  = parseDetailedMatches(detRows, true);
+      const jugs = parsePlayers(detRows);
+      if (det.length  > 0) DATA_B_2024D.apertura  = det;
+      if (jugs.length > 0) DATA_B_2024D.jugadores = jugs;
+    } catch(e) { console.warn('Apt2024D parseDetailedMatches:', e); }
+    try { const g = parseGlobalStats(globalRows);     if (g.length > 0)   DATA_B_2024D.jugadores = g;  } catch(e) { console.warn('Apt2024D parseGlobalStats:', e); }
+    try { const t = parseTablaSheet(tablaRows);       if (t.length >= 3)  DATA_B_2024D.tabla     = t;  } catch(e) { console.warn('Apt2024D parseTablaSheet:', e); }
+
+    _bApt2024dLoaded = true;
+    console.log('[Apt2024D] Loaded:', DATA_B_2024D.partidos.length, 'partidos,', DATA_B_2024D.jugadores.length, 'jugadores,', DATA_B_2024D.tabla.length, 'tabla');
+  } catch(e) {
+    console.error('[Apt2024D] Load failed:', e.message || e);
+  }
+}
+
+// ── renderTorneoApt2024DB ─────────────────────────────────────────────────
+function renderTorneoApt2024DB() {
+  const d          = DATA_B_2024D;
+  const name       = 'Apertura AIFA D 2024';
+  const CONTAINER  = 'torneo-apertura-2024d-b-content';
+  const FECHA_TARGET = 'ap24d-fecha-detail';
+
+  function doRender() {
+    const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
+    const played   = partidos.filter(m => m.resultado !== null);
+    const last     = played.length ? played[played.length - 1] : null;
+
+    const rc    = m => m.gf > m.gc ? 'var(--verde)' : m.gf < m.gc ? 'var(--rojo)' : 'var(--dorado)';
+    const badge = m => m.gf > m.gc ? '<span class="ap-mc-badge won">Victoria</span>'
+                     : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>'
+                     : '<span class="ap-mc-badge draw">Empate</span>';
+
+    // ── Tab 1: Plantel ──────────────────────────────────────────────────
+    function buildPlantelTab() {
+      const jugs = d.jugadores || [];
+      if (!jugs.length && !_bApt2024dLoaded) {
+        return `<div style="color:#475569;padding:40px;text-align:center">⏳ Cargando plantel…</div>`;
+      }
+      if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Sin datos de plantel disponibles.</div>`;
+      const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
+      const posMap = {};
+      for (const match of (d.apertura || [])) {
+        for (const p of (match.jugadores || [])) {
+          if (p.nombre && p.pos && !posMap[p.nombre]) posMap[p.nombre] = p.pos;
+        }
+      }
+      const POS_GROUP = { ARQ:0, DFI:1, DFC:1, DFD:1, DEF:1, MI:2, MC:2, MCO:2, MD:2, DC:3, DEL:3 };
+      const posGroup = p => POS_GROUP[String(p||'').toUpperCase()] ?? 4;
+      const byGoles = [...jugs].sort((a,b) => numVal(b.goles) - numVal(a.goles));
+      const byAsist = [...jugs].sort((a,b) => numVal(b.asist) - numVal(a.asist));
+      const byGA    = [...jugs].sort((a,b) => (numVal(b.goles)+numVal(b.asist)) - (numVal(a.goles)+numVal(a.asist)));
+      const byPJ    = [...jugs].sort((a,b) => (numVal(b.pj)||numVal(b.titular)) - (numVal(a.pj)||numVal(a.titular)));
+      const topG = byGoles[0], topA = byAsist[0], topGA = byGA[0], topPJ = byPJ[0];
+      const kpiCard = (icon, val, nm, label) => `<div class="ap-plantel-kpi">
+        <div class="ap-plantel-kpi-icon">${icon}</div><div class="ap-plantel-kpi-label">${label}</div>
+        <div class="ap-plantel-kpi-val">${val}</div><div class="ap-plantel-kpi-name">${nm}</div></div>`;
+      const kpisHtml = `<div class="ap-plantel-kpis">
+        ${kpiCard('⚽', numVal(topG?.goles), topG?.nombre||'—', 'Máximo Goleador')}
+        ${kpiCard('🎯', numVal(topA?.asist), topA?.nombre||'—', 'Máximo Asistidor')}
+        ${kpiCard('🌟', numVal(topGA?.goles)+numVal(topGA?.asist), topGA?.nombre||'—', 'Goles + Asistencias')}
+        ${kpiCard('🏃', numVal(topPJ?.pj)||numVal(topPJ?.titular), topPJ?.nombre||'—', 'Más Partidos Jugados')}</div>`;
+      const tableId = 'ap24d-plantel-tbl';
+      const rows = jugs.map(j => {
+        const g = numVal(j.goles), a = numVal(j.asist), tr = numVal(j.rojas);
+        const tit = numVal(j.titular), sup = numVal(j.entro);
+        const pj = numVal(j.pj) || (tit + sup);
+        const cit = numVal(j.citado);
+        const pg = numVal(j.promGol), pa = numVal(j.promAsist), pga = numVal(j.promGA);
+        const pos = posMap[j.nombre] || j.pos || '';
+        const grp = posGroup(pos);
+        return { j, g, a, tr, tit, sup, pj, cit, pg, pa, pga, pos, grp };
+      });
+      const z  = v => v > 0 ? v : `<span class="num-zero">0</span>`;
+      const zf = v => v > 0 ? v.toFixed(2) : `<span class="num-zero">—</span>`;
+      const defaultSorted = [...rows].sort((a,b) => a.grp !== b.grp ? a.grp - b.grp : b.pj - a.pj);
+      function renderRows(arr) {
+        return arr.map(({ j, g, a, tr, tit, sup, pj, cit, pg, pa, pga, pos }) => `<tr
+            data-nombre="${j.nombre.toLowerCase()}"
+            data-pj="${pj}" data-tit="${tit}" data-sup="${sup}" data-cit="${cit}"
+            data-goles="${g}" data-asist="${a}" data-ga="${g+a}" data-tr="${tr}"
+            data-pg="${pg}" data-pa="${pa}" data-pga="${pga}">
+          <td>${pos ? `<span class="pos-badge" style="margin-right:6px">${pos}</span>` : ''}${j.nombre}</td>
+          <td class="${pj>0?'':'num-zero'}">${z(pj)}</td>
+          <td class="${tit>0?'':'num-zero'}">${z(tit)}</td>
+          <td class="${sup>0?'':'num-zero'}">${z(sup)}</td>
+          <td class="${g>0?'num-goles':'num-zero'}">${z(g)}</td>
+          <td class="${a>0?'num-asist':'num-zero'}">${z(a)}</td>
+          <td class="${(g+a)>0?'num-ga':'num-zero'}">${z(g+a)}</td>
+          <td class="${tr>0?'num-rojas':'num-zero'}">${z(tr)}</td>
+          <td class="${cit>0?'':'num-zero'}">${z(cit)}</td>
+          <td class="${pg>0?'num-goles':'num-zero'}">${zf(pg)}</td>
+          <td class="${pa>0?'num-asist':'num-zero'}">${zf(pa)}</td>
+          <td class="${pga>0?'num-ga':'num-zero'}">${zf(pga)}</td>
+        </tr>`).join('');
+      }
+      const colDefs = [
+        { key:'nombre', label:'Jugador',     numeric:false },
+        { key:'pj',    label:'🎽 PJ',        numeric:true  },
+        { key:'tit',   label:'👕 TIT',       numeric:true  },
+        { key:'sup',   label:'🔄 SUP',       numeric:true  },
+        { key:'goles', label:'⚽ GOL',        numeric:true  },
+        { key:'asist', label:'👟 AST',        numeric:true  },
+        { key:'ga',    label:'🔥 G+A',        numeric:true  },
+        { key:'tr',    label:'🟥 TR',         numeric:true  },
+        { key:'cit',   label:'📋 CIT',        numeric:true  },
+        { key:'pg',    label:'📈 Prom.G',     numeric:true  },
+        { key:'pa',    label:'📈 Prom.A',     numeric:true  },
+        { key:'pga',   label:'📈 Prom.G+A',   numeric:true  },
+      ];
+      const thead = `<thead><tr>${colDefs.map((c,i) =>
+        `<th data-col="${c.key}" onclick="ap24dPlantelSort('${tableId}','${c.key}',${c.numeric})"
+             style="cursor:pointer;user-select:none;${i===0?'text-align:left':''}">
+          ${c.label} <span class="ap-sort-arrow" data-col="${c.key}"></span></th>`
+      ).join('')}</tr></thead>`;
+      window._ap24dPlantelSortState = { col: null, asc: false };
+      window.ap24dPlantelSort = function(tid, col, numeric) {
+        const st = window._ap24dPlantelSortState;
+        const asc = st.col === col ? !st.asc : col === 'nombre';
+        st.col = col; st.asc = asc;
+        const tbl = document.getElementById(tid);
+        if (!tbl) return;
+        const tbody = tbl.querySelector('tbody');
+        const trs = [...tbody.querySelectorAll('tr')];
+        trs.sort((a, b) => {
+          const av = a.dataset[col] ?? '', bv = b.dataset[col] ?? '';
+          const cmp = numeric ? (Number(av) - Number(bv)) : av.localeCompare(bv, 'es');
+          return asc ? cmp : -cmp;
+        });
+        tbody.innerHTML = trs.map(r => r.outerHTML).join('');
+        tbl.querySelectorAll('.ap-sort-arrow').forEach(el => {
+          el.textContent = el.dataset.col === col ? (asc ? '↑' : '↓') : '';
+        });
+        tbl.querySelectorAll('th[data-col]').forEach(el => {
+          el.classList.toggle('ap-sort-active', el.dataset.col === col);
+        });
+      };
+      return `${kpisHtml}<div class="ap-plantel-table-wrap">
+        <table class="ap-plantel-table" id="${tableId}">${thead}<tbody>${renderRows(defaultSorted)}</tbody></table></div>`;
+    }
+
+    // ── Tab 2: Tabla ────────────────────────────────────────────────────
+    const lastCard = last ? `
+      <div class="ap-match-card" onclick="ap24dSwitchTab('fechas');ap24dSelectFecha(${last.fecha})">
+        <div class="ap-card-title">⚽ Último Partido</div>${badge(last)}
+        <div class="ap-mc-rival">vs ${last.rival}</div>
+        <div class="ap-mc-score" style="color:${rc(last)}">${last.resultado}</div>
+        <div class="ap-mc-meta">Fecha ${last.fecha}${last.local ? ' · ' + last.local : ''}</div>
+        ${last.posCSB ? `<div class="ap-mc-meta" style="color:var(--dorado)">🏅 Posición: ${last.posCSB}</div>` : ''}
+      </div>` : `<div class="ap-match-card"><div class="ap-card-title">⚽ Último Partido</div><div class="ap-mc-pending">Sin partidos jugados</div></div>`;
+
+    const tabla = d.tabla || [];
+    const copaLegendItems = [
+      { color:'#f59e0b', label:'Campeón / Supercopa' },
+      { color:'#22c55e', label:'Recopa / Promoción' },
+      { color:'#fb923c', label:'Copa de Honor' },
+      { color:'#ef4444', label:'Descenso' },
+    ];
+    function copaBadge(copa) {
+      if (!copa || copa === '-' || copa === '–') return '<span style="color:rgba(255,255,255,.15)">—</span>';
+      if (/campe[oó]n|supercopa/i.test(copa)) return `<span class="copa-badge copa-campeon">${copa}</span>`;
+      if (/recopa/i.test(copa))               return `<span class="copa-badge copa-recopa">${copa}</span>`;
+      if (/promoci[oó]n/i.test(copa))         return `<span class="copa-badge copa-honor">${copa}</span>`;
+      if (/copa de honor/i.test(copa))        return `<span class="copa-badge copa-honor">${copa}</span>`;
+      if (/descenso/i.test(copa))             return `<span class="copa-badge copa-descenso">${copa}</span>`;
+      return `<span style="color:rgba(255,255,255,.4);font-size:0.68rem">${copa}</span>`;
+    }
+    function renderTablaRows(rows) {
+      return rows.map((t, i) => {
+        const isLeader = i === 0;
+        const df = (t.df > 0 ? '+' : '') + (t.df ?? 0);
+        const dfColor = t.df > 0 ? 'color:#22c55e' : t.df < 0 ? 'color:#ef4444' : '';
+        return `<tr class="${isLeader ? 'leader-row' : t.csb ? 'csb-row' : ''}">
+          <td style="font-weight:700;color:${isLeader ? '#22c55e' : 'var(--gris-texto)'}">${t.pos}</td>
+          <td>${isLeader ? '🏆 ' : t.csb ? '⭐ ' : ''}${t.equipo}</td>
+          <td>${copaBadge(t.copas)}</td>
+          <td><strong style="color:${isLeader ? '#22c55e' : '#f1f5f9'}">${t.pts}</strong></td>
+          <td>${t.pj??'–'}</td><td>${t.pg??'–'}</td><td>${t.pe??'–'}</td><td>${t.pp??'–'}</td>
+          <td>${t.gf??'–'}</td><td>${t.gc??'–'}</td>
+          <td style="${dfColor}">${df}</td>
+        </tr>`;
+      }).join('');
+    }
+    const tablaHtml = tabla.length ? `
+      <div class="ap-standings-card">
+        <div class="ap-card-title">📊 Tabla de Posiciones — Apertura AIFA D 2024</div>
+        <div style="overflow-x:auto"><table class="ap-table">
+          <thead><tr><th>#</th><th>Equipo</th><th style="text-align:left;min-width:90px">Clasificación</th>
+            <th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DF</th>
+          </tr></thead>
+          <tbody>${renderTablaRows(tabla)}</tbody>
+        </table></div>
+        <div class="ap-copa-legend">
+          ${copaLegendItems.map(l => `<span class="ap-legend-item"><span class="ap-legend-dot" style="background:${l.color}"></span>${l.label}</span>`).join('')}
+        </div>
+      </div>` : `<div class="ap-standings-card"><div class="ap-card-title">📊 Tabla de Posiciones</div>
+        <div style="color:var(--gris-texto);font-size:0.82rem">${_bApt2024dLoaded ? 'Sin datos disponibles.' : 'Cargando…'}</div></div>`;
+
+    // ── Tab 3: Fecha a Fecha ────────────────────────────────────────────
+    const allFechas = partidos.map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null })).sort((a,b) => a.n - b.n);
+    const fechaBtns = allFechas.map(f =>
+      `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="ap24dSelectFecha(${f.n})">Fecha ${f.n}</button>`
+    ).join('');
+    const autoFecha = last ? last.fecha : (allFechas.length ? allFechas[0].n : null);
+
+    // ── Render shell ────────────────────────────────────────────────────
+    document.getElementById(CONTAINER).innerHTML = `
+      <button class="torneo-back" onclick="document.querySelectorAll('#main-nav button')[4].click()">← Torneos Antiguos</button>
+      <div class="section-title" style="margin-bottom:20px">📁 ${name}</div>
+      <nav class="ap-tab-nav">
+        <button class="ap-tab-btn active" data-tab="plantel" onclick="ap24dSwitchTab('plantel')"><span class="ap-tab-icon">🌟</span> Plantel</button>
+        <button class="ap-tab-btn"        data-tab="tabla"   onclick="ap24dSwitchTab('tabla')">  <span class="ap-tab-icon">📊</span> Tabla Completa</button>
+        <button class="ap-tab-btn"        data-tab="fechas"  onclick="ap24dSwitchTab('fechas')"> <span class="ap-tab-icon">📅</span> Fecha a Fecha</button>
+      </nav>
+      <div class="ap-tab-panel active" id="ap24d-tab-plantel">${buildPlantelTab()}</div>
+      <div class="ap-tab-panel" id="ap24d-tab-tabla">
+        <div class="ap-overview">${tablaHtml}<div class="ap-match-cards">${lastCard}</div></div>
+      </div>
+      <div class="ap-tab-panel" id="ap24d-tab-fechas">
+        <div class="ap-fechas-title">📅 Fechas del Torneo — ${name}</div>
+        <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas disponibles</span>'}</div>
+        <div id="${FECHA_TARGET}"></div>
+      </div>`;
+
+    window.ap24dSwitchTab = function(tab) {
+      ['plantel','tabla','fechas'].forEach(t => {
+        const el = document.getElementById('ap24d-tab-' + t);
+        if (el) el.classList.toggle('active', t === tab);
+      });
+      document.querySelectorAll('#torneo-apertura-2024d-b-content .ap-tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === tab);
+      });
+      if (tab === 'fechas' && autoFecha !== null) ap24dSelectFecha(autoFecha);
+    };
+
+    window.ap24dSelectFecha = function(n) {
+      document.querySelectorAll(`#${CONTAINER} .ap-fecha-btn`).forEach(b => {
+        b.classList.toggle('active', b.dataset.fecha === String(n));
+      });
+      const basic  = (d.partidos || []).find(m => String(m.fecha) === String(n));
+      const detail = (d.apertura  || []).find(m => String(m.fecha) === String(n));
+      renderFechaDetail(basic, detail, FECHA_TARGET);
+    };
+
+    if (autoFecha !== null) ap24dSelectFecha(autoFecha);
+  }
+
+  doRender();
+  // Async-load data then re-render only if it changed something
+  if (!_bApt2024dLoaded) {
+    _loadBApt2024d().then(() => { if (_bApt2024dLoaded) doRender(); }).catch(() => {});
+  }
 }
 
 async function fetchAifaTabla(slug, isA, copaLegendItems, renderTablaRows) {
@@ -5680,7 +5973,8 @@ function renderGraficos() {
 
   // Tournaments that have full interactive detail views
   const RICH = {
-    '2025|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2025a')" }
+    '2025|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2025a')" },
+    '2024|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2024d-b')" },
   };
 
   const isCampeon    = pos => /campe[oó]n/i.test(pos);
