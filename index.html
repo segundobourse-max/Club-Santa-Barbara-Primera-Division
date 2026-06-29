@@ -2225,6 +2225,7 @@ const DATA_B = {
     { nombre:'Bautista Busch',        citado:1,  titular:0,  sup:0,  goles:0, asist:0, rojas:0 },
   ],
   historico: { pj:108, pg:57, pe:25, pp:26, gf:212, gc:133, vi:33 },
+  graficos: [],
   topHist: {
     partidos: [
       { nombre:'Joaquin Cadenas',       valor:99 },
@@ -3746,7 +3747,7 @@ function parseEstHistSheet(rows) {
   // Más partidos (top-right):  pos=13, nombre=14, empty=15, valor=16
   const num = v => { const n = parseFloat(String(v ?? '').replace(',','.')); return isNaN(n) ? 0 : n; };
   let historico = null;
-  const goleadores = [], asistidores = [], masPartidos = [];
+  const goleadores = [], asistidores = [], masPartidos = [], torneos = [];
   let readGol = false, readAsi = false, readPar = false;
 
   for (const row of rows) {
@@ -3769,6 +3770,20 @@ function parseEstHistSheet(rows) {
     // Skip Posicion/Jugador/Cantidad header rows
     if (c[1]?.toUpperCase() === 'JUGADOR' || c[7]?.toUpperCase() === 'JUGADOR' || c[14]?.toUpperCase() === 'JUGADOR') continue;
 
+    // Tournament rows: comp in col0, year in col2, PJ>0 in col3, before stats sections
+    if (!readGol && !readAsi && !readPar) {
+      const comp = c[0], yr = c[2], pj = num(row[3]);
+      if (comp && comp.toUpperCase() !== 'TOTAL' && /^20\d{2}$/.test(yr) && pj > 0
+          && !/^(competencia|torneo|comp)$/i.test(comp)) {
+        torneos.push({
+          competencia: comp, anio: Number(yr),
+          pj, pg: num(row[4]), pe: num(row[5]), pp: num(row[6]),
+          gf: num(row[7]), gc: num(row[8]), vi: num(row[9]),
+          pts: null, pos: null,
+        });
+      }
+    }
+
     // Goleadores: nombre=col1, valor=col3
     if (readGol && c[1] && !isNaN(parseFloat(c[3])))
       goleadores.push({ nombre: c[1], valor: num(row[3]) });
@@ -3784,6 +3799,7 @@ function parseEstHistSheet(rows) {
 
   return {
     historico,
+    torneos,
     goleadores:  goleadores.slice(0, 5),
     asistidores: asistidores.slice(0, 5),
     masPartidos: masPartidos.slice(0, 5),
@@ -3892,8 +3908,8 @@ const SEED_HISTORIAL = [
 let _histSort = { col:'rival', asc: true };
 
 function renderHistorial() {
-  // Start with seed data for instant render while async load completes
-  let data = [...SEED_HISTORIAL];
+  // Start with seed data for instant render while async load completes (A only; B has no seed)
+  let data = currentData === DATA_B ? [] : [...SEED_HISTORIAL];
 
   function kpi(icon, val, label, variant = '') {
     const v = (typeof val === 'number' && (label.toLowerCase().includes('dif') || label.toLowerCase().includes('diferencia')))
@@ -4000,9 +4016,10 @@ function renderHistorial() {
   };
   window.histDrilldown = rival => renderHistorialDetalle(rival);
 
-  // Async: load full historical cache (2016–present) and rebuild summary from real match data
-  _loadPartidosCache().then(allMatches => {
-    if (!allMatches || allMatches.length < 10) return;
+  // Async: load full historical cache and rebuild summary from real match data
+  const cacheLoader = currentData === DATA_B ? _loadPartidosCacheB() : _loadPartidosCache();
+  cacheLoader.then(allMatches => {
+    if (!allMatches || allMatches.length < 5) return;
     data = _buildSummaryFromCache(allMatches);
     const inp = document.getElementById('hist-search-input');
     if (inp) inp.placeholder = `Buscar entre ${data.length} clubes…`;
@@ -4011,7 +4028,8 @@ function renderHistorial() {
 }
 
 // ── Parser for "Partidos Historial" sheet ── col A always blank, data in cells[1..8] ──
-let _partidosCache = null;
+let _partidosCache  = null;
+let _partidosCacheB = null;
 
 function _parsePartidosPorTorneos(rows) {
   // Column A in the sheet is always blank — data starts at cells[1]:
@@ -4090,6 +4108,24 @@ async function _loadPartidosCache() {
   return _partidosCache;
 }
 
+async function _loadPartidosCacheB() {
+  if (_partidosCacheB) return _partidosCacheB;
+  try {
+    console.log('[Historial B] Fetching Partidos Historial from B_HIST:', GS.B_HIST);
+    const rows = await fetchProxy('Partidos Historial', null, GS.B_HIST);
+    console.log('[Historial B] Rows received:', rows ? rows.length : 'null');
+    if (!rows || rows.length < 5) throw new Error('empty response: ' + (rows ? rows.length : 0));
+    const parsed = _parsePartidosPorTorneos(rows);
+    console.log('[Historial B] Parsed matches:', parsed.length, parsed.slice(0,3));
+    _partidosCacheB = parsed;
+  } catch(e) {
+    console.error('[Historial B] Load failed:', e.message || e);
+    _partidosCacheB = null;
+    return [];
+  }
+  return _partidosCacheB;
+}
+
 // Build per-rival summary table from raw match cache
 function _buildSummaryFromCache(matches) {
   const map = {};
@@ -4113,7 +4149,7 @@ function renderHistorialDetalle(rival) {
   el.innerHTML = `<div class="hd-loading"><div class="hd-loading-spin">⚽</div><div style="margin-top:12px;font-size:.85rem">Cargando historial vs ${rival}…</div></div>`;
   document.getElementById('part-title').textContent = '';
 
-  _loadPartidosCache().then(allMatches => {
+  (currentData === DATA_B ? _loadPartidosCacheB() : _loadPartidosCache()).then(allMatches => {
     const rivalUp = rival.toUpperCase();
     // All matches vs this rival, sorted newest first (reverse chronological)
     const matches = allMatches
@@ -4302,6 +4338,7 @@ function renderJugadoresMenu() {
         <div class="torneo-card-name">Estadísticas Anuales</div>
         <div class="torneo-card-sub">Estadísticas separadas por temporada</div>
       </div>
+      ${currentData !== DATA_B ? `
       <div class="torneo-card" onclick="showJugSub('debuts')">
         <div class="torneo-card-icon">🌟</div>
         <div class="torneo-card-name">Debuts</div>
@@ -4311,7 +4348,7 @@ function renderJugadoresMenu() {
         <div class="torneo-card-icon">🎓</div>
         <div class="torneo-card-name">Inferiores Aportes</div>
         <div class="torneo-card-sub">Jugadores surgidos de inferiores</div>
-      </div>
+      </div>` : ''}
     </div>`;
 }
 
@@ -5545,9 +5582,12 @@ const SEED_GRAFICOS = [
 function renderGraficos() {
   const container = document.getElementById('graf-content');
 
-  // Group by year (already sorted newest first in SEED_GRAFICOS)
+  // Use B's live data when in Primera B context, A's seed otherwise
+  const source = currentData === DATA_B ? DATA_B.graficos : SEED_GRAFICOS;
+  // Sort newest first
+  const sorted = [...source].sort((a, b) => b.anio - a.anio || (b.competencia || '').localeCompare(a.competencia || ''));
   const byYear = [];
-  SEED_GRAFICOS.forEach(t => {
+  sorted.forEach(t => {
     const last = byYear[byYear.length - 1];
     if (last && last.anio === t.anio) last.torneos.push(t);
     else byYear.push({ anio: t.anio, torneos: [t] });
@@ -6151,6 +6191,7 @@ async function loadLiveData() {
     const p = parseEstHistSheet(bHist.value);
     console.log('B_Hist parsed:', p.historico, 'gol:', p.goleadores[0], 'par:', p.masPartidos[0]);
     if (p.historico?.pj > 0)    DATA_B.historico        = p.historico;
+    if (p.torneos?.length)      DATA_B.graficos         = p.torneos;
     if (p.goleadores.length)    DATA_B.topHist.goles    = p.goleadores;
     if (p.asistidores.length)   DATA_B.topHist.asist    = p.asistidores;
     if (p.masPartidos.length)   DATA_B.topHist.partidos = p.masPartidos;
