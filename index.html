@@ -5613,10 +5613,8 @@ const SEED_GRAFICOS_B = [
   { competencia:'Clausura AIFA B',           anio:2025, pj:15, pg:7,  pe:4, pp:4, gf:32, gc:24, vi:1, pts:25,   pos:'4°' },
   { competencia:'Supercopa',                 anio:2025, pj:1,  pg:0,  pe:1, pp:0, gf:2,  gc:2,  vi:0, pts:null, pos:'Octavos de Final' },
   // 2024
-  { competencia:'Apertura AIFA D',           anio:2024, pj:15, pg:10, pe:4, pp:1, gf:51, gc:13, vi:5, pts:34,   pos:'1°' },
-  { competencia:'Final Apertura AIFA D',     anio:2024, pj:1,  pg:1,  pe:0, pp:0, gf:4,  gc:1,  vi:0, pts:null, pos:'Campeón' },
-  { competencia:'Clausura AIFA C',           anio:2024, pj:15, pg:9,  pe:4, pp:2, gf:24, gc:13, vi:6, pts:31,   pos:'3°' },
-  { competencia:'Promocion Clausura AIFA C', anio:2024, pj:1,  pg:1,  pe:0, pp:0, gf:2,  gc:1,  vi:0, pts:null, pos:'Ascenso' },
+  { competencia:'Apertura AIFA D',           anio:2024, pj:15, pg:10, pe:4, pp:1, gf:51, gc:13, vi:5, pts:34,   pos:'Campeón y Ascenso' },
+  { competencia:'Clausura AIFA C',           anio:2024, pj:15, pg:9,  pe:4, pp:2, gf:24, gc:13, vi:6, pts:31,   pos:'3° y Ascenso' },
   { competencia:'Recopa',                    anio:2024, pj:1,  pg:0,  pe:0, pp:1, gf:3,  gc:7,  vi:0, pts:null, pos:'Octavos de Final' },
   // 2023
   { competencia:'Apertura AIFA D',           anio:2023, pj:15, pg:8,  pe:4, pp:3, gf:36, gc:14, vi:4, pts:28,   pos:null },
@@ -5683,17 +5681,22 @@ function renderGraficos() {
 
   const isCampeon    = pos => /campe[oó]n/i.test(pos);
   const isSubcampeon = pos => /subcampe[oó]n/i.test(pos);
+  const isAscenso    = pos => /ascenso/i.test(pos);
 
   function posLabel(pos) {
+    if (!pos || pos === '?') return '—';
+    // Combined labels — preserve full string but enrich with icons
+    if (isCampeon(pos) && isAscenso(pos)) return '🏆 Campeón · 🆙 Ascenso';
     if (isCampeon(pos))    return '🏆 Campeón';
     if (isSubcampeon(pos)) return '🥈 Subcampeón';
-    if (!pos || pos === '?') return '—';
+    if (isAscenso(pos))    return '🆙 ' + pos;
     return pos;
   }
 
   function cardIcon(t) {
     if (isCampeon(t.pos))    return '🏆';
     if (isSubcampeon(t.pos)) return '🥈';
+    if (isAscenso(t.pos))    return '🆙';
     if (/recopa|copa/i.test(t.competencia)) return '🏅';
     return '📋';
   }
