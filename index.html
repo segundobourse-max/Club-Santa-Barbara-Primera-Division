@@ -5802,7 +5802,7 @@ function parseTablaSheet(rows) {
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     const equipo = String(r[1]??'').trim();
-    if (!equipo) continue;
+    if (!equipo || /^(equipo|club|nombre)$/i.test(equipo)) continue;
     result.push({
       pos:   rank + '°',
       equipo,
@@ -5848,19 +5848,29 @@ function parseGlobalStats(rows) {
     const row = rows[i];
     const nombre = String(row[cols.nombre] ?? '').trim();
     if (!nombre || /^(jugador|total|porcentaje|promedio)/i.test(nombre)) continue;
+    const pj    = num(row[cols.pj]);
+    const goles = num(row[cols.goles]);
+    const asist = num(row[cols.asist]);
+    let promGol   = cols.promGol   >= 0 ? num(row[cols.promGol])   : 0;
+    let promAsist = cols.promAsist >= 0 ? num(row[cols.promAsist]) : 0;
+    let promGA    = cols.promGA    >= 0 ? num(row[cols.promGA])    : 0;
+    // Fallback: recalculate client-side if sheet returns 0 but pj > 0
+    if (pj > 0) {
+      if (!promGol)   promGol   = parseFloat((goles / pj).toFixed(2));
+      if (!promAsist) promAsist = parseFloat((asist / pj).toFixed(2));
+      if (!promGA)    promGA    = parseFloat(((goles + asist) / pj).toFixed(2));
+    }
     players.push({
       nombre,
-      pj:        num(row[cols.pj]),
+      pj,
       titular:   num(row[cols.titular]),
       entro:     num(row[cols.entro]),
       salio:     num(row[cols.salio]),
-      goles:     num(row[cols.goles]),
-      asist:     num(row[cols.asist]),
+      goles,
+      asist,
       rojas:     num(row[cols.rojas]),
       citado:    num(row[cols.citado]),
-      promGol:   cols.promGol   >= 0 ? num(row[cols.promGol])   : 0,
-      promAsist: cols.promAsist >= 0 ? num(row[cols.promAsist]) : 0,
-      promGA:    cols.promGA    >= 0 ? num(row[cols.promGA])    : 0,
+      promGol, promAsist, promGA,
     });
   }
   return players;
@@ -6031,8 +6041,9 @@ function refreshCurrentView() {
 
 async function fetchCSV(id, tab, range) {
   // Try proxy first (no CORS issues), fall back to GViz
+  // Always pass sheetId so the proxy looks in the correct spreadsheet
   if (tab) {
-    try { return await fetchProxy(tab, range); } catch(e) {}
+    try { return await fetchProxy(tab, range, id); } catch(e) {}
   }
   return fetchCSVFallback(id, tab, range);
 }
