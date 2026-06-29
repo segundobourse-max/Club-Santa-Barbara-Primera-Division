@@ -3806,6 +3806,65 @@ function parseEstHistSheet(rows) {
   };
 }
 
+// Parser for B_HIST "Estadisticas Historicas" — different column layout from A_MAIN
+// B layout: A=comp, B=año, C=PJ, D=PG, E=PE, F=PP, G=GF, H=GC, I=VI, J=Pts, K=Pos
+function parseEstHistSheetB(rows) {
+  const num = v => { const n = parseFloat(String(v ?? '').replace(',','.')); return isNaN(n) ? 0 : n; };
+  let historico = null;
+  const torneos = [], goleadores = [], asistidores = [], masPartidos = [];
+  let readGol = false, readAsi = false, readPar = false;
+
+  for (const row of rows) {
+    const c = row.map(v => String(v ?? '').trim());
+    const rowUp = c.join('|').toUpperCase();
+
+    // TOTAL row: col 0 = "TOTAL", data starts at col 2
+    if (!historico && c[0].toUpperCase() === 'TOTAL') {
+      const pj = num(row[2]);
+      if (pj > 0) historico = { pj, pg: num(row[3]), pe: num(row[4]), pp: num(row[5]), gf: num(row[6]), gc: num(row[7]), vi: num(row[8]) };
+    }
+
+    // Section headers
+    let headerFound = false;
+    if (rowUp.includes('GOLEADORES') && !readGol) { readGol = true; headerFound = true; }
+    if (rowUp.includes('ASISTIDOR')  && !readAsi) { readAsi = true; headerFound = true; }
+    if ((rowUp.includes('MAS PARTIDOS') || rowUp.includes('MÁS PARTIDOS')) && !readPar) { readPar = true; headerFound = true; }
+    if (headerFound) continue;
+
+    if (c[1]?.toUpperCase() === 'JUGADOR' || c[7]?.toUpperCase() === 'JUGADOR' || c[14]?.toUpperCase() === 'JUGADOR') continue;
+
+    // Tournament rows: comp in col0, year in col1, PJ>0 in col2
+    if (!readGol && !readAsi && !readPar) {
+      const comp = c[0], yr = c[1], pj = num(row[2]);
+      if (comp && comp.toUpperCase() !== 'TOTAL' && /^20\d{2}$/.test(yr) && pj > 0
+          && !/^(competencia|torneo|comp)$/i.test(comp)) {
+        const posRaw = c[10] ? String(c[10]).trim() : null;
+        torneos.push({
+          competencia: comp, anio: Number(yr),
+          pj, pg: num(row[3]), pe: num(row[4]), pp: num(row[5]),
+          gf: num(row[6]), gc: num(row[7]), vi: num(row[8]),
+          pts: num(row[9]) || null, pos: posRaw || null,
+        });
+      }
+    }
+
+    if (readGol && c[1] && !isNaN(parseFloat(c[3])))
+      goleadores.push({ nombre: c[1], valor: num(row[3]) });
+    if (readAsi && c[7] && !isNaN(parseFloat(c[9])))
+      asistidores.push({ nombre: c[7], valor: num(row[9]) });
+    if (readPar && c[14] && !isNaN(parseFloat(c[16])))
+      masPartidos.push({ nombre: c[14], valor: num(row[16]) });
+  }
+
+  return {
+    historico,
+    torneos,
+    goleadores:  goleadores.slice(0, 5),
+    asistidores: asistidores.slice(0, 5),
+    masPartidos: masPartidos.slice(0, 5),
+  };
+}
+
 async function fetchResumenHistorico(d, sheetId) {
   try {
     const rows = await fetchCSVFallback(sheetId, 'Estadisticas Historicas');
@@ -5544,6 +5603,28 @@ const CHART_DEFAULTS = {
 // ──────────────────────────────────────────────
 // SEED: HISTORIAL DE TORNEOS
 // ──────────────────────────────────────────────
+// ── Primera B historical tournament seed (B_HIST layout, newest first) ──────
+const SEED_GRAFICOS_B = [
+  // 2026
+  { competencia:'Apertura AIFA B',           anio:2026, pj:15, pg:6,  pe:1, pp:8, gf:18, gc:25, vi:5, pts:19,   pos:'11°' },
+  { competencia:'Recopa',                    anio:2026, pj:2,  pg:1,  pe:0, pp:1, gf:1,  gc:3,  vi:1, pts:null, pos:'Cuartos de Final' },
+  // 2025
+  { competencia:'Apertura AIFA B',           anio:2025, pj:15, pg:6,  pe:2, pp:7, gf:17, gc:25, vi:5, pts:20,   pos:'11°' },
+  { competencia:'Clausura AIFA B',           anio:2025, pj:15, pg:7,  pe:4, pp:4, gf:32, gc:24, vi:1, pts:25,   pos:'4°' },
+  { competencia:'Supercopa',                 anio:2025, pj:1,  pg:0,  pe:1, pp:0, gf:2,  gc:2,  vi:0, pts:null, pos:'Octavos de Final' },
+  // 2024
+  { competencia:'Apertura AIFA D',           anio:2024, pj:15, pg:10, pe:4, pp:1, gf:51, gc:13, vi:5, pts:34,   pos:'1°' },
+  { competencia:'Final Apertura AIFA D',     anio:2024, pj:1,  pg:1,  pe:0, pp:0, gf:4,  gc:1,  vi:0, pts:null, pos:'Campeón' },
+  { competencia:'Clausura AIFA C',           anio:2024, pj:15, pg:9,  pe:4, pp:2, gf:24, gc:13, vi:6, pts:31,   pos:'3°' },
+  { competencia:'Promocion Clausura AIFA C', anio:2024, pj:1,  pg:1,  pe:0, pp:0, gf:2,  gc:1,  vi:0, pts:null, pos:'Ascenso' },
+  { competencia:'Recopa',                    anio:2024, pj:1,  pg:0,  pe:0, pp:1, gf:3,  gc:7,  vi:0, pts:null, pos:'Octavos de Final' },
+  // 2023
+  { competencia:'Apertura AIFA D',           anio:2023, pj:15, pg:8,  pe:4, pp:3, gf:36, gc:14, vi:4, pts:28,   pos:null },
+  { competencia:'Clausura AIFA D',           anio:2023, pj:14, pg:9,  pe:5, pp:0, gf:25, gc:9,  vi:7, pts:32,   pos:'5°' },
+  // 2021
+  { competencia:'Apertura AIFA D',           anio:2021, pj:12, pg:7,  pe:2, pp:2, gf:27, gc:14, vi:3, pts:23,   pos:'4°' },
+];
+
 const SEED_GRAFICOS = [
   // 2025
   { competencia:'Apertura AIFA A', anio:2025, pj:15, pg:9,  pe:3, pp:3,  gf:25, gc:10, vi:8, pts:30,  pos:'4°' },
@@ -5582,8 +5663,10 @@ const SEED_GRAFICOS = [
 function renderGraficos() {
   const container = document.getElementById('graf-content');
 
-  // Use B's live data when in Primera B context, A's seed otherwise
-  const source = currentData === DATA_B ? DATA_B.graficos : SEED_GRAFICOS;
+  // Use B's live data (from sheet) or B seed; A always uses SEED_GRAFICOS
+  const source = currentData === DATA_B
+    ? (DATA_B.graficos.length ? DATA_B.graficos : SEED_GRAFICOS_B)
+    : SEED_GRAFICOS;
   // Sort newest first
   const sorted = [...source].sort((a, b) => b.anio - a.anio || (b.competencia || '').localeCompare(a.competencia || ''));
   const byYear = [];
@@ -6188,8 +6271,8 @@ async function loadLiveData() {
     if (p.masPartidos.length)   DATA_A.topHist.partidos = p.masPartidos;
   }
   if (bHist.status === 'fulfilled' && bHist.value?.length > 3) {
-    const p = parseEstHistSheet(bHist.value);
-    console.log('B_Hist parsed:', p.historico, 'gol:', p.goleadores[0], 'par:', p.masPartidos[0]);
+    const p = parseEstHistSheetB(bHist.value);
+    console.log('B_Hist parsed:', p.historico, 'torneos:', p.torneos.length, 'gol:', p.goleadores[0]);
     if (p.historico?.pj > 0)    DATA_B.historico        = p.historico;
     if (p.torneos?.length)      DATA_B.graficos         = p.torneos;
     if (p.goleadores.length)    DATA_B.topHist.goles    = p.goleadores;
