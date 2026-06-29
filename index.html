@@ -4170,10 +4170,14 @@ async function _loadPartidosCache() {
 async function _loadPartidosCacheB() {
   if (_partidosCacheB) return _partidosCacheB;
   try {
-    console.log('[Historial B] Fetching Partidos Historial from B_HIST:', GS.B_HIST);
-    const rows = await fetchProxy('Partidos Historial', null, GS.B_HIST);
-    console.log('[Historial B] Rows received:', rows ? rows.length : 'null');
-    if (!rows || rows.length < 5) throw new Error('empty response: ' + (rows ? rows.length : 0));
+    // Fetch by gid to avoid tab-name mismatch; same format as A_MAIN Partidos Historial
+    const url = `https://docs.google.com/spreadsheets/d/${GS.B_HIST}/gviz/tq?tqx=out:csv&gid=1711655156`;
+    console.log('[Historial B] Fetching by gid:', url);
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = parseCSV(await r.text());
+    console.log('[Historial B] Rows received:', rows ? rows.length : 'null', rows && rows[0]);
+    if (!rows || rows.length < 5) throw new Error('empty: ' + (rows ? rows.length : 0));
     const parsed = _parsePartidosPorTorneos(rows);
     console.log('[Historial B] Parsed matches:', parsed.length, parsed.slice(0,3));
     _partidosCacheB = parsed;
