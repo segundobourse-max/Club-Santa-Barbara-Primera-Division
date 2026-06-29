@@ -4295,8 +4295,12 @@ function renderHistorial() {
   function balClass(v) { return v > 0 ? 'hist-bal-pos' : v < 0 ? 'hist-bal-neg' : 'hist-bal-neu'; }
   function sign(v) { return v > 0 ? '+' + v : String(v); }
 
+  const isLoadingB = currentData === DATA_B && !data.length;
+
   function buildTable(rows) {
-    if (!rows.length) return `<div class="hist-empty">No se encontraron clubes.</div>`;
+    if (!rows.length) return isLoadingB
+      ? `<div class="hd-loading"><div class="hd-loading-spin">⚽</div><div style="margin-top:12px;font-size:.85rem">Cargando historial…</div></div>`
+      : `<div class="hist-empty">No se encontraron clubes.</div>`;
     const cols = [
       { key:'rival', label:'Rival' },
       { key:'pj',    label:'PJ'   },
@@ -4371,7 +4375,7 @@ function renderHistorial() {
   // Async: load full historical cache and rebuild summary from real match data
   const cacheLoader = currentData === DATA_B ? _loadPartidosCacheB() : _loadPartidosCache();
   cacheLoader.then(allMatches => {
-    if (!allMatches || allMatches.length < 5) return;
+    if (!allMatches || allMatches.length < 1) return;
     data = _buildSummaryFromCache(allMatches);
     const inp = document.getElementById('hist-search-input');
     if (inp) inp.placeholder = `Buscar entre ${data.length} clubes…`;
