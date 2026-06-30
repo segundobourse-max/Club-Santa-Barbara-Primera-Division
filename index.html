@@ -1295,6 +1295,7 @@
     .pp-cond-sup   { color:#3b82f6; background:rgba(59,130,246,0.12); }
     .pp-cond-banco { color:#94a3b8; background:rgba(148,163,184,0.1); }
     .pp-match-stat { font-size:0.78rem; font-weight:800; }
+    .pp-nido-loading { margin-top:12px; font-size:0.72rem; color:var(--gris-texto); }
   </style>
 </head>
 <body>
@@ -2341,15 +2342,27 @@ function closePlayerProfile() {
 }
 
 // ── Aggregate every known data source for a single player ──────────────────
+// Career totals + títulos come from "El Nido" (centralized DB across A+B); the
+// current squad sheet supplies the titular/suplente breakdown and fecha-a-fecha
+// match log; rankings compare against the full roster of the player's active
+// competition (El Nido filtered by team), not just the local plantel array.
 function _collectPlayerStats(nombre) {
   const target = normName(nombre);
   const d = currentData || DATA_A;
+  const team = d === DATA_B ? 'b' : 'a';
   const plantel = d.jugadores || [];
   const me = plantel.find(p => normName(p.nombre) === target);
 
-  // Rankings across the full plantel for the active category (goles / asist / pj-citado)
+  const nidoMe   = window._nidoFindPlayer ? window._nidoFindPlayer(nombre, team) : null;
+  const nidoPool = window._nidoGetTeamData ? window._nidoGetTeamData(team) : [];
+  const nidoReady = nidoPool && nidoPool.length > 0;
+
+  // Rankings against the full universe of registered players in the player's
+  // current competition (El Nido, team-scoped) — falls back to the local
+  // plantel array while El Nido is still loading.
   function rankIn(metricFn) {
-    const ranked = plantel
+    const pool = nidoReady ? nidoPool : plantel;
+    const ranked = pool
       .map(p => ({ nombre: p.nombre, v: metricFn(p) || 0 }))
       .sort((a, b) => b.v - a.v);
     const idx = ranked.findIndex(p => normName(p.nombre) === target);
@@ -2359,7 +2372,8 @@ function _collectPlayerStats(nombre) {
   const rankAsist = rankIn(p => p.asist);
   const rankPJ    = rankIn(p => p.pj || p.citado);
 
-  // Fecha a fecha — current season's detailed matches (Apertura)
+  // Fecha a fecha — cross-reference El Nido with the active squad sheet's detailed
+  // matches (Apertura) to list the most recent dates played, result included.
   const apertura = d.apertura || [];
   const partidos = apertura
     .filter(m => (m.jugadores || []).some(j => normName(j.nombre) === target))
@@ -2376,27 +2390,31 @@ function _collectPlayerStats(nombre) {
     })
     .sort((a, b) => (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
 
-  const pj      = me ? (me.pj || me.citado || 0) : 0;
+  // Career totals: prefer El Nido (accumulated trayectoria en el club), fall back
+  // to the local plantel row while El Nido is loading, and to 0 if neither has data.
+  const pj      = nidoMe ? nidoMe.pj    : me ? (me.pj || me.citado || 0) : 0;
   const titular = me ? (me.titular || 0) : 0;
   const sup     = me ? (me.entro || me.sup || 0) : 0;
   const citado  = me ? (me.citado || pj) : 0;
-  const goles   = me ? (me.goles || 0) : 0;
-  const asist   = me ? (me.asist || 0) : 0;
+  const goles   = nidoMe ? nidoMe.goles : me ? (me.goles || 0) : 0;
+  const asist   = nidoMe ? nidoMe.asist : me ? (me.asist || 0) : 0;
   const rojas   = me ? (me.rojas || 0) : 0;
+  const titulos = nidoMe ? (nidoMe.titulos || 0) : 0;
   const safeDiv = (a, b) => (b > 0 ? a / b : 0);
-  const promGol   = me && me.promGol   != null ? me.promGol   : safeDiv(goles, pj);
-  const promAsist = me && me.promAsist != null ? me.promAsist : safeDiv(asist, pj);
-  const promGA    = me && (me.promGA ?? me.promGmas) != null ? (me.promGA ?? me.promGmas) : safeDiv(goles + asist, pj);
+  const promGol   = nidoMe ? nidoMe.promGol   : (me && me.promGol   != null ? me.promGol   : safeDiv(goles, pj));
+  const promAsist = nidoMe ? nidoMe.promAsist : (me && me.promAsist != null ? me.promAsist : safeDiv(asist, pj));
+  const promGA    = nidoMe ? nidoMe.promGmas  : (me && (me.promGA ?? me.promGmas) != null ? (me.promGA ?? me.promGmas) : safeDiv(goles + asist, pj));
   const efectividadGA = safeDiv(goles + asist, pj) * 100;
 
   return {
-    nombre: me ? me.nombre : nombre,
-    pos: me ? (me.pos || me.posicion || '') : '',
-    pj, citado, titular, sup, goles, asist, rojas,
+    nombre: nidoMe ? nidoMe.nombre : me ? me.nombre : nombre,
+    pos: nidoMe ? (nidoMe.pos || '') : me ? (me.pos || me.posicion || '') : '',
+    pj, citado, titular, sup, goles, asist, rojas, titulos,
     promGol, promAsist, promGA, efectividadGA,
     rankGoles, rankAsist, rankPJ,
     partidos,
-    found: !!me,
+    found: !!(me || nidoMe),
+    nidoReady,
   };
 }
 
@@ -2440,6 +2458,7 @@ function renderPlayerProfile(nombre) {
       ${kpi('⚽', s.goles, 'Goles', '#22c55e')}
       ${kpi('🎯', s.asist, 'Asistencias', '#3b82f6')}
       ${kpi('🔥', s.goles + s.asist, 'G+A', '#a855f7')}
+      ${kpi('🏆', s.titulos, 'Títulos (El Nido)', '#fbbf24')}
       ${kpi('🟥', s.rojas, 'Rojas', '#ef4444')}
       ${kpi('📈', s.promGol.toFixed(2).replace('.', ','), 'Prom. Gol/Partido', '#22c55e')}
       ${kpi('🎯', s.promAsist.toFixed(2).replace('.', ','), 'Prom. Asist/Partido', '#3b82f6')}
@@ -2448,7 +2467,8 @@ function renderPlayerProfile(nombre) {
       <div class="hd-section-label">Efectividad de participación en goles (G+A)</div>
       <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${Math.min(100, s.efectividadGA).toFixed(0)}%"></div></div>
       <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct">${s.efectividadGA.toFixed(0)}%</span><span>100%</span></div>
-    </div>`;
+    </div>
+    ${!s.nidoReady ? `<div class="pp-nido-loading">⏳ Sincronizando con El Nido…</div>` : ''}`;
 
   const rankings = `
     <div class="pp-ranks">
@@ -2462,7 +2482,7 @@ function renderPlayerProfile(nombre) {
         <div class="pp-match-row">
           <div class="pp-match-main">
             <span class="pp-match-torneo">${m.torneo}</span>
-            <span class="pp-match-rival">vs ${m.rival}${m.fecha ? ' · Fecha ' + m.fecha : ''}</span>
+            <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` (${m.resultado})` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
           </div>
           <div class="pp-match-side">
             <span class="pp-match-cond pp-cond-${m.condicion === 'Titular' ? 'tit' : m.condicion === 'Ingresó desde el banco' ? 'sup' : 'banco'}">${m.condicion}</span>
@@ -2493,6 +2513,16 @@ function renderPlayerProfile(nombre) {
         <div class="pp-match-list">${matchRows}</div>
       </div>
     </div>`;
+
+  // El Nido (combined A+B career DB) loads async — re-render once ready so
+  // títulos, career totals and rankings reflect the centralized data.
+  if (!s.nidoReady && window._nidoEnsureLoaded) {
+    window._nidoEnsureLoaded().then(() => {
+      if (document.getElementById('player-profile-overlay')?.style.display === 'block') {
+        renderPlayerProfile(nombre);
+      }
+    });
+  }
 }
 
 window.addEventListener('popstate', () => {
@@ -7301,16 +7331,13 @@ async function loadLiveData() {
     `;
   }
 
-  window.renderNido = function() {
-    const el = document.getElementById('nido-content');
-    if (!el) return;
-    if (_nidoMerged !== null) { _renderNidoContent(); return; }
-    if (_nidoLoading) { _renderNidoContent(); return; }
-
+  let _nidoLoadPromise = null;
+  // Shared loader: dedupes concurrent callers (renderNido + player profile) into one fetch.
+  function _nidoLoad() {
+    if (_nidoMerged !== null) return Promise.resolve();
+    if (_nidoLoadPromise) return _nidoLoadPromise;
     _nidoLoading = true;
-    _renderNidoContent();
-
-    Promise.allSettled([
+    _nidoLoadPromise = Promise.allSettled([
       fetchProxy('Jugadores Estadisticas', null, GS.A_MAIN),
       fetchProxy('Jugadores Estadisticas', null, GS.B_HIST),
     ]).then(([resA, resB]) => {
@@ -7322,8 +7349,25 @@ async function loadLiveData() {
       _nidoDataB  = rowsB.slice(1).map(r => hdrB.map((_, i) => String(r[i] ?? '').trim())).map(normB).filter(Boolean);
       _nidoMerged = mergeAB(_nidoDataA, _nidoDataB);
       _nidoLoading = false;
-      _renderNidoContent();
     });
+    return _nidoLoadPromise;
+  }
+
+  window.renderNido = function() {
+    const el = document.getElementById('nido-content');
+    if (!el) return;
+    if (_nidoMerged !== null) { _renderNidoContent(); return; }
+    _renderNidoContent();
+    _nidoLoad().then(_renderNidoContent);
+  };
+
+  // ── Public accessors used by the Player Profile component ──────────────
+  window._nidoEnsureLoaded = _nidoLoad;
+  window._nidoGetTeamData  = function(team) { return team === 'b' ? _nidoDataB : _nidoDataA; };
+  window._nidoGetMerged    = function() { return _nidoMerged || []; };
+  window._nidoFindPlayer   = function(nombre, team) {
+    const pool = team === 'b' ? _nidoDataB : team === 'a' ? _nidoDataA : (_nidoMerged || []);
+    return pool.find(p => normName(p.nombre) === normName(nombre)) || null;
   };
 
   window._nidoTeam = function(t) { _nidoTeam = t; _renderNidoContent(); };
