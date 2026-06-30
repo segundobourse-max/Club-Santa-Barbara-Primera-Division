@@ -4370,11 +4370,26 @@ function renderHistorial() {
     else { _histSort.col = col; _histSort.asc = col === 'rival'; }
     paint();
   };
-  window.histDrilldown = rival => renderHistorialDetalle(rival);
+  window.histDrilldown = rival => currentData === DATA_B
+    ? renderHistorialDetalleB(rival)
+    : renderHistorialDetalle(rival);
+
+  if (currentData === DATA_B) {
+    // Direct mapping from "HISTORIAL PRIMERA B vs OTROS CLUBES" (A3:I61) — re-fetched
+    // every time this panel renders, so edits/new rows in the Sheet show up automatically.
+    _loadHistorialResumenB().then(({ clubes, total }) => {
+      _histDataB = clubes;
+      _histTotalB = total;
+      data = clubes;
+      const inp = document.getElementById('hist-search-input');
+      if (inp) inp.placeholder = `Buscar entre ${data.length} clubes…`;
+      paint();
+    });
+    return;
+  }
 
   // Async: load full historical cache and rebuild summary from real match data
-  const cacheLoader = currentData === DATA_B ? _loadPartidosCacheB() : _loadPartidosCache();
-  cacheLoader.then(allMatches => {
+  _loadPartidosCache().then(allMatches => {
     if (!allMatches || allMatches.length < 1) return;
     data = _buildSummaryFromCache(allMatches);
     const inp = document.getElementById('hist-search-input');
@@ -4464,6 +4479,56 @@ async function _loadPartidosCache() {
   return _partidosCache;
 }
 
+// ── "HISTORIAL PRIMERA B vs OTROS CLUBES" summary sheet (gid=1711655156, range A3:I61) ──
+// Direct column mapping: A=Rival B=PJ C=PG D=PE E=PP F=Dif.Historial G=GF H=GC I=Dif.Goles
+// Row 62 (TOTAL) is excluded from the club list but kept as an aggregate summary.
+let _histDataB = [];
+let _histTotalB = null;
+
+function _parseHistorialResumenB(rows) {
+  const clubes = [];
+  let total = null;
+  for (const row of rows) {
+    const c = row.map(x => String(x ?? '').trim());
+    const rivalRaw = c[0];
+    if (!rivalRaw) continue;
+    const pj = Number(c[1]);
+    if (!Number.isFinite(pj)) continue;            // header / blank / non-data row
+    const rec = {
+      rival: rivalRaw.toUpperCase(),
+      pj,
+      pg: Number(c[2]) || 0,
+      pe: Number(c[3]) || 0,
+      pp: Number(c[4]) || 0,
+      dh: Number(c[5]) || 0,
+      gf: Number(c[6]) || 0,
+      gc: Number(c[7]) || 0,
+      dif: Number(c[8]) || 0,
+    };
+    if (rec.rival === 'TOTAL') { total = rec; continue; }
+    clubes.push(rec);
+  }
+  clubes.sort((a, b) => a.rival.localeCompare(b.rival));
+  return { clubes, total };
+}
+
+// No persistent cache: re-fetched on every visit to the panel so the web reflects
+// the Sheet in real time (new/edited rows in Google Sheets show up on next load).
+async function _loadHistorialResumenB() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${GS.B_HIST}/gviz/tq?tqx=out:csv&gid=1711655156`;
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = parseCSV(await r.text());
+    const { clubes, total } = _parseHistorialResumenB(rows);
+    console.log('[Historial B] Clubes:', clubes.length, 'Total:', total);
+    return { clubes, total };
+  } catch (e) {
+    console.error('[Historial B] Load failed:', e.message || e);
+    return { clubes: [], total: null };
+  }
+}
+
 async function _loadPartidosCacheB() {
   if (_partidosCacheB) return _partidosCacheB;
   try {
@@ -4502,6 +4567,70 @@ function _buildSummaryFromCache(matches) {
   }
   for (const r of Object.values(map)) r.dif = r.gf - r.gc;
   return Object.values(map).sort((a, b) => a.rival.localeCompare(b.rival));
+}
+
+// Macro-stats drilldown for Primera B — built directly from the summary row
+// (the B sheet only has per-club aggregates, no match-by-match log).
+function renderHistorialDetalleB(rivalName) {
+  const el = document.getElementById('partidos-grid');
+  document.getElementById('part-title').textContent = '';
+  const r = _histDataB.find(x => x.rival === rivalName.toUpperCase());
+  if (!r) {
+    el.innerHTML = `<button class="hd-back" onclick="renderHistorial()">← Volver al historial</button>
+      <div class="hist-empty">Sin datos para ${rivalName}.</div>`;
+    return;
+  }
+  const efectividad = r.pj > 0 ? Math.round(((r.pg * 3 + r.pe) / (r.pj * 3)) * 100) : 0;
+  const difSign = r.dif > 0 ? '+' : '';
+  const dhSign  = r.dh  > 0 ? '+' : '';
+  const initials = s => s.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  el.innerHTML = `
+    <button class="hd-back" onclick="renderHistorial()">← Volver al historial</button>
+    <div class="hist-kpis" style="margin-bottom:18px">
+      <div class="hist-kpi"><div class="hist-kpi-icon">📋</div><div class="hist-kpi-val">${r.pj}</div><div class="hist-kpi-label">Partidos</div></div>
+      <div class="hist-kpi hist-kpi-win"><div class="hist-kpi-icon">✅</div><div class="hist-kpi-val">${r.pg}</div><div class="hist-kpi-label">Victorias</div></div>
+      <div class="hist-kpi hist-kpi-draw"><div class="hist-kpi-icon">🟡</div><div class="hist-kpi-val">${r.pe}</div><div class="hist-kpi-label">Empates</div></div>
+      <div class="hist-kpi hist-kpi-loss"><div class="hist-kpi-icon">❌</div><div class="hist-kpi-val">${r.pp}</div><div class="hist-kpi-label">Derrotas</div></div>
+      <div class="hist-kpi"><div class="hist-kpi-icon">⚽</div><div class="hist-kpi-val">${r.gf}</div><div class="hist-kpi-label">GF</div></div>
+      <div class="hist-kpi"><div class="hist-kpi-icon">🥅</div><div class="hist-kpi-val">${r.gc}</div><div class="hist-kpi-label">GC</div></div>
+      <div class="hist-kpi"><div class="hist-kpi-icon">📈</div><div class="hist-kpi-val" style="color:${r.dif>0?'#22c55e':r.dif<0?'#ef4444':'#f1f5f9'}">${difSign}${r.dif}</div><div class="hist-kpi-label">Diferencia</div></div>
+      <div class="hist-kpi"><div class="hist-kpi-icon">🎯</div><div class="hist-kpi-val">${efectividad}%</div><div class="hist-kpi-label">Efectividad</div></div>
+    </div>
+    <div class="hd-layout">
+      <div class="hd-sidebar">
+        <div class="hd-profile-card">
+          <div class="hd-profile-identity">
+            <div class="hd-club-avatar">${initials(r.rival)}</div>
+            <div class="hd-club-name">${r.rival}</div>
+            <div class="hd-club-sub">${r.pj} partido${r.pj !== 1 ? 's' : ''} históricos</div>
+          </div>
+          <div class="hd-profile-section">
+            <div class="hd-section-label">Efectividad de puntos</div>
+            <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${efectividad}%"></div></div>
+            <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct">${efectividad}%</span><span>100%</span></div>
+          </div>
+          <div class="hd-profile-section">
+            <div class="hd-section-label">Balance del historial</div>
+            <div class="hd-goals-row"><span class="hd-goals-label">📊 Saldo (PG−PP)</span><span class="hd-goals-val" style="color:${r.dh>0?'#22c55e':r.dh<0?'#ef4444':'#64748b'}">${dhSign}${r.dh}</span></div>
+          </div>
+          <div class="hd-profile-section">
+            <div class="hd-section-label">Balance de goles</div>
+            <div class="hd-goals-row"><span class="hd-goals-label">⚽ Goles a favor</span><span class="hd-goals-val" style="color:#60a5fa">${r.gf}</span></div>
+            <div class="hd-goals-row"><span class="hd-goals-label">🥅 Goles en contra</span><span class="hd-goals-val" style="color:#ef4444">${r.gc}</span></div>
+            <div class="hd-goals-divider"></div>
+            <div class="hd-goals-row"><span class="hd-goals-label">📈 Diferencia</span><span class="hd-goals-val" style="color:${r.dif>0?'#22c55e':r.dif<0?'#ef4444':'#64748b'}">${difSign}${r.dif}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hd-main">
+        <div class="hd-empty-state">
+          <div class="hd-empty-icon">📊</div>
+          <div class="hd-empty-title">Resumen histórico</div>
+          <div class="hd-empty-sub">Métricas extraídas en vivo de la planilla de historial de Primera B. El detalle partido a partido no está disponible para esta categoría.</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 function renderHistorialDetalle(rival) {
