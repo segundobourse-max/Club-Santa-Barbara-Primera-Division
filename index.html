@@ -1285,6 +1285,8 @@
     .pp-avatar { width:64px; height:64px; border-radius:50%; background:rgba(245,158,11,0.12); border:2px solid rgba(245,158,11,0.4); display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:900; color:var(--dorado); flex-shrink:0; }
     .pp-name { font-size:1.4rem; font-weight:900; color:#fff; line-height:1.15; }
     .pp-pos { font-size:0.82rem; color:var(--gris-texto); margin-top:2px; font-weight:600; }
+    .pp-rank-row { margin-bottom: 10px; }
+    .pp-rank-group-label { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--gris-texto); margin-bottom:6px; }
     .pp-ranks { display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 4px; }
     .pp-rank-pill { display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; border:1px solid #1e2a3a; background:rgba(255,255,255,0.03); font-size:0.78rem; font-weight:800; color:#94a3b8; }
     .pp-rank-top { box-shadow: 0 0 0 1px rgba(255,255,255,0.02); }
@@ -2347,79 +2349,93 @@ function closePlayerProfile() {
   history.pushState(null, '', _ppReturnHash || (location.pathname));
 }
 
-// ── Aggregate every known data source for a single player ──────────────────
-// Career totals + títulos come from "El Nido" (centralized DB across A+B); the
-// current squad sheet supplies the titular/suplente breakdown and fecha-a-fecha
-// match log; rankings compare against the full roster of the player's active
-// competition (El Nido filtered by team), not just the local plantel array.
+// ── Aggregate every known data source for a single player, cross-team ──────
+// Career totals + títulos always come from "El Nido" (centralized DB), summing
+// Primera A + Primera B when the player has history in both. Rankings are kept
+// SEPARATE per category (never mixed) plus an overall combined ranking when the
+// player played both. The current squad sheets (DATA_A/DATA_B, always loaded
+// regardless of the active section) supply the titular/suplente breakdown and
+// the fecha-a-fecha match log.
 function _collectPlayerStats(nombre) {
   const target = normName(nombre);
-  const d = currentData || DATA_A;
-  const team = d === DATA_B ? 'b' : 'a';
-  const plantel = d.jugadores || [];
-  const me = plantel.find(p => normName(p.nombre) === target);
 
-  const nidoMe   = window._nidoFindPlayer ? window._nidoFindPlayer(nombre, team) : null;
-  const nidoPool = window._nidoGetTeamData ? window._nidoGetTeamData(team) : [];
-  const nidoReady = nidoPool && nidoPool.length > 0;
+  const nidoA = window._nidoFindPlayer ? window._nidoFindPlayer(nombre, 'a') : null;
+  const nidoB = window._nidoFindPlayer ? window._nidoFindPlayer(nombre, 'b') : null;
+  const poolA = window._nidoGetTeamData ? window._nidoGetTeamData('a') : [];
+  const poolB = window._nidoGetTeamData ? window._nidoGetTeamData('b') : [];
+  const merged = window._nidoGetMerged ? window._nidoGetMerged() : [];
+  const nidoReady = (poolA && poolA.length > 0) || (poolB && poolB.length > 0);
+  const hasA = !!nidoA, hasB = !!nidoB;
 
-  // Rankings against the full universe of registered players in the player's
-  // current competition (El Nido, team-scoped) — falls back to the local
-  // plantel array while El Nido is still loading.
-  function rankIn(metricFn) {
-    const pool = nidoReady ? nidoPool : plantel;
+  function rankInPool(pool, metricFn) {
     const ranked = pool
       .map(p => ({ nombre: p.nombre, v: metricFn(p) || 0 }))
       .sort((a, b) => b.v - a.v);
     const idx = ranked.findIndex(p => normName(p.nombre) === target);
-    return { pos: idx >= 0 ? idx + 1 : null, total: ranked.length, val: idx >= 0 ? ranked[idx].v : 0 };
+    return { pos: idx >= 0 ? idx + 1 : null, total: ranked.length };
   }
-  const rankGoles = rankIn(p => p.goles);
-  const rankAsist = rankIn(p => p.asist);
-  const rankPJ    = rankIn(p => p.pj || p.citado);
+  function rankSet(pool) {
+    return {
+      goles: rankInPool(pool, p => p.goles),
+      asist: rankInPool(pool, p => p.asist),
+      pj:    rankInPool(pool, p => p.pj),
+    };
+  }
+  // Fallback while El Nido loads: rank within whichever local plantel is on screen.
+  const fallbackPool = (currentData && currentData.jugadores) || [];
+  const rankA   = nidoReady ? (hasA ? rankSet(poolA) : null) : (currentData === DATA_A ? rankSet(fallbackPool.map(p=>({nombre:p.nombre,goles:p.goles,asist:p.asist,pj:p.pj||p.citado}))) : null);
+  const rankB   = nidoReady ? (hasB ? rankSet(poolB) : null) : (currentData === DATA_B ? rankSet(fallbackPool.map(p=>({nombre:p.nombre,goles:p.goles,asist:p.asist,pj:p.pj||p.citado}))) : null);
+  const rankGen = nidoReady && hasA && hasB ? rankSet(merged) : null;
 
-  // Fecha a fecha — cross-reference El Nido with the active squad sheet's detailed
-  // matches (Apertura) to list the most recent dates played, result included.
-  const apertura = d.apertura || [];
-  const partidos = apertura
-    .filter(m => (m.jugadores || []).some(j => normName(j.nombre) === target))
-    .map(m => {
+  // Fecha a fecha — both squad sheets are always loaded in background, so the
+  // match log covers every category the player appeared in, newest first.
+  const partidos = [DATA_A, DATA_B]
+    .flatMap(d => (d.apertura || []).map(m => ({ m, torneo: d.nombre || 'Torneo' })))
+    .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target))
+    .map(({ m, torneo }) => {
       const j = m.jugadores.find(jj => normName(jj.nombre) === target);
       let condicion = 'No citado';
       if (j.titular) condicion = 'Titular';
       else if (j.entro) condicion = 'Ingresó desde el banco';
       else if (j.citado) condicion = 'Banco (no ingresó)';
       return {
-        torneo: d.nombre || 'Torneo', rival: m.rival, fecha: m.fecha, resultado: m.resultado,
+        torneo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
         condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
       };
     })
     .sort((a, b) => (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
 
-  // Career totals: prefer El Nido (accumulated trayectoria en el club), fall back
-  // to the local plantel row while El Nido is loading, and to 0 if neither has data.
-  const pj      = nidoMe ? nidoMe.pj    : me ? (me.pj || me.citado || 0) : 0;
-  const titular = me ? (me.titular || 0) : 0;
-  const sup     = me ? (me.entro || me.sup || 0) : 0;
-  const citado  = me ? (me.citado || pj) : 0;
-  const goles   = nidoMe ? nidoMe.goles : me ? (me.goles || 0) : 0;
-  const asist   = nidoMe ? nidoMe.asist : me ? (me.asist || 0) : 0;
-  const rojas   = me ? (me.rojas || 0) : 0;
-  const titulos = nidoMe ? (nidoMe.titulos || 0) : 0;
+  // Titular/suplente/rojas breakdown — summed across both current-season squad sheets.
+  const meA = (DATA_A.jugadores || []).find(p => normName(p.nombre) === target);
+  const meB = (DATA_B.jugadores || []).find(p => normName(p.nombre) === target);
+  const titular = (meA?.titular || 0) + (meB?.titular || 0);
+  const sup     = (meA?.entro || meA?.sup || 0) + (meB?.entro || meB?.sup || 0);
+  const rojasLocal = (meA?.rojas || 0) + (meB?.rojas || 0);
+
+  // Career totals: El Nido summed A+B (accumulated trayectoria en el club).
+  // Fall back to the local squad rows while El Nido is still loading/unavailable.
+  const pj      = hasA || hasB ? (nidoA?.pj    || 0) + (nidoB?.pj    || 0) : (meA?.pj || meA?.citado || 0) + (meB?.pj || meB?.citado || 0);
+  const goles   = hasA || hasB ? (nidoA?.goles || 0) + (nidoB?.goles || 0) : (meA?.goles || 0) + (meB?.goles || 0);
+  const asist   = hasA || hasB ? (nidoA?.asist || 0) + (nidoB?.asist || 0) : (meA?.asist || 0) + (meB?.asist || 0);
+  const titulos = (nidoA?.titulos || 0) + (nidoB?.titulos || 0);
+  const rojas   = rojasLocal;
+
   const safeDiv = (a, b) => (b > 0 ? a / b : 0);
-  const promGol   = nidoMe ? nidoMe.promGol   : (me && me.promGol   != null ? me.promGol   : safeDiv(goles, pj));
-  const promAsist = nidoMe ? nidoMe.promAsist : (me && me.promAsist != null ? me.promAsist : safeDiv(asist, pj));
-  const promGA    = nidoMe ? nidoMe.promGmas  : (me && (me.promGA ?? me.promGmas) != null ? (me.promGA ?? me.promGmas) : safeDiv(goles + asist, pj));
+  const promGol       = safeDiv(goles, pj);
+  const promAsist     = safeDiv(asist, pj);
   const efectividadGA = safeDiv(goles + asist, pj) * 100;
 
+  const nombreResuelto = nidoA?.nombre || nidoB?.nombre || meA?.nombre || meB?.nombre || nombre;
+  const posResuelta    = nidoA?.pos || nidoB?.pos || meA?.pos || meB?.pos || meA?.posicion || meB?.posicion || '';
+
   return {
-    nombre: nidoMe ? nidoMe.nombre : me ? me.nombre : nombre,
-    pos: nidoMe ? (nidoMe.pos || '') : me ? (me.pos || me.posicion || '') : '',
-    pj, citado, titular, sup, goles, asist, rojas, titulos,
-    promGol, promAsist, promGA, efectividadGA,
-    rankGoles, rankAsist, rankPJ,
+    nombre: nombreResuelto,
+    pos: posResuelta,
+    pj, titular, sup, goles, asist, rojas, titulos,
+    promGol, promAsist, efectividadGA,
+    hasA, hasB, rankA, rankB, rankGen,
     partidos,
-    found: !!(me || nidoMe),
+    found: !!(meA || meB || nidoA || nidoB),
     nidoReady,
   };
 }
@@ -2430,13 +2446,30 @@ const POS_NOMBRE = { ARQ:'Arquero', DFC:'Defensor Central', DFI:'Defensor Izquie
   DEL:'Delantero', AT:'Delantero' };
 
 function _ppRankBadge(rank, label) {
-  if (!rank.pos) return '';
+  if (!rank || !rank.pos) return '';
   const top = rank.pos <= 3;
   const medal = rank.pos === 1 ? '🥇' : rank.pos === 2 ? '🥈' : rank.pos === 3 ? '🥉' : '';
   const color = rank.pos === 1 ? '#FFD700' : rank.pos === 2 ? '#C0C0C0' : rank.pos === 3 ? '#CD7F32' : '#94a3b8';
   return `<div class="pp-rank-pill${top ? ' pp-rank-top' : ''}" style="${top ? `border-color:${color}66;background:${color}14` : ''}">
     <span style="color:${color}">${medal || '#' + rank.pos}</span>
     <span class="pp-rank-label">${label}</span>
+  </div>`;
+}
+
+// One row of the three category badges (Goleadores/Asistidores/Presencias), with
+// an optional group caption ("Primera A" / "Primera B" / "General") shown above it
+// when the player has history in more than one competition.
+function _ppRankGroup(rankSet, groupLabel) {
+  if (!rankSet) return '';
+  const badges = [
+    _ppRankBadge(rankSet.goles, 'en Goleadores'),
+    _ppRankBadge(rankSet.asist, 'en Asistidores'),
+    _ppRankBadge(rankSet.pj,    'en Presencias'),
+  ].join('');
+  if (!badges) return '';
+  return `<div class="pp-rank-row">
+    ${groupLabel ? `<div class="pp-rank-group-label">${groupLabel}</div>` : ''}
+    <div class="pp-ranks">${badges}</div>
   </div>`;
 }
 
@@ -2476,12 +2509,16 @@ function renderPlayerProfile(nombre) {
     </div>
     ${!s.nidoReady ? `<div class="pp-nido-loading">⏳ Sincronizando con El Nido…</div>` : ''}`;
 
-  const rankings = `
-    <div class="pp-ranks">
-      ${_ppRankBadge(s.rankGoles, 'en Goleadores')}
-      ${_ppRankBadge(s.rankAsist, 'en Asistidores')}
-      ${_ppRankBadge(s.rankPJ, 'en Presencias')}
-    </div>`;
+  // Both categories played → three separate groups (A / B / General), never mixed.
+  // Only one category → clean single row, no group caption (as it worked originally).
+  const bothCategorias = s.hasA && s.hasB;
+  const rankings = bothCategorias
+    ? [
+        _ppRankGroup(s.rankA,   'Primera A'),
+        _ppRankGroup(s.rankB,   'Primera B'),
+        _ppRankGroup(s.rankGen, 'General (A + B)'),
+      ].join('')
+    : _ppRankGroup(s.rankA || s.rankB, '');
 
   const matchRows = s.partidos.length
     ? s.partidos.map(m => `
@@ -2533,10 +2570,16 @@ function renderPlayerProfile(nombre) {
 
 window.addEventListener('popstate', () => {
   const m = location.hash.match(/^#jugador\/(.+)$/);
-  if (m && currentData) {
-    const plantel = currentData.jugadores || [];
-    const found = plantel.find(p => slugify(p.nombre) === m[1]);
-    if (found) { renderPlayerProfile(found.nombre); return; }
+  if (m) {
+    const pools = [
+      (currentData && currentData.jugadores) || [],
+      DATA_A.jugadores || [], DATA_B.jugadores || [],
+      window._nidoGetMerged ? window._nidoGetMerged() : [],
+    ];
+    for (const pool of pools) {
+      const found = pool.find(p => slugify(p.nombre) === m[1]);
+      if (found) { renderPlayerProfile(found.nombre); return; }
+    }
   }
   closePlayerProfile();
 });
@@ -5954,7 +5997,7 @@ function _anualesBuildRankings(year) {
         const nameColor = isPodium && i === 0 ? '#fff' : '#e2e8f0';
         const prefix    = isPodium ? PODIUM_ICON[i]   : `<span style="color:rgba(255,255,255,0.3);font-size:0.72rem;min-width:16px;display:inline-block;text-align:center">${i+1}.</span>`;
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:7px;margin-bottom:3px;background:${rowBg};border:${rowBorder}">
-          <span style="font-size:0.8rem;color:${nameColor};font-weight:${i===0?'700':'400'}">${prefix} ${p.nombre}</span>
+          <span style="font-size:0.8rem;color:${nameColor};font-weight:${i===0?'700':'400'}">${prefix} ${pl(p.nombre)}</span>
           <span style="font-size:0.9rem;font-weight:900;color:${numColor};margin-left:8px">${p[key]}${suffix}</span>
         </div>`;
       }).join('')}
@@ -7214,8 +7257,8 @@ async function loadLiveData() {
       }
 
       const nombreCell = podio
-        ? `<span style="font-weight:700;">${p.nombre}</span>`
-        : p.nombre;
+        ? `<span style="font-weight:700;">${pl(p.nombre)}</span>`
+        : pl(p.nombre);
 
       // Helper: td — active ranking column highlights the value text only (no bg)
       const td = (colKey, value) => {
