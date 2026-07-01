@@ -1301,6 +1301,10 @@
     .pp-effectiveness { margin-top: 16px; }
     .pp-match-list { display:flex; flex-direction:column; gap:8px; max-height: 560px; overflow-y:auto; }
     .pp-match-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid #1e2a3a; flex-wrap:wrap; }
+    .pp-match-row-link { cursor:pointer; transition:border-color .15s, background .15s; }
+    .pp-match-row-link:hover { border-color:rgba(245,158,11,.35); background:rgba(255,255,255,0.04); }
+    .pp-match-arrow { color:#334155; font-size:1rem; transition:color .15s, transform .15s; }
+    .pp-match-row-link:hover .pp-match-arrow { color:var(--dorado); transform:translateX(2px); }
     .pp-match-main { display:flex; flex-direction:column; gap:2px; }
     .pp-match-torneo { font-size:0.7rem; color:var(--gris-texto); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
     .pp-match-rival { font-size:0.86rem; color:#f1f5f9; font-weight:700; }
@@ -2356,6 +2360,26 @@ function closePlayerProfile() {
   history.pushState(null, '', _ppReturnHash || (location.pathname));
 }
 
+// Deep link from a match row in the Player Profile straight into that tournament's
+// "Fecha a Fecha" tab, with the exact date pre-selected (formación, incidencias, etc).
+function goToMatchFecha(equipo, fecha) {
+  closePlayerProfile();
+  currentData = equipo === 'b' ? DATA_B : DATA_A;
+
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('tab-nido').style.display = 'none';
+  const badge = document.getElementById('section-badge');
+  badge.textContent = currentData.badge;
+  badge.className = 'header-section-badge ' + currentData.badgeClass;
+  destroyCharts();
+
+  showTorneo('apertura');       // renders the tab + auto-selects the last played date
+  window.apSwitchTab('fechas'); // switch to the "Fecha a Fecha" sub-tab
+  selectFecha(fecha);           // override the auto-selection with the requested date
+}
+
 // ── Aggregate every known data source for a single player, cross-team ──────
 // Career totals + títulos always come from "El Nido" (centralized DB), summing
 // Primera A + Primera B when the player has history in both. Rankings are kept
@@ -2397,18 +2421,20 @@ function _collectPlayerStats(nombre) {
   const rankGen = nidoReady && merged.length ? rankSet(merged) : null;
 
   // Fecha a fecha — both squad sheets are always loaded in background, so the
-  // match log covers every category the player appeared in, newest first.
-  const partidos = [DATA_A, DATA_B]
-    .flatMap(d => (d.apertura || []).map(m => ({ m, torneo: d.nombre || 'Torneo' })))
+  // match log covers every category the player appeared in, newest first. Each
+  // row keeps its source team so the profile can deep-link back into that
+  // tournament's "Fecha a Fecha" tab with the exact date pre-selected.
+  const partidos = [{ d: DATA_A, equipo: 'a' }, { d: DATA_B, equipo: 'b' }]
+    .flatMap(({ d, equipo }) => (d.apertura || []).map(m => ({ m, torneo: d.nombre || 'Torneo', equipo })))
     .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target))
-    .map(({ m, torneo }) => {
+    .map(({ m, torneo, equipo }) => {
       const j = m.jugadores.find(jj => normName(jj.nombre) === target);
       let condicion = 'No citado';
       if (j.titular) condicion = 'Titular';
       else if (j.entro) condicion = 'Ingresó desde el banco';
       else if (j.citado) condicion = 'Banco (no ingresó)';
       return {
-        torneo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
+        torneo, equipo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
         condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
       };
     })
@@ -2540,9 +2566,11 @@ function renderPlayerProfile(nombre) {
       <div class="pp-rank-col-right">${rightCol}</div>
     </div>` : '';
 
+  // Every row is a deep link straight into that tournament's Fecha a Fecha tab,
+  // with the exact date pre-selected (formación, incidencias, observaciones).
   const matchRows = s.partidos.length
     ? s.partidos.map(m => `
-        <div class="pp-match-row">
+        <div class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${m.equipo}', '${String(m.fecha).replace(/'/g, "\\'")}')" title="Ver Fecha ${m.fecha} en detalle">
           <div class="pp-match-main">
             <span class="pp-match-torneo">${m.torneo}</span>
             <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` (${m.resultado})` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
@@ -2552,6 +2580,7 @@ function renderPlayerProfile(nombre) {
             ${m.goles ? `<span class="pp-match-stat" style="color:#22c55e">⚽${m.goles > 1 ? ' ×' + m.goles : ''}</span>` : ''}
             ${m.asist ? `<span class="pp-match-stat" style="color:#3b82f6">🎯${m.asist > 1 ? ' ×' + m.asist : ''}</span>` : ''}
             ${m.rojas ? `<span class="pp-match-stat" style="color:#ef4444">🟥</span>` : ''}
+            <span class="pp-match-arrow">›</span>
           </div>
         </div>`).join('')
     : `<div class="hist-empty">No se encontraron partidos registrados para esta temporada.</div>`;
@@ -7494,7 +7523,7 @@ async function loadLiveData() {
           style="min-width:170px;max-width:260px;padding:7px 13px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#f1f5f9;font-size:13px;outline:none;" />
       </div>
 
-      ${renderTable()}
+      <div id="nido-table-container">${renderTable()}</div>
     `;
   }
 
@@ -7538,7 +7567,13 @@ async function loadLiveData() {
   };
 
   window._nidoTeam = function(t) { _nidoTeam = t; _renderNidoContent(); };
-  window._nidoSearch = function(q) { _nidoQuery = q; _renderNidoContent(); };
+  // Only refresh the results table on each keystroke — never touch the input's
+  // parent innerHTML, or the DOM node (and keyboard focus) would be destroyed.
+  window._nidoSearch = function(q) {
+    _nidoQuery = q;
+    const c = document.getElementById('nido-table-container');
+    if (c) c.innerHTML = renderTable();
+  };
   window._nidoSort = function(col) {
     _nidoRank = null;
     if (_nidoSort.col === col) _nidoSort.asc = !_nidoSort.asc;
