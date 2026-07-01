@@ -1301,6 +1301,10 @@
     .pp-effectiveness { margin-top: 16px; }
     .pp-match-list { display:flex; flex-direction:column; gap:8px; max-height: 560px; overflow-y:auto; }
     .pp-match-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid #1e2a3a; flex-wrap:wrap; }
+    .pp-match-row-link { cursor:pointer; transition:border-color .15s, background .15s; }
+    .pp-match-row-link:hover { border-color:rgba(245,158,11,.35); background:rgba(255,255,255,0.04); }
+    .pp-match-arrow { color:#334155; font-size:1rem; transition:color .15s, transform .15s; }
+    .pp-match-row-link:hover .pp-match-arrow { color:var(--dorado); transform:translateX(2px); }
     .pp-match-main { display:flex; flex-direction:column; gap:2px; }
     .pp-match-torneo { font-size:0.7rem; color:var(--gris-texto); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
     .pp-match-rival { font-size:0.86rem; color:#f1f5f9; font-weight:700; }
@@ -2356,6 +2360,26 @@ function closePlayerProfile() {
   history.pushState(null, '', _ppReturnHash || (location.pathname));
 }
 
+// Deep link from a match row in the Player Profile straight into that tournament's
+// "Fecha a Fecha" tab, with the exact date pre-selected (formación, incidencias, etc).
+function goToMatchFecha(equipo, fecha) {
+  closePlayerProfile();
+  currentData = equipo === 'b' ? DATA_B : DATA_A;
+
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('main-nav').style.display = 'flex';
+  document.getElementById('tab-nido').style.display = 'none';
+  const badge = document.getElementById('section-badge');
+  badge.textContent = currentData.badge;
+  badge.className = 'header-section-badge ' + currentData.badgeClass;
+  destroyCharts();
+
+  showTorneo('apertura');       // renders the tab + auto-selects the last played date
+  window.apSwitchTab('fechas'); // switch to the "Fecha a Fecha" sub-tab
+  selectFecha(fecha);           // override the auto-selection with the requested date
+}
+
 // ── Aggregate every known data source for a single player, cross-team ──────
 // Career totals + títulos always come from "El Nido" (centralized DB), summing
 // Primera A + Primera B when the player has history in both. Rankings are kept
@@ -2397,18 +2421,20 @@ function _collectPlayerStats(nombre) {
   const rankGen = nidoReady && merged.length ? rankSet(merged) : null;
 
   // Fecha a fecha — both squad sheets are always loaded in background, so the
-  // match log covers every category the player appeared in, newest first.
-  const partidos = [DATA_A, DATA_B]
-    .flatMap(d => (d.apertura || []).map(m => ({ m, torneo: d.nombre || 'Torneo' })))
+  // match log covers every category the player appeared in, newest first. Each
+  // row keeps its source team so the profile can deep-link back into that
+  // tournament's "Fecha a Fecha" tab with the exact date pre-selected.
+  const partidos = [{ d: DATA_A, equipo: 'a' }, { d: DATA_B, equipo: 'b' }]
+    .flatMap(({ d, equipo }) => (d.apertura || []).map(m => ({ m, torneo: d.nombre || 'Torneo', equipo })))
     .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target))
-    .map(({ m, torneo }) => {
+    .map(({ m, torneo, equipo }) => {
       const j = m.jugadores.find(jj => normName(jj.nombre) === target);
       let condicion = 'No citado';
       if (j.titular) condicion = 'Titular';
       else if (j.entro) condicion = 'Ingresó desde el banco';
       else if (j.citado) condicion = 'Banco (no ingresó)';
       return {
-        torneo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
+        torneo, equipo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
         condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
       };
     })
@@ -2540,9 +2566,11 @@ function renderPlayerProfile(nombre) {
       <div class="pp-rank-col-right">${rightCol}</div>
     </div>` : '';
 
+  // Every row is a deep link straight into that tournament's Fecha a Fecha tab,
+  // with the exact date pre-selected (formación, incidencias, observaciones).
   const matchRows = s.partidos.length
     ? s.partidos.map(m => `
-        <div class="pp-match-row">
+        <div class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${m.equipo}', '${String(m.fecha).replace(/'/g, "\\'")}')" title="Ver Fecha ${m.fecha} en detalle">
           <div class="pp-match-main">
             <span class="pp-match-torneo">${m.torneo}</span>
             <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` (${m.resultado})` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
@@ -2552,6 +2580,7 @@ function renderPlayerProfile(nombre) {
             ${m.goles ? `<span class="pp-match-stat" style="color:#22c55e">⚽${m.goles > 1 ? ' ×' + m.goles : ''}</span>` : ''}
             ${m.asist ? `<span class="pp-match-stat" style="color:#3b82f6">🎯${m.asist > 1 ? ' ×' + m.asist : ''}</span>` : ''}
             ${m.rojas ? `<span class="pp-match-stat" style="color:#ef4444">🟥</span>` : ''}
+            <span class="pp-match-arrow">›</span>
           </div>
         </div>`).join('')
     : `<div class="hist-empty">No se encontraron partidos registrados para esta temporada.</div>`;
@@ -5806,6 +5835,48 @@ const SEED_ANUALES_PLAYERS = {
   ],
 };
 
+// ── Primera B: Estadísticas Anuales — rankings de jugadores por temporada ──
+// Only 2023 confirmed so far (Apertura + Clausura AIFA D 2023 combined). 2024/2025
+// pending — the source sheet's per-year tabs couldn't be fetched reliably yet.
+const SEED_ANUALES_PLAYERS_B = {
+  '2023': [
+    {nombre:'Segundo Bourse',                    pos:'MC',  goles:9, asist:11, gmas:20, pj:24, promGmas:0.83},
+    {nombre:'Guillermo Diaz Mayer',               pos:'DEL', goles:9, asist:3,  gmas:12, pj:22, promGmas:0.55},
+    {nombre:'Joaquin Cadenas',                    pos:'MC',  goles:6, asist:5,  gmas:11, pj:27, promGmas:0.41},
+    {nombre:'Tobias Ricciardelli',                pos:'DEL', goles:7, asist:2,  gmas:9,  pj:20, promGmas:0.45},
+    {nombre:'Tomas del Frade',                    pos:'DEL', goles:5, asist:3,  gmas:8,  pj:23, promGmas:0.35},
+    {nombre:'Juan Bautista R. Basabilvaso',       pos:'DEF', goles:2, asist:4,  gmas:6,  pj:20, promGmas:0.30},
+    {nombre:'Teo Bellotti',                       pos:'MC',  goles:2, asist:4,  gmas:6,  pj:25, promGmas:0.24},
+    {nombre:'Simon Gazzera',                      pos:'DEL', goles:4, asist:1,  gmas:5,  pj:7,  promGmas:0.71},
+    {nombre:'Jonatan Lopez',                      pos:'DEF', goles:3, asist:1,  gmas:4,  pj:12, promGmas:0.33},
+    {nombre:'Felipe Navasal',                     pos:'DEL', goles:2, asist:2,  gmas:4,  pj:11, promGmas:0.36},
+    {nombre:'Francisco Preuss',                   pos:'DEL', goles:2, asist:2,  gmas:4,  pj:9,  promGmas:0.44},
+    {nombre:'Mateo Garcia',                       pos:'DEF', goles:3, asist:0,  gmas:3,  pj:11, promGmas:0.27},
+    {nombre:'Rufino Falconi',                     pos:'DEF', goles:2, asist:0,  gmas:2,  pj:15, promGmas:0.13},
+    {nombre:'Felipe Gomez',                       pos:'DEF', goles:0, asist:2,  gmas:2,  pj:17, promGmas:0.12},
+    {nombre:'Lucca Lopez Mañan',                  pos:'DEL', goles:1, asist:1,  gmas:2,  pj:14, promGmas:0.14},
+    {nombre:'Vicente Fiore',                      pos:'DEL', goles:1, asist:1,  gmas:2,  pj:7,  promGmas:0.29},
+    {nombre:'Manuel Diaz Bridge',                 pos:'DEF', goles:1, asist:0,  gmas:1,  pj:21, promGmas:0.05},
+    {nombre:'Mateo Alfonso',                      pos:'DEF', goles:1, asist:0,  gmas:1,  pj:17, promGmas:0.06},
+    {nombre:'Ignacio Frassia',                    pos:'DEF', goles:1, asist:0,  gmas:1,  pj:12, promGmas:0.08},
+    {nombre:'Gonzalo Aguirre',                    pos:'DEF', goles:1, asist:0,  gmas:1,  pj:7,  promGmas:0.14},
+    {nombre:'Iñaki Usandizaga',                   pos:'ARQ', goles:0, asist:0,  gmas:0,  pj:13, promGmas:0},
+    {nombre:'Cruz Queirolo',                      pos:'ARQ', goles:0, asist:0,  gmas:0,  pj:9,  promGmas:0},
+    {nombre:'Santino Ruocco',                     pos:'ARQ', goles:0, asist:0,  gmas:0,  pj:6,  promGmas:0},
+    {nombre:'Dimas Molinari',                     pos:'ARQ', goles:0, asist:0,  gmas:0,  pj:2,  promGmas:0},
+    {nombre:'Tobias Torino',                      pos:'DEF', goles:0, asist:0,  gmas:0,  pj:10, promGmas:0},
+    {nombre:'Pedro Bulacio',                      pos:'DEF', goles:0, asist:0,  gmas:0,  pj:4,  promGmas:0},
+    {nombre:'Santiago Bassi',                     pos:'DEF', goles:0, asist:0,  gmas:0,  pj:2,  promGmas:0},
+    {nombre:'Felipe Saccone',                     pos:'DEF', goles:0, asist:0,  gmas:0,  pj:1,  promGmas:0},
+    {nombre:'Joaquin Paz',                        pos:'DEF', goles:0, asist:0,  gmas:0,  pj:0,  promGmas:0},
+    {nombre:'Esteban Fernandez King',             pos:'MC',  goles:0, asist:0,  gmas:0,  pj:24, promGmas:0},
+    {nombre:'Felipe Fossa',                       pos:'MC',  goles:0, asist:0,  gmas:0,  pj:6,  promGmas:0},
+    {nombre:'Santiago Bulacio',                   pos:'MC',  goles:0, asist:0,  gmas:0,  pj:5,  promGmas:0},
+    {nombre:'Ivan Daverio',                       pos:'DEL', goles:0, asist:0,  gmas:0,  pj:1,  promGmas:0},
+    {nombre:'Matias Wiegers',                     pos:'DEL', goles:0, asist:0,  gmas:0,  pj:0,  promGmas:0},
+  ],
+};
+
 const SEED_ANUALES = {
   '2023': {
     torneos: [
@@ -6057,7 +6128,149 @@ function renderJugAnualesYearB(year) {
         </div>`;
       }).join('')}
     </div>
-    <div style="font-size:0.72rem;color:rgba(255,255,255,0.35)">Rankings de jugadores por temporada no disponibles para Primera B.</div>`;
+
+    ${SEED_ANUALES_PLAYERS_B[year] ? `
+    <!-- BLOQUE 3: Rankings de la temporada -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">🏅 Rankings de la temporada</div>
+    <div id="jug-anual-rankings-b" style="margin-bottom:20px"></div>
+
+    <!-- BLOQUE 4: Base de datos de jugadores -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">👥 Todos los jugadores</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <input id="jug-anual-search-b" type="search" placeholder="🔍 Buscar jugador..." oninput="_anualesFilterB(this.value)"
+        style="flex:1;min-width:150px;padding:7px 11px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:0.85rem;outline:none">
+      <span id="jug-anual-count-b" style="color:var(--gris-texto);font-size:0.78rem;white-space:nowrap"></span>
+    </div>
+    <div id="jug-anual-table-b" style="overflow-x:auto"></div>`
+    : `<div style="font-size:0.72rem;color:rgba(255,255,255,0.35)">Rankings de jugadores por temporada no disponibles todavía para ${year} en Primera B.</div>`}`;
+
+  if (SEED_ANUALES_PLAYERS_B[year]) {
+    _anualesYearB = year;
+    _anualesQueryB = '';
+    _anualesSortColB = 1;
+    _anualesSortAscB = false;
+    _anualesBuildRankingsB(year);
+    _anualesBuildTableB(year);
+  }
+}
+
+// ── Primera B: rankings + player table state (separate from A's, since both use
+// the same '2023'/'2024'/'2025' keys and must never mix data between categories) ──
+let _anualesYearB = null;
+let _anualesQueryB = '';
+let _anualesSortColB = 1;
+let _anualesSortAscB = false;
+
+function _anualesFilterB(q) {
+  _anualesQueryB = q.toLowerCase().trim();
+  if (_anualesYearB) _anualesBuildTableB(_anualesYearB);
+}
+
+function _anualesSortB(col) {
+  if (_anualesSortColB === col) _anualesSortAscB = !_anualesSortAscB;
+  else { _anualesSortColB = col; _anualesSortAscB = false; }
+  if (_anualesYearB) _anualesBuildTableB(_anualesYearB);
+}
+
+function _anualesBuildRankingsB(year) {
+  const el = document.getElementById('jug-anual-rankings-b');
+  if (!el) return;
+  const players = SEED_ANUALES_PLAYERS_B[year] || [];
+  if (!players.length) { el.innerHTML = '<div style="color:var(--gris-texto);font-size:0.82rem">Sin datos de jugadores.</div>'; return; }
+
+  const top = (arr, key, n=5) => [...arr].sort((a,b) => b[key]-a[key]).slice(0,n).filter(p => p[key] > 0);
+  const PODIUM_BG     = ['rgba(251,191,36,0.09)','rgba(148,163,184,0.07)','rgba(180,120,60,0.08)'];
+  const PODIUM_BORDER = ['rgba(251,191,36,0.30)','rgba(148,163,184,0.25)','rgba(180,120,60,0.25)'];
+  const PODIUM_COLOR  = ['#fbbf24','#94a3b8','#b47c3c'];
+  const PODIUM_ICON   = ['🥇','🥈','🥉'];
+  const rankBlock = (title, icon, items, key, suffix='') => {
+    if (!items.length) return '';
+    return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gris-texto);margin-bottom:8px">${icon} ${title}</div>
+      ${items.map((p, i) => {
+        const isPodium = i < 3;
+        const rowBg     = isPodium ? PODIUM_BG[i]     : 'transparent';
+        const rowBorder = isPodium ? `1px solid ${PODIUM_BORDER[i]}` : '1px solid transparent';
+        const numColor  = isPodium ? PODIUM_COLOR[i]  : '#f1f5f9';
+        const nameColor = isPodium && i === 0 ? '#fff' : '#e2e8f0';
+        const prefix    = isPodium ? PODIUM_ICON[i]   : `<span style="color:rgba(255,255,255,0.3);font-size:0.72rem;min-width:16px;display:inline-block;text-align:center">${i+1}.</span>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:7px;margin-bottom:3px;background:${rowBg};border:${rowBorder}">
+          <span style="font-size:0.8rem;color:${nameColor};font-weight:${i===0?'700':'400'}">${prefix} ${pl(p.nombre)}</span>
+          <span style="font-size:0.9rem;font-weight:900;color:${numColor};margin-left:8px">${p[key]}${suffix}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+    ${rankBlock('Goleadores',   '⚽', top(players,'goles'), 'goles')}
+    ${rankBlock('Asistidores',  '🎯', top(players,'asist'), 'asist')}
+    ${rankBlock('G+A',          '🔥', top(players,'gmas'),  'gmas')}
+    ${rankBlock('Más partidos', '🎮', top(players,'pj'),    'pj', ' PJ')}
+  </div>`;
+}
+
+function _anualesBuildTableB(year) {
+  const el = document.getElementById('jug-anual-table-b');
+  const countEl = document.getElementById('jug-anual-count-b');
+  if (!el) return;
+  const players = SEED_ANUALES_PLAYERS_B[year] || [];
+
+  const COLS = [
+    { label:'Jugador',  key:'nombre',  color:'#fff',     isText: true },
+    { label:'PJ',       key:'pj',      color:'#94a3b8' },
+    { label:'⚽ Goles', key:'goles',   color:'#22c55e' },
+    { label:'🎯 Asist', key:'asist',   color:'#3b82f6' },
+    { label:'🔥 G+A',  key:'gmas',    color:'#a855f7' },
+    { label:'Prom G+A', key:'promGmas',color:'#a855f7', isDecimal: true },
+  ];
+
+  let rows = [...players];
+  if (_anualesQueryB) rows = rows.filter(p => p.nombre.toLowerCase().includes(_anualesQueryB));
+
+  const { key: sk, isText } = COLS[_anualesSortColB] || COLS[1];
+  rows.sort((a,b) => {
+    const cmp = isText ? (a[sk]||'').localeCompare(b[sk]||'','es') : (b[sk]||0) - (a[sk]||0);
+    return _anualesSortAscB ? -cmp : cmp;
+  });
+
+  if (countEl) countEl.textContent = `${rows.length} jugador${rows.length !== 1 ? 'es' : ''}`;
+
+  const ths = COLS.map((c, i) => {
+    const active = _anualesSortColB === i;
+    return `<th onclick="_anualesSortB(${i})" style="cursor:pointer;user-select:none;padding:9px 10px;font-size:0.65rem;color:${active ? c.color : 'var(--gris-texto)'};text-align:${i===0?'left':'center'};white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)">
+      ${c.label}${active ? `<span style="margin-left:2px;font-size:.7em">${_anualesSortAscB?'▲':'▼'}</span>` : ''}
+    </th>`;
+  }).join('');
+
+  const trs = rows.map((p, i) => {
+    const bg = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)';
+    const initials = p.nombre.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const pos = p.pos || '';
+    const pc = POS_COLOR[pos] || '#94a3b8';
+    const pb = POS_BG[pos]   || 'rgba(255,255,255,0.08)';
+    return `<tr style="background:${bg};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${bg}'">
+      <td style="padding:8px 10px;white-space:nowrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:30px;height:30px;border-radius:50%;background:${pb};border:1.5px solid ${pc}44;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:900;color:${pc};flex-shrink:0">${initials}</div>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:0.85rem;line-height:1.1;cursor:pointer" onclick="goToPlayer('${p.nombre.replace(/'/g,"\\'")}')">${p.nombre}</div>
+            <span style="font-size:0.6rem;font-weight:800;color:${pc};background:${pb};padding:2px 7px;border-radius:999px;border:1px solid ${pc}33">${pos}</span>
+          </div>
+        </div>
+      </td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:#94a3b8;font-weight:700">${p.pj || '<span style=\'color:rgba(255,255,255,0.18)\'>—</span>'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.goles>0?'#22c55e':'rgba(255,255,255,0.18)'};font-weight:${p.goles>0?'800':'400'}">${p.goles > 0 ? p.goles : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.asist>0?'#60a5fa':'rgba(255,255,255,0.18)'};font-weight:${p.asist>0?'800':'400'}">${p.asist > 0 ? p.asist : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.gmas>0?'#a855f7':'rgba(255,255,255,0.18)'};font-weight:${p.gmas>0?'800':'400'}">${p.gmas  > 0 ? p.gmas  : '—'}</span></td>
+      <td style="text-align:center;padding:8px 10px"><span style="color:${p.promGmas>0?'#a855f7':'rgba(255,255,255,0.18)'}">${p.promGmas > 0 ? p.promGmas.toFixed(2).replace('.',',') : '—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+    <thead><tr>${ths}</tr></thead>
+    <tbody>${trs || `<tr><td colspan="${COLS.length}" style="text-align:center;color:var(--gris-texto);padding:24px">Sin resultados</td></tr>`}</tbody>
+  </table>`;
 }
 
 function _anualesLoadPlayers(year) {
@@ -7494,7 +7707,7 @@ async function loadLiveData() {
           style="min-width:170px;max-width:260px;padding:7px 13px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#f1f5f9;font-size:13px;outline:none;" />
       </div>
 
-      ${renderTable()}
+      <div id="nido-table-container">${renderTable()}</div>
     `;
   }
 
@@ -7538,7 +7751,13 @@ async function loadLiveData() {
   };
 
   window._nidoTeam = function(t) { _nidoTeam = t; _renderNidoContent(); };
-  window._nidoSearch = function(q) { _nidoQuery = q; _renderNidoContent(); };
+  // Only refresh the results table on each keystroke — never touch the input's
+  // parent innerHTML, or the DOM node (and keyboard focus) would be destroyed.
+  window._nidoSearch = function(q) {
+    _nidoQuery = q;
+    const c = document.getElementById('nido-table-container');
+    if (c) c.innerHTML = renderTable();
+  };
   window._nidoSort = function(col) {
     _nidoRank = null;
     if (_nidoSort.col === col) _nidoSort.asc = !_nidoSort.asc;
