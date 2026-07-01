@@ -2285,7 +2285,7 @@ const DATA_B = {
     { nombre:'Joaquin Paz',           citado:1,  titular:0,  sup:1,  goles:0, asist:0, rojas:0 },
     { nombre:'Bautista Busch',        citado:1,  titular:0,  sup:0,  goles:0, asist:0, rojas:0 },
   ],
-  historico: { pj:108, pg:57, pe:25, pp:26, gf:212, gc:133, vi:33 },
+  historico: { pj:122, pg:65, pe:27, pp:29, gf:242, gc:151, vi:37 },
   graficos: [],
   topHist: {
     partidos: [
@@ -7044,6 +7044,15 @@ async function fetchCSVFallback(id, tab, range) {
   return parseCSV(await r.text());
 }
 
+// Fetch a sheet by gid instead of tab name — bypasses fetchProxy's silent
+// empty-array response when a B_HIST tab name doesn't match exactly.
+async function fetchGvizByGid(sheetId, gid) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+  const r = await fetch(url, { mode: 'cors' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return parseCSV(await r.text());
+}
+
 function parseCSV(text) {
   const rows = []; let row = [], f = '', q = false;
   for (let i = 0; i < text.length; i++) {
@@ -7408,7 +7417,7 @@ async function loadLiveData() {
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A1:J18'),
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A21:J550'),
     fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
-    fetchProxy('Estadisticas Historicas', null, GS.B_HIST),
+    fetchGvizByGid(GS.B_HIST, 1913593241), // "Estadísticas Históricas" — by gid, tab-name fetch silently returns empty
     fetchProxy('Apertura 2026', 'L3:X33',  GS.A_MAIN),  // global player stats table
     fetchProxy('Apertura 2026', 'L37:V53', GS.A_MAIN),  // standings table
     // ── Apertura 2025 A (historical) ──
