@@ -5837,6 +5837,7 @@ let _anualesSortAsc = false;
 let _anualesQuery = '';
 
 function renderJugAnualesMenu() {
+  if (currentData === DATA_B) return renderJugAnualesMenuB();
   const back = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:16px">← Estadísticas Jugadores</button>`;
   document.getElementById('jug-anuales-content').innerHTML = back + `
     <div style="margin-bottom:18px">
@@ -5951,6 +5952,112 @@ function renderJugAnualesYear(year) {
     </div>`;
 
   _anualesLoadPlayers(year);
+}
+
+// ── Primera B: Estadísticas Anuales — strictly sourced from B_HIST, never A_MAIN ──
+// Built from the same torneos[] records used by "Torneos Antiguos" (parseEstHistSheetB),
+// so team-level year totals always reflect Primera B's own sheet.
+function _anualesSourceB() {
+  return (DATA_B.graficos && DATA_B.graficos.length) ? DATA_B.graficos : SEED_GRAFICOS_B;
+}
+
+function renderJugAnualesMenuB() {
+  const back = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:16px">← Estadísticas Jugadores</button>`;
+  const years = [...new Set(_anualesSourceB().map(t => t.anio))].sort((a, b) => b - a);
+  document.getElementById('jug-anuales-content').innerHTML = back + `
+    <div style="margin-bottom:18px">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:2px">Club Santa Bárbara — Primera B</div>
+      <div style="font-size:1.25rem;font-weight:900;color:#fff">📅 Estadísticas Anuales</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;max-width:600px">
+      ${years.map(y => `
+        <div onclick="renderJugAnualesYearB(${y})" style="cursor:pointer;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:22px 20px;text-align:center;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,0.09)';this.style.borderColor='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.1)'">
+          <div style="font-size:2rem;margin-bottom:8px">📊</div>
+          <div style="font-size:1.5rem;font-weight:900;color:#fff">${y}</div>
+          <div style="font-size:0.72rem;color:var(--gris-texto);margin-top:4px">Ver temporada →</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderJugAnualesYearB(year) {
+  const yr = Number(year);
+  const torneosYear = _anualesSourceB().filter(t => t.anio === yr);
+  const backMenu = `<button class="torneo-back" onclick="renderJugAnualesMenuB()" style="margin-bottom:16px">← Estadísticas Anuales</button>`;
+
+  if (!torneosYear.length) {
+    document.getElementById('jug-anuales-content').innerHTML = backMenu +
+      `<div class="hist-empty">Sin torneos registrados para ${year} en Primera B.</div>`;
+    return;
+  }
+
+  // Team totals: league competitions only (Copa/Recopa excluded from the aggregate,
+  // same convention as "Torneos Antiguos").
+  const liga = torneosYear.filter(t => !/recopa|copa/i.test(t.competencia));
+  const total = liga.reduce((acc, t) => {
+    acc.pj += t.pj || 0; acc.g += t.pg || 0; acc.e += t.pe || 0; acc.p += t.pp || 0;
+    acc.gf += t.gf || 0; acc.gc += t.gc || 0;
+    return acc;
+  }, { pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0 });
+
+  const safeDiv = (a, b) => (b > 0 ? a / b : 0);
+  const pctPts  = Math.round(safeDiv(total.g * 3 + total.e, total.pj * 3) * 100); // 0% limpio si pj=0
+  const dif     = total.gf - total.gc;
+
+  const posStyle = p => { const n = parseInt(p); return isNaN(n) ? '#94a3b8' : n <= 4 ? '#22c55e' : n <= 7 ? '#f59e0b' : '#ef4444'; };
+
+  document.getElementById('jug-anuales-content').innerHTML = backMenu + `
+    <div style="margin-bottom:16px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto)">Club Santa Bárbara — Primera B</div>
+      <div style="font-size:1.3rem;font-weight:900;color:#fff">Temporada ${year}</div>
+    </div>
+
+    <!-- BLOQUE 1: Resumen del equipo -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">📊 Resumen del equipo (Liga)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:20px">
+      ${[
+        ['🎮','PJ', total.pj, '#94a3b8'],
+        ['✅','Victorias', total.g, '#22c55e'],
+        ['➡️','Empates', total.e, '#f59e0b'],
+        ['❌','Derrotas', total.p, '#ef4444'],
+        ['⚽','GF', total.gf, '#60a5fa'],
+        ['🥅','GC', total.gc, '#94a3b8'],
+        ['📊','Dif.', dif >= 0 ? '+' + dif : dif, dif >= 0 ? '#22c55e' : '#ef4444'],
+        ['🎯','Efectividad', pctPts + '%', pctPts >= 50 ? '#22c55e' : pctPts >= 35 ? '#f59e0b' : '#ef4444'],
+      ].map(([icon, label, val, color]) => `
+        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-left:3px solid ${color};border-radius:9px;padding:9px 10px;display:flex;align-items:center;gap:8px">
+          <div style="font-size:1.1rem">${icon}</div>
+          <div>
+            <div style="font-size:1.1rem;font-weight:900;color:${color};line-height:1">${val}</div>
+            <div style="font-size:0.6rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">${label}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- BLOQUE 2: Rendimiento por torneo -->
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris-texto);margin-bottom:8px">🏟️ Rendimiento por torneo</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:20px">
+      ${torneosYear.map(t => {
+        const isLeague = t.pts != null;
+        const posColor = posStyle(t.pos);
+        const posBg = posColor + '1f', posBorder = posColor + '59';
+        const posBadge = `<span style="display:inline-block;padding:3px 10px;border-radius:999px;background:${posBg};border:1px solid ${posBorder};color:${posColor};font-size:0.75rem;font-weight:800">${t.pos || '—'}</span>`;
+        const statBadge = (val, label, color) => `<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,0.06);font-size:0.72rem;font-weight:700;color:${color}">${val}<span style="font-weight:400;color:rgba(255,255,255,0.4);font-size:0.65rem">&thinsp;${label}</span></span>`;
+        return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:0.8rem;font-weight:700;color:#fff">${t.competencia} ${year}</span>
+            ${posBadge}
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px">
+            ${isLeague ? statBadge(t.pts + ' pts', '', '#f1f5f9') : ''}
+            ${statBadge(t.pg, 'G', '#22c55e')}
+            ${statBadge(t.pe, 'E', '#f59e0b')}
+            ${statBadge(t.pp, 'P', '#ef4444')}
+            ${statBadge(t.gf + ':' + t.gc, '', '#94a3b8')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:0.72rem;color:rgba(255,255,255,0.35)">Rankings de jugadores por temporada no disponibles para Primera B.</div>`;
 }
 
 function _anualesLoadPlayers(year) {
