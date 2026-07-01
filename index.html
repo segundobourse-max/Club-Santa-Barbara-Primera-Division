@@ -1315,6 +1315,16 @@
     .pp-cond-banco { color:#94a3b8; background:rgba(148,163,184,0.1); }
     .pp-match-stat { font-size:0.78rem; font-weight:800; }
     .pp-nido-loading { margin-top:12px; font-size:0.72rem; color:var(--gris-texto); }
+    .pp-metrics-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+    .pp-metric-tabs { display:flex; gap:6px; background:rgba(255,255,255,0.03); border:1px solid #1e2a3a; border-radius:999px; padding:3px; }
+    .pp-metric-tab { border:none; background:transparent; color:var(--gris-texto); font-size:0.72rem; font-weight:700; padding:6px 13px; border-radius:999px; cursor:pointer; transition:background .18s, color .18s; white-space:nowrap; font-family:inherit; }
+    .pp-metric-tab:hover { color:#e2e8f0; }
+    .pp-metric-tab.active { background:var(--dorado); color:#1a1206; }
+    .pp-metric-val.pp-fading { opacity:0; transition:opacity .15s; }
+    .pp-metric-val { transition:opacity .15s; }
+    #pp-m-pct.pp-fading { opacity:0; }
+    #pp-m-pct { transition:opacity .15s; }
+    #pp-m-meter { transition:width .25s ease; }
   </style>
 </head>
 <body>
@@ -2380,6 +2390,47 @@ function goToMatchFecha(equipo, fecha) {
   selectFecha(fecha);           // override the auto-selection with the requested date
 }
 
+// Switch "Métricas Totales" between Totales / Primera A / Primera B without
+// re-rendering the whole profile — just fades the numbers out/in for a smooth swap.
+function ppFilterMetrics(cat, btn) {
+  const c = window._ppMetricsData && window._ppMetricsData[cat];
+  if (!c) return;
+
+  document.querySelectorAll('#pp-metric-tabs .pp-metric-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const fields = [
+    ['pp-m-pj',       c.pj,                                          `Partidos (${c.titular} tit · ${c.sup} sup)`],
+    ['pp-m-goles',    c.goles],
+    ['pp-m-asist',    c.asist],
+    ['pp-m-ga',       c.goles + c.asist],
+    ['pp-m-titulos',  c.titulos],
+    ['pp-m-rojas',    c.rojas],
+    ['pp-m-promgol',  c.promGol.toFixed(2).replace('.', ',')],
+    ['pp-m-promasist',c.promAsist.toFixed(2).replace('.', ',')],
+  ];
+  fields.forEach(([id, val, label]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add('pp-fading');
+      setTimeout(() => { el.textContent = val; el.classList.remove('pp-fading'); }, 150);
+    }
+    if (label) {
+      const lbl = document.getElementById(id + '-label');
+      if (lbl) lbl.textContent = label;
+    }
+  });
+
+  const meter = document.getElementById('pp-m-meter');
+  const pctEl = document.getElementById('pp-m-pct');
+  const pct = Math.min(100, c.efectividadGA);
+  if (meter) meter.style.width = pct.toFixed(0) + '%';
+  if (pctEl) {
+    pctEl.classList.add('pp-fading');
+    setTimeout(() => { pctEl.textContent = c.efectividadGA.toFixed(0) + '%'; pctEl.classList.remove('pp-fading'); }, 150);
+  }
+}
+
 // ── Aggregate every known data source for a single player, cross-team ──────
 // Career totals + títulos always come from "El Nido" (centralized DB), summing
 // Primera A + Primera B when the player has history in both. Rankings are kept
@@ -2463,13 +2514,34 @@ function _collectPlayerStats(nombre) {
   const nombreResuelto = nidoA?.nombre || nidoB?.nombre || meA?.nombre || meB?.nombre || nombre;
   const posResuelta    = nidoA?.pos || nidoB?.pos || meA?.pos || meB?.pos || meA?.posicion || meB?.posicion || '';
 
+  // Per-category breakdown for the "Totales / Primera A / Primera B" metric
+  // filter — same safeDiv guard so switching category never shows #DIV/0!.
+  function buildCategoria(nido, me) {
+    const cPj      = nido?.pj    || 0;
+    const cGoles   = nido?.goles || 0;
+    const cAsist   = nido?.asist || 0;
+    const cTitulos = nido?.titulos || 0;
+    const cTitular = me?.titular || 0;
+    const cSup     = me?.entro || me?.sup || 0;
+    const cRojas   = me?.rojas || 0;
+    return {
+      pj: cPj, titular: cTitular, sup: cSup, goles: cGoles, asist: cAsist, rojas: cRojas, titulos: cTitulos,
+      promGol: safeDiv(cGoles, cPj), promAsist: safeDiv(cAsist, cPj), efectividadGA: safeDiv(cGoles + cAsist, cPj) * 100,
+    };
+  }
+  const porCategoria = {
+    total: { pj, titular, sup, goles, asist, rojas, titulos, promGol, promAsist, efectividadGA },
+    a: buildCategoria(nidoA, meA),
+    b: buildCategoria(nidoB, meB),
+  };
+
   return {
     nombre: nombreResuelto,
     pos: posResuelta,
     pj, titular, sup, goles, asist, rojas, titulos,
     promGol, promAsist, efectividadGA,
     hasA, hasB, rankA, rankB, rankGen,
-    partidos,
+    partidos, porCategoria,
     found: !!(meA || meB || nidoA || nidoB),
     nidoReady,
   };
@@ -2531,24 +2603,35 @@ function renderPlayerProfile(nombre) {
   const initials = s.nombre.trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const posLabel = POS_NOMBRE[s.pos] || s.pos || 'Posición sin definir';
 
-  const kpi = (icon, val, label, color) => `
-    <div class="hist-kpi"><div class="hist-kpi-icon">${icon}</div><div class="hist-kpi-val" style="${color ? `color:${color}` : ''}">${val}</div><div class="hist-kpi-label">${label}</div></div>`;
+  const kpi = (id, icon, val, label, color) => `
+    <div class="hist-kpi"><div class="hist-kpi-icon">${icon}</div><div class="hist-kpi-val pp-metric-val" id="${id}" style="${color ? `color:${color}` : ''}">${val}</div><div class="hist-kpi-label" id="${id}-label">${label}</div></div>`;
+
+  // Stash per-category numbers so the Totales/Primera A/Primera B tabs can swap
+  // the on-screen values instantly without re-rendering the whole profile.
+  window._ppMetricsData = s.porCategoria;
+
+  const metricsTabs = `
+    <div class="pp-metric-tabs" id="pp-metric-tabs">
+      <button class="pp-metric-tab active" data-cat="total" onclick="ppFilterMetrics('total', this)">📊 Totales</button>
+      <button class="pp-metric-tab" data-cat="a" onclick="ppFilterMetrics('a', this)">Ⓐ Primera A</button>
+      <button class="pp-metric-tab" data-cat="b" onclick="ppFilterMetrics('b', this)">Ⓑ Primera B</button>
+    </div>`;
 
   const metrics = `
     <div class="hist-kpis" style="grid-template-columns:repeat(4,1fr)">
-      ${kpi('📋', s.pj, 'Partidos (' + s.titular + ' tit · ' + s.sup + ' sup)')}
-      ${kpi('⚽', s.goles, 'Goles', '#22c55e')}
-      ${kpi('🎯', s.asist, 'Asistencias', '#3b82f6')}
-      ${kpi('🔥', s.goles + s.asist, 'G+A', '#a855f7')}
-      ${kpi('🏆', s.titulos, 'Títulos (El Nido)', '#fbbf24')}
-      ${kpi('🟥', s.rojas, 'Rojas', '#ef4444')}
-      ${kpi('📈', s.promGol.toFixed(2).replace('.', ','), 'Prom. Gol/Partido', '#22c55e')}
-      ${kpi('🎯', s.promAsist.toFixed(2).replace('.', ','), 'Prom. Asist/Partido', '#3b82f6')}
+      ${kpi('pp-m-pj',      '📋', s.pj,   'Partidos (' + s.titular + ' tit · ' + s.sup + ' sup)')}
+      ${kpi('pp-m-goles',   '⚽', s.goles, 'Goles', '#22c55e')}
+      ${kpi('pp-m-asist',   '🎯', s.asist, 'Asistencias', '#3b82f6')}
+      ${kpi('pp-m-ga',      '🔥', s.goles + s.asist, 'G+A', '#a855f7')}
+      ${kpi('pp-m-titulos', '🏆', s.titulos, 'Títulos (El Nido)', '#fbbf24')}
+      ${kpi('pp-m-rojas',   '🟥', s.rojas, 'Rojas', '#ef4444')}
+      ${kpi('pp-m-promgol', '📈', s.promGol.toFixed(2).replace('.', ','), 'Prom. Gol/Partido', '#22c55e')}
+      ${kpi('pp-m-promasist','🎯', s.promAsist.toFixed(2).replace('.', ','), 'Prom. Asist/Partido', '#3b82f6')}
     </div>
     <div class="pp-effectiveness">
       <div class="hd-section-label">Efectividad de participación en goles (G+A)</div>
-      <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${Math.min(100, s.efectividadGA).toFixed(0)}%"></div></div>
-      <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct">${s.efectividadGA.toFixed(0)}%</span><span>100%</span></div>
+      <div class="hd-meter-track"><div class="hd-meter-fill" id="pp-m-meter" style="width:${Math.min(100, s.efectividadGA).toFixed(0)}%"></div></div>
+      <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct" id="pp-m-pct">${s.efectividadGA.toFixed(0)}%</span><span>100%</span></div>
     </div>
     ${!s.nidoReady ? `<div class="pp-nido-loading">⏳ Sincronizando con El Nido…</div>` : ''}`;
 
@@ -2597,7 +2680,10 @@ function renderPlayerProfile(nombre) {
       </div>
       ${rankings}
       <div class="card" style="margin-top:18px">
-        <div class="card-label" style="margin-bottom:12px">Métricas Totales</div>
+        <div class="pp-metrics-header">
+          <div class="card-label">Métricas Totales</div>
+          ${metricsTabs}
+        </div>
         ${metrics}
       </div>
       <div class="card" style="margin-top:18px">
