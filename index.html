@@ -541,21 +541,21 @@
     .debuts-wrap { max-width: 1100px; }
 
     /* KPI grid */
-    .debuts-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+    .debuts-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
     @media (max-width: 600px) { .debuts-kpis { grid-template-columns: repeat(2, 1fr); } }
     .debuts-kpi {
       background: linear-gradient(145deg, #1a2236, #131825);
       border: 1px solid #1e2a3a;
-      border-radius: 18px;
-      padding: 24px 16px 20px;
-      display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .debuts-kpi:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-    .debuts-kpi-icon { font-size: 1.5rem; opacity: 0.85; }
-    .debuts-kpi-val { font-size: 2.4rem; font-weight: 900; color: #22c55e; line-height: 1; letter-spacing: -0.02em; }
-    .debuts-kpi-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
-    .debuts-kpi-sub { font-size: 0.8rem; color: #94a3b8; font-weight: 600; margin-top: 2px; }
+    .debuts-kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .debuts-kpi-icon { font-size: 1.15rem; opacity: 0.85; }
+    .debuts-kpi-val { font-size: 1.7rem; font-weight: 900; color: #22c55e; line-height: 1; letter-spacing: -0.02em; }
+    .debuts-kpi-label { font-size: 0.66rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 700; }
+    .debuts-kpi-sub { font-size: 0.78rem; color: #e2e8f0; font-weight: 600; margin-top: 1px; }
 
     /* Bento stats */
     .debuts-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 32px; }
@@ -570,16 +570,13 @@
       font-size: 0.68rem; font-weight: 700; color: #475569;
       text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;
     }
-    .debuts-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-    .debuts-bar-label { width: 38px; color: #64748b; text-align: right; flex-shrink: 0; font-size: 0.75rem; font-weight: 500; }
-    .debuts-bar-track { flex: 1; background: rgba(255,255,255,0.04); border-radius: 6px; height: 9px; overflow: hidden; }
-    .debuts-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #16a34a, #22c55e);
-      border-radius: 6px;
-      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+    .debuts-bar-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid #1a2236; font-size: 0.82rem;
     }
-    .debuts-bar-count { width: 22px; color: #e2e8f0; font-weight: 700; font-size: 0.75rem; text-align: left; }
+    .debuts-bar-row:last-child { border-bottom: none; }
+    .debuts-bar-label { color: #94a3b8; font-weight: 600; font-size: 0.82rem; }
+    .debuts-bar-count { color: #f1f5f9; font-weight: 700; font-size: 0.85rem; text-align: right; }
     .debuts-rival-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 9px 0; border-bottom: 1px solid #1a2236; font-size: 0.82rem;
@@ -587,11 +584,7 @@
     .debuts-rival-row:last-child { border-bottom: none; }
     .debuts-rival-name { color: #94a3b8; display: flex; align-items: center; gap: 8px; }
     .debuts-rival-icon { color: #334155; font-size: 0.75rem; }
-    .debuts-rival-count {
-      background: rgba(34,197,94,0.1); color: #22c55e;
-      border: 1px solid rgba(34,197,94,0.2);
-      border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; font-weight: 700;
-    }
+    .debuts-rival-count { color: #f1f5f9; font-weight: 700; font-size: 0.85rem; text-align: right; }
 
     /* Filter pills */
     .debuts-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
@@ -642,11 +635,10 @@
     .debut-card:hover::before { opacity: 1; }
     .debut-avatar {
       width: 56px; height: 56px; border-radius: 50%;
-      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      background: rgba(148,163,184,0.1);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(22,163,74,0.35);
-      border: 2px solid rgba(34,197,94,0.25);
+      font-size: 1rem; font-weight: 800; color: #cbd5e1; flex-shrink: 0;
+      border: 1.5px solid rgba(148,163,184,0.25);
     }
     .debut-name { font-size: 0.83rem; font-weight: 700; color: #e2e8f0; line-height: 1.35; }
     .debut-detail { display: flex; flex-direction: column; gap: 5px; width: 100%; }
@@ -655,7 +647,7 @@
       font-size: 0.73rem; color: #64748b; font-weight: 500;
     }
     .debut-detail-row span { color: #94a3b8; }
-    .debut-res-pill { font-size: 0.7rem; font-weight: 700; padding: 3px 12px; border-radius: 24px; letter-spacing: 0.02em; }
+    .debut-res-pill { font-size: 0.7rem; font-weight: 700; padding: 3px 12px; border-radius: 8px; letter-spacing: 0.02em; }
     .debut-res-w { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
     .debut-res-d { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
     .debut-res-l { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
@@ -6632,12 +6624,10 @@ function renderDebuts() {
   // ── Stats: debuts por año + rival más frecuente ───────────────────────
   const byYear = {};
   data.forEach(d => { byYear[d.year] = (byYear[d.year]||0) + 1; });
-  const maxByYear = Math.max(...Object.values(byYear));
   const barsHtml = years.map(y => `
     <div class="debuts-bar-row">
-      <div class="debuts-bar-label">${y}</div>
-      <div class="debuts-bar-track"><div class="debuts-bar-fill" style="width:${Math.round((byYear[y]/maxByYear)*100)}%"></div></div>
-      <div class="debuts-bar-count">${byYear[y]}</div>
+      <span class="debuts-bar-label">${y}</span>
+      <span class="debuts-bar-count">${byYear[y]}</span>
     </div>`).join('');
 
   const rivalCount = {};
