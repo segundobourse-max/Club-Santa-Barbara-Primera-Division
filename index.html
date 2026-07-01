@@ -1285,8 +1285,15 @@
     .pp-avatar { width:64px; height:64px; border-radius:50%; background:rgba(245,158,11,0.12); border:2px solid rgba(245,158,11,0.4); display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:900; color:var(--dorado); flex-shrink:0; }
     .pp-name { font-size:1.4rem; font-weight:900; color:#fff; line-height:1.15; }
     .pp-pos { font-size:0.82rem; color:var(--gris-texto); margin-top:2px; font-weight:600; }
+    .pp-rank-layout { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; margin-bottom: 4px; }
+    .pp-rank-col-left { flex: 1 1 300px; min-width: 260px; }
+    .pp-rank-col-right { flex: 1 1 260px; min-width: 240px; padding-left: 20px; border-left: 1px solid #1e2a3a; }
+    @media (max-width: 640px) { .pp-rank-col-right { padding-left: 0; border-left: none; border-top: 1px solid #1e2a3a; padding-top: 14px; } }
     .pp-rank-row { margin-bottom: 10px; }
+    .pp-rank-row-accent { background: rgba(251,191,36,0.04); border-radius: 10px; padding: 10px 12px; margin: -10px -12px 10px; }
     .pp-rank-group-label { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--gris-texto); margin-bottom:6px; }
+    .pp-rank-group-label-accent { color: var(--dorado); display:flex; align-items:center; gap:6px; }
+    .pp-rank-hist-tag { font-size:0.6rem; font-weight:800; text-transform:none; letter-spacing:0; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.35); color: var(--dorado); padding: 1px 7px; border-radius: 999px; }
     .pp-ranks { display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 4px; }
     .pp-rank-pill { display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; border:1px solid #1e2a3a; background:rgba(255,255,255,0.03); font-size:0.78rem; font-weight:800; color:#94a3b8; }
     .pp-rank-top { box-shadow: 0 0 0 1px rgba(255,255,255,0.02); }
@@ -2385,7 +2392,9 @@ function _collectPlayerStats(nombre) {
   const fallbackPool = (currentData && currentData.jugadores) || [];
   const rankA   = nidoReady ? (hasA ? rankSet(poolA) : null) : (currentData === DATA_A ? rankSet(fallbackPool.map(p=>({nombre:p.nombre,goles:p.goles,asist:p.asist,pj:p.pj||p.citado}))) : null);
   const rankB   = nidoReady ? (hasB ? rankSet(poolB) : null) : (currentData === DATA_B ? rankSet(fallbackPool.map(p=>({nombre:p.nombre,goles:p.goles,asist:p.asist,pj:p.pj||p.citado}))) : null);
-  const rankGen = nidoReady && hasA && hasB ? rankSet(merged) : null;
+  // General/histórico ranking always compares against the full unified A+B roster
+  // (every player who ever appears in either category), not only double-team players.
+  const rankGen = nidoReady && merged.length ? rankSet(merged) : null;
 
   // Fecha a fecha — both squad sheets are always loaded in background, so the
   // match log covers every category the player appeared in, newest first.
@@ -2445,30 +2454,38 @@ const POS_NOMBRE = { ARQ:'Arquero', DFC:'Defensor Central', DFI:'Defensor Izquie
   MCE:'Mediocampista', MI:'Mediocampista Izquierdo', MD:'Mediocampista Derecho', DC:'Delantero Centro',
   DEL:'Delantero', AT:'Delantero' };
 
-function _ppRankBadge(rank, label) {
+// accent=true → golden "Histórico/General" styling regardless of top-3 medal position
+function _ppRankBadge(rank, label, accent) {
   if (!rank || !rank.pos) return '';
   const top = rank.pos <= 3;
   const medal = rank.pos === 1 ? '🥇' : rank.pos === 2 ? '🥈' : rank.pos === 3 ? '🥉' : '';
-  const color = rank.pos === 1 ? '#FFD700' : rank.pos === 2 ? '#C0C0C0' : rank.pos === 3 ? '#CD7F32' : '#94a3b8';
-  return `<div class="pp-rank-pill${top ? ' pp-rank-top' : ''}" style="${top ? `border-color:${color}66;background:${color}14` : ''}">
+  const color = top ? (rank.pos === 1 ? '#FFD700' : rank.pos === 2 ? '#C0C0C0' : '#CD7F32') : (accent ? '#fbbf24' : '#94a3b8');
+  const style = top
+    ? `border-color:${color}66;background:${color}14`
+    : accent ? `border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08)` : '';
+  return `<div class="pp-rank-pill${top || accent ? ' pp-rank-top' : ''}" style="${style}">
     <span style="color:${color}">${medal || '#' + rank.pos}</span>
     <span class="pp-rank-label">${label}</span>
   </div>`;
 }
 
 // One row of the three category badges (Goleadores/Asistidores/Presencias), with
-// an optional group caption ("Primera A" / "Primera B" / "General") shown above it
-// when the player has history in more than one competition.
-function _ppRankGroup(rankSet, groupLabel) {
+// an optional group caption shown above it. accent=true renders the golden
+// "Histórico/General" styling used for the unified A+B ranking column.
+function _ppRankGroup(rankSet, groupLabel, accent) {
   if (!rankSet) return '';
+  const suffix = accent ? ' General' : '';
   const badges = [
-    _ppRankBadge(rankSet.goles, 'en Goleadores'),
-    _ppRankBadge(rankSet.asist, 'en Asistidores'),
-    _ppRankBadge(rankSet.pj,    'en Presencias'),
+    _ppRankBadge(rankSet.goles, 'en Goleadores' + suffix, accent),
+    _ppRankBadge(rankSet.asist, 'en Asistidores' + suffix, accent),
+    _ppRankBadge(rankSet.pj,    'en Presencias' + suffix, accent),
   ].join('');
   if (!badges) return '';
-  return `<div class="pp-rank-row">
-    ${groupLabel ? `<div class="pp-rank-group-label">${groupLabel}</div>` : ''}
+  const label = groupLabel
+    ? `<div class="pp-rank-group-label${accent ? ' pp-rank-group-label-accent' : ''}">${accent ? '🏆 ' : ''}${groupLabel}${accent ? ' <span class="pp-rank-hist-tag">Histórico</span>' : ''}</div>`
+    : '';
+  return `<div class="pp-rank-row${accent ? ' pp-rank-row-accent' : ''}">
+    ${label}
     <div class="pp-ranks">${badges}</div>
   </div>`;
 }
@@ -2509,16 +2526,19 @@ function renderPlayerProfile(nombre) {
     </div>
     ${!s.nidoReady ? `<div class="pp-nido-loading">⏳ Sincronizando con El Nido…</div>` : ''}`;
 
-  // Both categories played → three separate groups (A / B / General), never mixed.
-  // Only one category → clean single row, no group caption (as it worked originally).
-  const bothCategorias = s.hasA && s.hasB;
-  const rankings = bothCategorias
-    ? [
-        _ppRankGroup(s.rankA,   'Primera A'),
-        _ppRankGroup(s.rankB,   'Primera B'),
-        _ppRankGroup(s.rankGen, 'General (A + B)'),
-      ].join('')
-    : _ppRankGroup(s.rankA || s.rankB, '');
+  // Left column: rendimiento por categoría (equipo). Stacked A above B if the
+  // player has "doble camiseta"; a single labeled block otherwise.
+  const leftCol = [
+    _ppRankGroup(s.rankA, 'Primera A'),
+    _ppRankGroup(s.rankB, 'Primera B'),
+  ].join('');
+  // Right column: unified A+B historical ranking, always shown, golden accent.
+  const rightCol = _ppRankGroup(s.rankGen, 'General', true);
+  const rankings = (leftCol || rightCol) ? `
+    <div class="pp-rank-layout">
+      <div class="pp-rank-col-left">${leftCol}</div>
+      <div class="pp-rank-col-right">${rightCol}</div>
+    </div>` : '';
 
   const matchRows = s.partidos.length
     ? s.partidos.map(m => `
