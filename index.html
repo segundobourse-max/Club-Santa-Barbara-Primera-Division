@@ -672,28 +672,44 @@
     .inf-kpi-pct { font-size: 0.85rem; font-weight: 700; color: rgba(245,158,11,0.6); }
     .inf-kpi-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
 
-    /* Executive table — full-width, compact dark header, subtle row hover */
-    .inf-table-wrap { width: 100%; overflow-x: auto; border: 1px solid #1e2a3a; border-radius: 14px; }
-    .inf-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    .inf-table thead th {
-      background: rgba(255,255,255,0.035); color: #64748b;
-      font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-      text-align: left; padding: 11px 14px; white-space: nowrap;
-      border-bottom: 1px solid #1e2a3a;
+    /* Premium horizontal row cards — one per categoría, full width */
+    .inf-rows { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+    .inf-row {
+      background: rgba(15,23,42,0.5); backdrop-filter: blur(6px);
+      border: 1px solid #1e293b; border-radius: 14px; padding: 16px;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 16px;
+      transition: border-color 0.3s ease, background 0.3s ease;
     }
-    .inf-table tbody tr { border-bottom: 1px solid #1e2a3a; transition: background 0.15s ease; }
-    .inf-table tbody tr:last-child { border-bottom: none; }
-    .inf-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-    .inf-table td { padding: 11px 14px; color: #94a3b8; vertical-align: top; }
-    .inf-td-cat { color: #e2e8f0; font-weight: 800; white-space: nowrap; }
-    .inf-td-num { text-align: center; color: #cbd5e1; font-weight: 600; white-space: nowrap; }
-    .inf-td-name { color: #e2e8f0; font-weight: 600; white-space: nowrap; }
-    .inf-td-obs { color: #94a3b8; font-size: 0.78rem; min-width: 220px; }
-    .inf-td-roster { color: #cbd5e1; line-height: 1.6; min-width: 260px; }
-    .inf-td-goles { text-align: right; color: #cbd5e1; font-weight: 700; white-space: nowrap; }
-    .inf-pill { display: inline-block; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
-    .inf-pill-pj    { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25); color: #60a5fa; }
-    .inf-pill-goles { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.25);  color: #22c55e; }
+    @media (min-width: 768px) { .inf-row { flex-direction: row; align-items: center; justify-content: space-between; } }
+    .inf-row:hover { border-color: rgba(249,115,22,0.4); background: rgba(15,23,42,0.7); }
+    .inf-row-block { display: flex; flex-direction: column; }
+
+    /* Bloque 1: identificación */
+    .inf-row-id { flex-shrink: 0; min-width: 110px; gap: 6px; }
+    .inf-row-year { font-size: 1.25rem; font-weight: 800; color: #fff; line-height: 1; }
+    .inf-row-count { font-size: 0.68rem; color: #94a3b8; background: #1e293b; padding: 2px 8px; border-radius: 999px; width: max-content; }
+
+    /* Bloque 2: hitos históricos */
+    .inf-row-hitos { flex-shrink: 0; min-width: 190px; gap: 4px; }
+    .inf-row-hito { font-size: 0.72rem; color: #cbd5e1; }
+    .inf-row-hito.muted { color: #94a3b8; }
+    .inf-row-hito strong { color: #e2e8f0; font-weight: 700; }
+    .inf-row-hito.muted strong { color: #cbd5e1; font-weight: 600; }
+    .inf-row-obs { font-size: 0.62rem; background: rgba(249,115,22,0.1); color: #fb923c; padding: 2px 8px; border-radius: 6px; margin-top: 4px; width: max-content; }
+
+    /* Bloque 3: jugadores — the flexible, widest block */
+    .inf-row-players { flex: 1 1 auto; flex-direction: row; flex-wrap: wrap; gap: 6px; max-width: 640px; align-self: stretch; align-content: center; }
+    .inf-row-tag { background: rgba(30,41,59,0.6); color: #cbd5e1; font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(51,65,85,0.5); white-space: nowrap; }
+
+    /* Bloque 4: métricas de impacto */
+    .inf-row-metrics { flex-direction: row; gap: 8px; flex-shrink: 0; align-self: flex-end; }
+    @media (min-width: 768px) { .inf-row-metrics { align-self: center; } }
+    .inf-row-metric { border-radius: 10px; padding: 8px; min-width: 68px; text-align: center; }
+    .inf-row-metric-val { font-size: 1.15rem; font-weight: 800; color: #f1f5f9; line-height: 1; }
+    .inf-row-metric-label { font-size: 0.58rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; font-weight: 600; }
+    .inf-row-metric-pj    { background: rgba(16,185,129,0.1);  border: 1px solid rgba(16,185,129,0.2); }
+    .inf-row-metric-goles { background: rgba(59,130,246,0.1);  border: 1px solid rgba(59,130,246,0.2); }
+    .inf-row-metric-empty { opacity: 0.4; }
 
     /* ── RESUMEN LAYOUT ── */
     .resumen-grid {
@@ -2808,6 +2824,12 @@ function showHistoricoTorneo(key) {
   } else if (key === 'apertura-2024d-b') {
     document.getElementById('tab-torneo-apertura-2024d-b').classList.add('active');
     renderTorneoApt2024DB();
+  } else if (key === 'apertura-2026') {
+    // Just-finished Apertura AIFA 2026 (A or B) — full 3-tab component (Plantel/
+    // Tabla/Fecha a Fecha), reusing the same live-fetched data now that the season
+    // is over. currentData is already A or B from whichever section the user is in.
+    document.getElementById('tab-torneo-apertura').classList.add('active');
+    renderTorneoApertura();
   } else {
     const el = document.getElementById('tab-torneo-historico-' + key);
     if (el) el.classList.add('active');
@@ -2832,6 +2854,35 @@ function apBand(pos) {
   if (['MI','MCO','MD'].includes(p)) return 3;
   return 4;
 }
+// Aggregate per-player totals (pj/citado/titular/goles/asist/rojas/promedios) from a
+// filtered subset of detailed matches — used to keep Liga and Copa stats strictly
+// separate instead of both reading the sheet's single combined "jugadores" table.
+function _aggregatePlayerStats(matches) {
+  const map = {};
+  for (const m of matches) {
+    for (const j of (m.jugadores || [])) {
+      if (!j.nombre) continue;
+      if (!map[j.nombre]) map[j.nombre] = { nombre: j.nombre, pj: 0, citado: 0, titular: 0, entro: 0, salio: 0, goles: 0, asist: 0, rojas: 0, pos: j.pos || '' };
+      const r = map[j.nombre];
+      if (j.citado) r.citado++;
+      if (j.titular)      { r.titular++; r.pj++; }
+      else if (j.entro)   { r.entro++;   r.pj++; }
+      if (j.salio) r.salio++;
+      r.goles += j.goles || 0;
+      r.asist += j.asist || 0;
+      r.rojas += j.rojas || 0;
+      if (!r.pos && j.pos) r.pos = j.pos;
+    }
+  }
+  const arr = Object.values(map);
+  arr.forEach(r => {
+    r.promGol   = r.pj > 0 ? r.goles / r.pj : 0;
+    r.promAsist = r.pj > 0 ? r.asist / r.pj : 0;
+    r.promGA    = r.pj > 0 ? (r.goles + r.asist) / r.pj : 0;
+  });
+  return arr;
+}
+
 // Placeholder 4-3-3 for when no real lineup is available
 const PITCH_PLACEHOLDER = [
   { pos:'ARQ', nombre:'1',  _ph:true },
@@ -3163,9 +3214,12 @@ function renderRecopa() {
   const copaPartidos = (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
 
   // ── Tab 1: Plantel (reuse same logic as Apertura) ──────────────────────
+  // Copa-only stats: aggregated strictly from copa matches (non-numeric fecha) so
+  // liga numbers never bleed into the Recopa plantel view.
+  const copaDetailMatches = (d.apertura || []).filter(m => !/^\d+$/.test(String(m.fecha)));
   function buildRecoPlantelTab() {
-    const jugs = d.jugadores || [];
-    if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
+    const jugs = _aggregatePlayerStats(copaDetailMatches);
+    if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel copero…</div>`;
     const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
     const posMap = {};
     for (const match of (d.apertura || [])) {
@@ -3404,9 +3458,13 @@ function renderRecopa() {
 function renderTorneoApertura() {
   const d = currentData;
   const isA = d === DATA_A;
-  // A's Apertura already finished (moved to Torneos Antiguos, unreachable from the
-  // menu now); B's tracked current-season slot is now Clausura AIFA B 2026.
-  const name = isA ? 'Apertura AIFA A 2026' : 'Clausura AIFA B 2026';
+  // A's Apertura already finished — only reachable from Torneos Antiguos now.
+  // B's tracked current-season slot is Clausura AIFA B 2026 (Torneos Actuales),
+  // but the same finished Apertura AIFA B 2026 is still viewable historically.
+  const fromAntiguos = document.querySelectorAll('#main-nav button')[4]?.classList.contains('active');
+  const name = isA
+    ? 'Apertura AIFA A 2026'
+    : (fromAntiguos ? 'Apertura AIFA B 2026' : 'Clausura AIFA B 2026');
 
   const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
   const played   = partidos.filter(m => m.resultado !== null);
@@ -3421,9 +3479,13 @@ function renderTorneoApertura() {
                    : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>'
                    : '<span class="ap-mc-badge draw">Empate</span>';
 
+  // Liga-only stats: aggregated strictly from league matches (numeric fecha) so
+  // Recopa/copa goals and assists never bleed into the Apertura plantel view.
+  const ligaDetailMatches = (d.apertura || []).filter(m => /^\d+$/.test(String(m.fecha)));
+
   // ── Tab 1: Plantel ──────────────────────────────────────────────────────
   function buildPlantelTab() {
-    const jugs = d.jugadores || [];
+    const jugs = ligaDetailMatches.length ? _aggregatePlayerStats(ligaDetailMatches) : (d.jugadores || []);
     if (!jugs.length) {
       return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
     }
@@ -3662,8 +3724,14 @@ function renderTorneoApertura() {
   ).join('');
 
   // ── Render shell ────────────────────────────────────────────────────────
+  // Reached either from "Torneos Actuales" (B's live Clausura) or "Torneos Antiguos"
+  // (the finished Apertura, both A and B) — the back button follows wherever we came from.
+  const backBtnHtml = fromAntiguos
+    ? `<button class="torneo-back" onclick="showTab('graficos', document.querySelectorAll('#main-nav button')[4])">← Torneos Antiguos</button>`
+    : `<button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>`;
+
   document.getElementById('torneo-apertura-content').innerHTML = `
-    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+    ${backBtnHtml}
     <div class="section-title" style="margin-bottom:20px">🥇 ${name}</div>
 
     <nav class="ap-tab-nav">
@@ -6743,52 +6811,44 @@ function renderInferiores() {
       </div>
     </div>`;
 
-  // Executive table view — one row per categoría, no accordion state to manage.
-  const maxGoles = Math.max(...INFERIORES_DATA.map(d => d.goles));
-  const maxPJ    = Math.max(...INFERIORES_DATA.map(d => d.pj));
-
+  // Premium horizontal row-card view — one card per categoría.
   const rows = INFERIORES_DATA.map(d => {
-    const jugadores = d.jugadores.join(', ');
-    const golesTop = d.goles === maxGoles && d.goles > 0;
-    const pjTop    = d.pj === maxPJ;
+    const tags = d.jugadores.map(j => `<span class="inf-row-tag">${j}</span>`).join('');
+    const obsTag = d.obs ? `<span class="inf-row-obs">${d.obs}</span>` : '';
+    const golesEmpty = !d.goles || d.goles === 0;
     return `
-      <tr>
-        <td class="inf-td-cat">Categoría ${d.cat}</td>
-        <td class="inf-td-num">${d.aportes}</td>
-        <td class="inf-td-num">${pjTop ? `<span class="inf-pill inf-pill-pj">${d.pj}</span>` : d.pj}</td>
-        <td class="inf-td-name">${d.debutante || '—'}</td>
-        <td class="inf-td-name">${d.primerGol || ''}</td>
-        <td class="inf-td-obs">${d.obs || ''}</td>
-        <td class="inf-td-roster">${jugadores}</td>
-        <td class="inf-td-goles">${golesTop ? `<span class="inf-pill inf-pill-goles">⚽ ${d.goles}</span>` : d.goles}</td>
-      </tr>`;
+      <div class="inf-row">
+        <div class="inf-row-block inf-row-id">
+          <div class="inf-row-year">${d.cat}</div>
+          <span class="inf-row-count">${d.aportes} jugador${d.aportes > 1 ? 'es' : ''}</span>
+        </div>
+        <div class="inf-row-block inf-row-hitos">
+          <div class="inf-row-hito">⏱️ Primer Debut: <strong>${d.debutante || '—'}</strong></div>
+          <div class="inf-row-hito muted">⚽ Primer Gol: <strong>${d.primerGol || '-'}</strong></div>
+          ${obsTag}
+        </div>
+        <div class="inf-row-block inf-row-players">${tags}</div>
+        <div class="inf-row-block inf-row-metrics">
+          <div class="inf-row-metric inf-row-metric-pj">
+            <div class="inf-row-metric-val">${d.pj}</div>
+            <div class="inf-row-metric-label">PJ</div>
+          </div>
+          <div class="inf-row-metric inf-row-metric-goles${golesEmpty ? ' inf-row-metric-empty' : ''}">
+            <div class="inf-row-metric-val">${d.goles}</div>
+            <div class="inf-row-metric-label">GOLES</div>
+          </div>
+        </div>
+      </div>`;
   }).join('');
 
-  const tableHtml = `
-    <div class="inf-table-wrap">
-      <table class="inf-table">
-        <thead>
-          <tr>
-            <th>Categoría</th>
-            <th style="text-align:center">Cant. Jugadores</th>
-            <th style="text-align:center">PJ Totales</th>
-            <th>Primer Debut</th>
-            <th>Primer Gol</th>
-            <th>Observaciones</th>
-            <th>Jugadores de la Camada</th>
-            <th style="text-align:right">Goles Aportados</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  const rowsHtml = `<div class="inf-rows">${rows}</div>`;
 
   document.getElementById('jug-inferiores-content').innerHTML = `
     <div class="inf-wrap">
       ${backBtn}
       <div class="section-title" style="margin-bottom:28px">🎓 Inferiores Aportes – Primera A</div>
       ${kpiHtml}
-      ${tableHtml}
+      ${rowsHtml}
     </div>`;
 }
 
@@ -6903,6 +6963,8 @@ function renderGraficos() {
   const RICH = {
     '2025|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2025a')" },
     '2024|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2024d-b')" },
+    '2026|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2026')" },
+    '2026|Apertura AIFA B': { fn: "showHistoricoTorneo('apertura-2026')" },
   };
 
   const isCampeon    = pos => /campe[oó]n/i.test(pos);
