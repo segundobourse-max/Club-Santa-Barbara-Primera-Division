@@ -672,50 +672,28 @@
     .inf-kpi-pct { font-size: 0.85rem; font-weight: 700; color: rgba(245,158,11,0.6); }
     .inf-kpi-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
 
-    .inf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
-    @media (max-width: 500px) { .inf-grid { grid-template-columns: 1fr; } }
-
-    .inf-card {
-      background: linear-gradient(160deg, #1a2236 0%, #131825 100%);
-      border: 1px solid #1e2a3a; border-radius: 18px; overflow: hidden;
-      transition: all 0.3s ease;
+    /* Executive table — full-width, compact dark header, subtle row hover */
+    .inf-table-wrap { width: 100%; overflow-x: auto; border: 1px solid #1e2a3a; border-radius: 14px; }
+    .inf-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .inf-table thead th {
+      background: rgba(255,255,255,0.035); color: #64748b;
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      text-align: left; padding: 11px 14px; white-space: nowrap;
+      border-bottom: 1px solid #1e2a3a;
     }
-    .inf-card:hover { border-color: rgba(245,158,11,0.35); box-shadow: 0 8px 28px rgba(0,0,0,0.5); }
-
-    .inf-card-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px; cursor: pointer; gap: 12px;
-      border-bottom: 1px solid transparent; transition: border-color 0.3s;
-    }
-    .inf-card.open .inf-card-header { border-bottom-color: #1e2a3a; }
-    .inf-card-left { display: flex; align-items: center; gap: 14px; }
-    .inf-cat-badge {
-      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
-      background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06));
-      border: 1px solid rgba(245,158,11,0.2);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.95rem; font-weight: 900; color: var(--dorado); letter-spacing: -0.02em;
-    }
-    .inf-cat-label { font-size: 1rem; font-weight: 800; color: #e2e8f0; }
-    .inf-cat-sub { font-size: 0.73rem; color: #475569; margin-top: 2px; }
-    .inf-card-right { display: flex; align-items: center; gap: 10px; }
-    .inf-pill-pj { background: rgba(255,255,255,0.05); border: 1px solid #1e2a3a; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #94a3b8; font-weight: 600; white-space: nowrap; }
-    .inf-pill-goles { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #22c55e; font-weight: 700; white-space: nowrap; }
-    .inf-chevron { color: #334155; font-size: 0.75rem; transition: transform 0.3s ease; flex-shrink: 0; }
-    .inf-card.open .inf-chevron { transform: rotate(180deg); }
-
-    .inf-card-body { display: none; padding: 16px 20px 20px; }
-    .inf-card.open .inf-card-body { display: block; }
-
-    .inf-body-row { display: flex; gap: 6px; margin-bottom: 10px; font-size: 0.78rem; align-items: flex-start; }
-    .inf-body-key { color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.65rem; padding-top: 1px; width: 90px; flex-shrink: 0; }
-    .inf-body-val { color: #94a3b8; line-height: 1.5; }
-    .inf-body-val strong { color: #e2e8f0; font-weight: 600; }
-
-    .inf-badges { display: flex; flex-wrap: wrap; gap: 6px; }
-    .inf-badge { background: rgba(255,255,255,0.06); border: 1px solid #1e2a3a; border-radius: 8px; padding: 3px 10px; font-size: 0.72rem; color: #94a3b8; font-weight: 500; }
-
-    .inf-obs { background: rgba(245,158,11,0.06); border-left: 2px solid rgba(245,158,11,0.4); border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 0.76rem; color: #94a3b8; font-style: italic; margin-top: 10px; }
+    .inf-table tbody tr { border-bottom: 1px solid #1e2a3a; transition: background 0.15s ease; }
+    .inf-table tbody tr:last-child { border-bottom: none; }
+    .inf-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .inf-table td { padding: 11px 14px; color: #94a3b8; vertical-align: top; }
+    .inf-td-cat { color: #e2e8f0; font-weight: 800; white-space: nowrap; }
+    .inf-td-num { text-align: center; color: #cbd5e1; font-weight: 600; white-space: nowrap; }
+    .inf-td-name { color: #e2e8f0; font-weight: 600; white-space: nowrap; }
+    .inf-td-obs { color: #94a3b8; font-size: 0.78rem; min-width: 220px; }
+    .inf-td-roster { color: #cbd5e1; line-height: 1.6; min-width: 260px; }
+    .inf-td-goles { text-align: right; color: #cbd5e1; font-weight: 700; white-space: nowrap; }
+    .inf-pill { display: inline-block; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+    .inf-pill-pj    { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25); color: #60a5fa; }
+    .inf-pill-goles { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.25);  color: #22c55e; }
 
     /* ── RESUMEN LAYOUT ── */
     .resumen-grid {
@@ -6765,55 +6743,53 @@ function renderInferiores() {
       </div>
     </div>`;
 
-  const cards = INFERIORES_DATA.map((d, i) => {
-    const badges = d.jugadores.map(j => `<span class="inf-badge">${j}</span>`).join('');
-    const obs = d.obs ? `<div class="inf-obs">💬 ${d.obs}</div>` : '';
+  // Executive table view — one row per categoría, no accordion state to manage.
+  const maxGoles = Math.max(...INFERIORES_DATA.map(d => d.goles));
+  const maxPJ    = Math.max(...INFERIORES_DATA.map(d => d.pj));
+
+  const rows = INFERIORES_DATA.map(d => {
+    const jugadores = d.jugadores.join(', ');
+    const golesTop = d.goles === maxGoles && d.goles > 0;
+    const pjTop    = d.pj === maxPJ;
     return `
-      <div class="inf-card" id="inf-card-${i}">
-        <div class="inf-card-header" onclick="infToggle(${i})">
-          <div class="inf-card-left">
-            <div class="inf-cat-badge">'${d.cat.slice(2)}</div>
-            <div>
-              <div class="inf-cat-label">Categoría ${d.cat}</div>
-              <div class="inf-cat-sub">${d.aportes} jugador${d.aportes>1?'es':''} · Debut: ${d.debutante}</div>
-            </div>
-          </div>
-          <div class="inf-card-right">
-            <span class="inf-pill-pj">${d.pj} PJ</span>
-            <span class="inf-pill-goles">⚽ ${d.goles}</span>
-            <span class="inf-chevron">▼</span>
-          </div>
-        </div>
-        <div class="inf-card-body">
-          <div class="inf-body-row">
-            <div class="inf-body-key">1er Debut</div>
-            <div class="inf-body-val"><strong>${d.debutante}</strong></div>
-          </div>
-          ${d.primerGol ? `<div class="inf-body-row">
-            <div class="inf-body-key">1er Gol</div>
-            <div class="inf-body-val"><strong>${d.primerGol}</strong></div>
-          </div>` : ''}
-          <div class="inf-body-row">
-            <div class="inf-body-key">Jugadores</div>
-            <div class="inf-body-val"><div class="inf-badges">${badges}</div></div>
-          </div>
-          ${obs}
-        </div>
-      </div>`;
+      <tr>
+        <td class="inf-td-cat">Categoría ${d.cat}</td>
+        <td class="inf-td-num">${d.aportes}</td>
+        <td class="inf-td-num">${pjTop ? `<span class="inf-pill inf-pill-pj">${d.pj}</span>` : d.pj}</td>
+        <td class="inf-td-name">${d.debutante || '—'}</td>
+        <td class="inf-td-name">${d.primerGol || ''}</td>
+        <td class="inf-td-obs">${d.obs || ''}</td>
+        <td class="inf-td-roster">${jugadores}</td>
+        <td class="inf-td-goles">${golesTop ? `<span class="inf-pill inf-pill-goles">⚽ ${d.goles}</span>` : d.goles}</td>
+      </tr>`;
   }).join('');
+
+  const tableHtml = `
+    <div class="inf-table-wrap">
+      <table class="inf-table">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th style="text-align:center">Cant. Jugadores</th>
+            <th style="text-align:center">PJ Totales</th>
+            <th>Primer Debut</th>
+            <th>Primer Gol</th>
+            <th>Observaciones</th>
+            <th>Jugadores de la Camada</th>
+            <th style="text-align:right">Goles Aportados</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 
   document.getElementById('jug-inferiores-content').innerHTML = `
     <div class="inf-wrap">
       ${backBtn}
       <div class="section-title" style="margin-bottom:28px">🎓 Inferiores Aportes – Primera A</div>
       ${kpiHtml}
-      <div class="inf-grid">${cards}</div>
+      ${tableHtml}
     </div>`;
-
-  window.infToggle = function(i) {
-    const card = document.getElementById('inf-card-' + i);
-    card.classList.toggle('open');
-  };
 }
 
 function renderJugSubWip(key, title, desc) {
