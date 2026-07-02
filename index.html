@@ -2824,6 +2824,12 @@ function showHistoricoTorneo(key) {
   } else if (key === 'apertura-2024d-b') {
     document.getElementById('tab-torneo-apertura-2024d-b').classList.add('active');
     renderTorneoApt2024DB();
+  } else if (key === 'apertura-2026') {
+    // Just-finished Apertura AIFA 2026 (A or B) — full 3-tab component (Plantel/
+    // Tabla/Fecha a Fecha), reusing the same live-fetched data now that the season
+    // is over. currentData is already A or B from whichever section the user is in.
+    document.getElementById('tab-torneo-apertura').classList.add('active');
+    renderTorneoApertura();
   } else {
     const el = document.getElementById('tab-torneo-historico-' + key);
     if (el) el.classList.add('active');
@@ -2848,6 +2854,35 @@ function apBand(pos) {
   if (['MI','MCO','MD'].includes(p)) return 3;
   return 4;
 }
+// Aggregate per-player totals (pj/citado/titular/goles/asist/rojas/promedios) from a
+// filtered subset of detailed matches — used to keep Liga and Copa stats strictly
+// separate instead of both reading the sheet's single combined "jugadores" table.
+function _aggregatePlayerStats(matches) {
+  const map = {};
+  for (const m of matches) {
+    for (const j of (m.jugadores || [])) {
+      if (!j.nombre) continue;
+      if (!map[j.nombre]) map[j.nombre] = { nombre: j.nombre, pj: 0, citado: 0, titular: 0, entro: 0, salio: 0, goles: 0, asist: 0, rojas: 0, pos: j.pos || '' };
+      const r = map[j.nombre];
+      if (j.citado) r.citado++;
+      if (j.titular)      { r.titular++; r.pj++; }
+      else if (j.entro)   { r.entro++;   r.pj++; }
+      if (j.salio) r.salio++;
+      r.goles += j.goles || 0;
+      r.asist += j.asist || 0;
+      r.rojas += j.rojas || 0;
+      if (!r.pos && j.pos) r.pos = j.pos;
+    }
+  }
+  const arr = Object.values(map);
+  arr.forEach(r => {
+    r.promGol   = r.pj > 0 ? r.goles / r.pj : 0;
+    r.promAsist = r.pj > 0 ? r.asist / r.pj : 0;
+    r.promGA    = r.pj > 0 ? (r.goles + r.asist) / r.pj : 0;
+  });
+  return arr;
+}
+
 // Placeholder 4-3-3 for when no real lineup is available
 const PITCH_PLACEHOLDER = [
   { pos:'ARQ', nombre:'1',  _ph:true },
@@ -3179,9 +3214,12 @@ function renderRecopa() {
   const copaPartidos = (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
 
   // ── Tab 1: Plantel (reuse same logic as Apertura) ──────────────────────
+  // Copa-only stats: aggregated strictly from copa matches (non-numeric fecha) so
+  // liga numbers never bleed into the Recopa plantel view.
+  const copaDetailMatches = (d.apertura || []).filter(m => !/^\d+$/.test(String(m.fecha)));
   function buildRecoPlantelTab() {
-    const jugs = d.jugadores || [];
-    if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
+    const jugs = _aggregatePlayerStats(copaDetailMatches);
+    if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel copero…</div>`;
     const numVal = v => (v === null || v === undefined || v === '' || v === '-') ? 0 : Number(v) || 0;
     const posMap = {};
     for (const match of (d.apertura || [])) {
@@ -3420,9 +3458,13 @@ function renderRecopa() {
 function renderTorneoApertura() {
   const d = currentData;
   const isA = d === DATA_A;
-  // A's Apertura already finished (moved to Torneos Antiguos, unreachable from the
-  // menu now); B's tracked current-season slot is now Clausura AIFA B 2026.
-  const name = isA ? 'Apertura AIFA A 2026' : 'Clausura AIFA B 2026';
+  // A's Apertura already finished — only reachable from Torneos Antiguos now.
+  // B's tracked current-season slot is Clausura AIFA B 2026 (Torneos Actuales),
+  // but the same finished Apertura AIFA B 2026 is still viewable historically.
+  const fromAntiguos = document.querySelectorAll('#main-nav button')[4]?.classList.contains('active');
+  const name = isA
+    ? 'Apertura AIFA A 2026'
+    : (fromAntiguos ? 'Apertura AIFA B 2026' : 'Clausura AIFA B 2026');
 
   const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
   const played   = partidos.filter(m => m.resultado !== null);
@@ -3437,9 +3479,13 @@ function renderTorneoApertura() {
                    : m.gf < m.gc ? '<span class="ap-mc-badge lost">Derrota</span>'
                    : '<span class="ap-mc-badge draw">Empate</span>';
 
+  // Liga-only stats: aggregated strictly from league matches (numeric fecha) so
+  // Recopa/copa goals and assists never bleed into the Apertura plantel view.
+  const ligaDetailMatches = (d.apertura || []).filter(m => /^\d+$/.test(String(m.fecha)));
+
   // ── Tab 1: Plantel ──────────────────────────────────────────────────────
   function buildPlantelTab() {
-    const jugs = d.jugadores || [];
+    const jugs = ligaDetailMatches.length ? _aggregatePlayerStats(ligaDetailMatches) : (d.jugadores || []);
     if (!jugs.length) {
       return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
     }
@@ -3678,8 +3724,14 @@ function renderTorneoApertura() {
   ).join('');
 
   // ── Render shell ────────────────────────────────────────────────────────
+  // Reached either from "Torneos Actuales" (B's live Clausura) or "Torneos Antiguos"
+  // (the finished Apertura, both A and B) — the back button follows wherever we came from.
+  const backBtnHtml = fromAntiguos
+    ? `<button class="torneo-back" onclick="showTab('graficos', document.querySelectorAll('#main-nav button')[4])">← Torneos Antiguos</button>`
+    : `<button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>`;
+
   document.getElementById('torneo-apertura-content').innerHTML = `
-    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+    ${backBtnHtml}
     <div class="section-title" style="margin-bottom:20px">🥇 ${name}</div>
 
     <nav class="ap-tab-nav">
@@ -6911,6 +6963,8 @@ function renderGraficos() {
   const RICH = {
     '2025|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2025a')" },
     '2024|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2024d-b')" },
+    '2026|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2026')" },
+    '2026|Apertura AIFA B': { fn: "showHistoricoTorneo('apertura-2026')" },
   };
 
   const isCampeon    = pos => /campe[oó]n/i.test(pos);
