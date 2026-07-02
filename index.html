@@ -1234,36 +1234,37 @@
     .ap-inc-label { font-size:0.68rem; font-weight:700; color:var(--gris-texto); min-width:90px; }
     .ap-inc-item { background:rgba(255,255,255,0.06); border-radius:6px; padding:2px 8px; color:var(--texto); font-size:0.74rem; }
     /* ── Recopa bracket ── */
-    .rc-bracket-wrap { overflow-x:auto; padding:8px 0 20px; }
-    .rc-bracket { display:flex; align-items:stretch; gap:0; min-width:900px; }
+    .rc-bracket-wrap { overflow-x:auto; padding:12px 0 24px; }
+    .rc-bracket { display:flex; align-items:stretch; gap:0; min-width:980px; }
     .rc-side { display:flex; gap:0; }
     .rc-side.right { flex-direction:row-reverse; }
     .rc-round-col { display:flex; flex-direction:column; }
-    .rc-round-header { font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; text-align:center; padding:6px 12px; margin-bottom:8px; border-radius:20px; white-space:nowrap; }
+    .rc-round-header { font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; text-align:center; padding:6px 14px; margin-bottom:10px; border-radius:20px; white-space:nowrap; }
     .rc-round-header.octavos   { background:rgba(139,92,246,.15); color:#a78bfa; border:1px solid rgba(139,92,246,.3); }
     .rc-round-header.cuartos   { background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
     .rc-round-header.semis     { background:rgba(100,116,139,.12); color:#94a3b8; border:1px solid rgba(100,116,139,.3); }
     .rc-round-header.final     { background:rgba(245,158,11,.18); color:#f59e0b; border:1px solid rgba(245,158,11,.4); }
     .rc-matches { display:flex; flex-direction:column; flex:1; }
-    .rc-slot { display:flex; flex-direction:column; justify-content:center; flex:1; padding:4px 0; position:relative; }
+    .rc-slot { display:flex; flex-direction:column; justify-content:center; flex:1; padding:6px 0; position:relative; }
     .rc-connector-right::after { content:''; position:absolute; right:-18px; top:50%; width:18px; height:2px; background:rgba(255,255,255,.12); }
     .rc-connector-left::after  { content:''; position:absolute; left:-18px; top:50%; width:18px; height:2px; background:rgba(255,255,255,.12); }
-    .rc-match-card { background:#1a2540; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:9px 12px; margin:4px 8px; min-width:155px; }
-    .rc-match-card.csb { border-color:rgba(245,158,11,.5); box-shadow:0 0 12px rgba(245,158,11,.12); }
-    .rc-match-card.pending { opacity:.7; }
-    .rc-match-card.final-card { border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.04); min-width:160px; }
-    .rc-team-row { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:3px 0; font-size:0.74rem; }
+    .rc-match-card { background:#1a2540; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:11px 14px; margin:6px 10px; min-width:170px; transition:border-color .2s, box-shadow .2s; }
+    .rc-match-card.csb { border-color:rgba(245,158,11,.55); box-shadow:0 0 0 1px rgba(245,158,11,.15), 0 4px 16px rgba(245,158,11,.14); background:linear-gradient(160deg,#241d10,#1a2540); }
+    .rc-match-card.pending { opacity:.65; }
+    .rc-match-card.final-card { border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.04); min-width:175px; }
+    .rc-team-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 0; font-size:0.76rem; }
     .rc-team-row + .rc-team-row { border-top:1px solid rgba(255,255,255,.05); }
     .rc-team-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#94a3b8; }
-    .rc-team-name.winner { color:#f1f5f9; font-weight:700; }
-    .rc-team-name.csb-name { color:#fbbf24; font-weight:700; }
+    .rc-team-name.winner { color:#22c55e; font-weight:800; }
+    .rc-team-name.csb-name { color:#fbbf24; font-weight:800; }
+    .rc-team-name.csb-name.winner { color:#4ade80; }
     .rc-team-name.tbd { color:rgba(255,255,255,.2); font-style:italic; }
-    .rc-score { font-size:0.88rem; font-weight:900; min-width:16px; text-align:center; color:#f1f5f9; }
+    .rc-score { font-size:0.9rem; font-weight:900; min-width:18px; text-align:center; color:#f1f5f9; }
     .rc-score.win { color:#22c55e; }
     .rc-score.loss { color:#ef4444; }
     .rc-score.tbd { color:rgba(255,255,255,.2); }
-    .rc-meta { font-size:0.58rem; color:var(--gris-texto); margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; }
-    .rc-center { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 8px; min-width:50px; }
+    .rc-meta { font-size:0.6rem; color:var(--gris-texto); margin-top:7px; display:flex; gap:6px; flex-wrap:wrap; line-height:1.4; }
+    .rc-center { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 10px; min-width:56px; }
     .rc-center-line { flex:1; width:2px; background:rgba(255,255,255,.06); }
     .rc-final-col { display:flex; flex-direction:column; align-items:center; justify-content:center; }
     .rc-round-label { writing-mode:horizontal-tb; font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--gris-texto); margin:6px 0; }
@@ -2542,6 +2543,7 @@ function _collectPlayerStats(nombre) {
 const POS_NOMBRE = { ARQ:'Arquero', DFC:'Defensor Central', DFI:'Defensor Izquierdo', DFD:'Defensor Derecho',
   LI:'Lateral Izquierdo', LD:'Lateral Derecho', MC:'Mediocampista', MCO:'Mediocampista Ofensivo',
   MCE:'Mediocampista', MI:'Mediocampista Izquierdo', MD:'Mediocampista Derecho', DC:'Delantero Centro',
+  ED:'Extremo Derecho', EI:'Extremo Izquierdo',
   DEL:'Delantero', AT:'Delantero' };
 
 // accent=true → golden "Histórico/General" styling regardless of top-3 medal position
@@ -2785,21 +2787,25 @@ function showJugSub(key) {
 
 function renderTorneosMenu() {
   const isA = currentData === DATA_A;
-  const apertura = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
+  // Apertura ended for both categories — its data lives in Torneos Antiguos now.
+  // A: only the still-running Recopa 2026 stays active.
+  // B: the tracked "current season" slot now represents Clausura AIFA B 2026
+  //    (same live sheet feed, relabeled); its Recopa already finished and moved
+  //    to Torneos Antiguos too, so it's dropped from Torneos Actuales.
+  const cards = isA
+    ? `<div class="torneo-card" onclick="showTorneo('recopa')">
+         <div class="torneo-card-icon">🏅</div>
+         <div class="torneo-card-name">Recopa 2026</div>
+         <div class="torneo-card-sub">Torneo copa · Temporada 2026</div>
+       </div>`
+    : `<div class="torneo-card" onclick="showTorneo('apertura')">
+         <div class="torneo-card-icon">🥇</div>
+         <div class="torneo-card-name">Clausura AIFA B 2026</div>
+         <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2026</div>
+       </div>`;
   document.getElementById('torneos-picker-content').innerHTML = `
     <div class="section-title" style="margin-bottom:20px">🏆 Torneos Actuales – ${currentData.nombre}</div>
-    <div class="torneos-picker-grid">
-      <div class="torneo-card" onclick="showTorneo('apertura')">
-        <div class="torneo-card-icon">🥇</div>
-        <div class="torneo-card-name">${apertura}</div>
-        <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2026</div>
-      </div>
-      <div class="torneo-card" onclick="showTorneo('recopa')">
-        <div class="torneo-card-icon">🏅</div>
-        <div class="torneo-card-name">Recopa 2026</div>
-        <div class="torneo-card-sub">Torneo copa · Temporada 2026</div>
-      </div>
-    </div>`;
+    <div class="torneos-picker-grid">${cards}</div>`;
 }
 
 function showTorneo(key) {
@@ -2838,7 +2844,7 @@ const AP_BAND_OF = { // horizontal order within each band (lower = more left)
   DFI:0, DFC:1, DFD:3,
   MCI:0, MC:1, MCE:1, MCC:1, MCD:2,
   MI:0, MCO:1, MD:3,
-  ATI:0, ATA:1, DC:1, DEL:2, ATD:3,
+  EI:0, ATI:0, ATA:1, DC:1, DEL:2, ATD:3, ED:3,
 };
 function apBand(pos) {
   const p = (pos||'').toUpperCase();
@@ -3263,7 +3269,9 @@ function renderRecopa() {
 
   // ── Tab 2: Fase de Eliminación (bracket) ───────────────────────────────
   function rcTeam(name, score, isWinner, isCsb, isPending) {
-    const nameClass = isCsb ? 'csb-name' : isPending ? 'tbd' : isWinner ? 'winner' : '';
+    const nameClass = isPending
+      ? 'tbd'
+      : [isCsb ? 'csb-name' : '', isWinner ? 'winner' : ''].filter(Boolean).join(' ');
     const scoreClass = isPending ? 'tbd' : isWinner ? 'win' : score !== null ? 'loss' : 'tbd';
     const scoreStr = score !== null ? score : '–';
     return `<div class="rc-team-row">
@@ -3296,28 +3304,29 @@ function renderRecopa() {
     </div>`;
   }
 
-  // Bracket data from AIFA image
+  // Bracket data from AIFA image — the CSB highlight follows whichever category
+  // (A/B) is currently active, so each section spotlights its own team's path.
   const leftOctavos = [
     rcMatch('GEBA BLANCO','RHINO',1,0,'📅 07/03 00:00 · POSTERGADO',false,false),
     rcMatch('REGATAS "B"','REP. DEL OESTE',1,0,'📅 07/03 15:00 · Club Regatas Avellaneda',false,false),
     rcMatch('LIBERTADOR "A"','SAN FERNANDO',4,1,'📅 06/03 22:00 · Club Acassuso',false,false),
-    rcMatch('SANTA BÁRBARA "A"','EL CHASQUI "A"',2,1,'📅 07/03 18:00 · Club Santa Bárbara, Talar',true,false,'t1'),
+    rcMatch('SANTA BÁRBARA "A"','EL CHASQUI "A"',2,1,'📅 07/03 18:00 · Club Santa Bárbara, Talar',isA,false,'t1'),
   ];
   const leftCuartos = [
     rcMatch('GEBA BLANCO','REGATAS "B"',2,0,'📅 21/05 21:00 · Club GEBA, Sede Palermo',false,false),
-    rcMatch('LIBERTADOR "A"','SANTA BÁRBARA "A"',2,5,'📅 23/05 14:30 · Santa Bárbara, C. Marcos',true,false,'t2'),
+    rcMatch('LIBERTADOR "A"','SANTA BÁRBARA "A"',2,5,'📅 23/05 14:30 · Santa Bárbara, C. Marcos',isA,false,'t2'),
   ];
   const leftSemis = [
-    rcMatch('GEBA BLANCO','SANTA BÁRBARA "A"',null,null,'📅 15/08 20:00 · Por definir',true,true,'t2'),
+    rcMatch('GEBA BLANCO','SANTA BÁRBARA "A"',null,null,'📅 15/08 20:00 · Por definir',isA,true,'t2'),
   ];
   const rightOctavos = [
     rcMatch('VILO','SHOLEM',null,null,'📅 07/03 19:00 · Club Vilo, Vte. López',false,true),
-    rcMatch('SANTA BÁRBARA "B"','ZAFADOS F.C.',null,null,'📅 07/03 16:00 · Club Santa Bárbara, Talar',false,true),
+    rcMatch('SANTA BÁRBARA "B"','ZAFADOS F.C.',null,null,'📅 07/03 16:00 · Club Santa Bárbara, Talar',!isA,true,'t1'),
     rcMatch('HEBRAICA','AFALP "B"',null,null,'📅 07/03 14:00 · Sede Hebraica, Pilar',false,true),
     rcMatch('CISSAB','LASALLE',null,null,'📅 07/03 17:00 · Cissab, Tristán Suárez',false,true),
   ];
   const rightCuartos = [
-    rcMatch('SHOLEM','SANTA BÁRBARA "B"',3,0,'📅 23/05 17:00 · Santa Bárbara, C. Marcos',false,false),
+    rcMatch('SHOLEM','SANTA BÁRBARA "B"',3,0,'📅 23/05 17:00 · Santa Bárbara, C. Marcos',!isA,false,'t2'),
     rcMatch('HEBRAICA','CISSAB',2,3,'📅 23/05 14:00 · Est. Monumental de C.',false,false),
   ];
   const rightSemis = [
@@ -3417,7 +3426,9 @@ function renderRecopa() {
 function renderTorneoApertura() {
   const d = currentData;
   const isA = d === DATA_A;
-  const name = isA ? 'Apertura AIFA A 2026' : 'Apertura AIFA B 2026';
+  // A's Apertura already finished (moved to Torneos Antiguos, unreachable from the
+  // menu now); B's tracked current-season slot is now Clausura AIFA B 2026.
+  const name = isA ? 'Apertura AIFA A 2026' : 'Clausura AIFA B 2026';
 
   const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
   const played   = partidos.filter(m => m.resultado !== null);
@@ -4351,7 +4362,7 @@ function renderResumen() {
           <div class="sh-item">
             <div class="sh-label">Partidos Jugados</div>
             <div class="sh-value">${h.pj}</div>
-            <div class="sh-pct">${isA ? 'Desde 2016' : 'Desde 2023'}</div>
+            <div class="sh-pct">${isA ? 'Desde 2016' : 'Desde 2021'}</div>
           </div>
           <div class="sh-item">
             <div class="sh-label">Victorias</div>
@@ -5283,8 +5294,8 @@ const JUG_COL = {
   gmas: 13, promGmas: 14
 };
 
-const POS_COLOR = { ARQ:'#a855f7', LI:'#22c55e', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444' };
-const POS_BG    = { ARQ:'rgba(168,85,247,0.18)', LI:'rgba(34,197,94,0.15)', DFC:'rgba(59,130,246,0.18)', LD:'rgba(34,197,94,0.15)', MC:'rgba(245,158,11,0.18)', DEL:'rgba(239,68,68,0.18)' };
+const POS_COLOR = { ARQ:'#a855f7', LI:'#22c55e', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444', DC:'#ef4444', ED:'#ef4444', EI:'#ef4444' };
+const POS_BG    = { ARQ:'rgba(168,85,247,0.18)', LI:'rgba(34,197,94,0.15)', DFC:'rgba(59,130,246,0.18)', LD:'rgba(34,197,94,0.15)', MC:'rgba(245,158,11,0.18)', DEL:'rgba(239,68,68,0.18)', DC:'rgba(239,68,68,0.18)', ED:'rgba(239,68,68,0.18)', EI:'rgba(239,68,68,0.18)' };
 
 const JUG_TABS = [
   { key:'general',      label:'General',      cols:[JUG_COL.pj, JUG_COL.goles, JUG_COL.asist, JUG_COL.gmas] },
@@ -5526,8 +5537,8 @@ const JUG_COL_B = {
   promGol:12, promAsist:13, promGmas:14, vallas:15
 };
 
-const POS_COLOR_B = { ARQ:'#a855f7', LI:'#22c55e', DEF:'#3b82f6', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444' };
-const POS_BG_B    = { ARQ:'rgba(168,85,247,0.18)', LI:'rgba(34,197,94,0.15)', DEF:'rgba(59,130,246,0.18)', DFC:'rgba(59,130,246,0.18)', LD:'rgba(34,197,94,0.15)', MC:'rgba(245,158,11,0.18)', DEL:'rgba(239,68,68,0.18)' };
+const POS_COLOR_B = { ARQ:'#a855f7', LI:'#22c55e', DEF:'#3b82f6', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444', DC:'#ef4444', ED:'#ef4444', EI:'#ef4444' };
+const POS_BG_B    = { ARQ:'rgba(168,85,247,0.18)', LI:'rgba(34,197,94,0.15)', DEF:'rgba(59,130,246,0.18)', DFC:'rgba(59,130,246,0.18)', LD:'rgba(34,197,94,0.15)', MC:'rgba(245,158,11,0.18)', DEL:'rgba(239,68,68,0.18)', DC:'rgba(239,68,68,0.18)', ED:'rgba(239,68,68,0.18)', EI:'rgba(239,68,68,0.18)' };
 
 const JUG_TABS_B = [
   { key:'general',       label:'General',       cols:[JUG_COL_B.pj, JUG_COL_B.goles, JUG_COL_B.asist, JUG_COL_B.gmas] },
@@ -6886,10 +6897,23 @@ const SEED_GRAFICOS = [
 function renderGraficos() {
   const container = document.getElementById('graf-content');
 
-  // Use B's live data (from sheet) or B seed; A always uses SEED_GRAFICOS
-  const source = currentData === DATA_B
-    ? (DATA_B.graficos.length ? DATA_B.graficos : SEED_GRAFICOS_B)
-    : SEED_GRAFICOS;
+  // Use B's live data (from sheet) or B seed; A uses SEED_GRAFICOS plus the just-finished
+  // Apertura AIFA A 2026, computed live from the standings table (Torneo Apertura moved
+  // here now that the season is over — no card for it in "Torneos Actuales" anymore).
+  let source;
+  if (currentData === DATA_B) {
+    source = DATA_B.graficos.length ? DATA_B.graficos : SEED_GRAFICOS_B;
+  } else {
+    source = SEED_GRAFICOS;
+    const csbRow = (DATA_A.tabla || []).find(t => t.csb);
+    if (csbRow && !source.some(t => t.anio === 2026 && t.competencia === 'Apertura AIFA A')) {
+      source = [...source, {
+        competencia: 'Apertura AIFA A', anio: 2026,
+        pj: csbRow.pj, pg: csbRow.pg, pe: csbRow.pe, pp: csbRow.pp,
+        gf: csbRow.gf, gc: csbRow.gc, vi: null, pts: csbRow.pts, pos: csbRow.pos,
+      }];
+    }
+  }
   // Sort newest first
   const sorted = [...source].sort((a, b) => b.anio - a.anio || (b.competencia || '').localeCompare(a.competencia || ''));
   const byYear = [];
