@@ -1361,14 +1361,14 @@
       <div class="card-icon">🏆</div>
       <div class="card-name">Primera A</div>
       <div class="card-desc">1ª División<br>Temporada 2026</div>
-      <span class="card-badge badge-gold">1° EN LA TABLA</span>
+      <span class="card-badge badge-gold">Clausura AIFA A 2026</span>
     </div>
 
     <div class="landing-card" onclick="openSection('b')">
       <div class="card-icon">⚽</div>
       <div class="card-name">Primera B</div>
       <div class="card-desc">1ª División B<br>Temporada 2026</div>
-      <span class="card-badge badge-blue">10° EN LA TABLA</span>
+      <span class="card-badge badge-blue">Clausura AIFA B 2026</span>
     </div>
 
     <div class="landing-card" onclick="openSection('nido')">
@@ -2125,7 +2125,7 @@ const SEED_APERTURA_A = [
 
 const DATA_A = {
   nombre: 'Primera A',
-  badge: '1° EN LA TABLA',
+  badge: 'Clausura AIFA A 2026',
   badgeClass: 'badge-gold',
   tabla: [
     { pos:'1°',  equipo:'SANTA BARBARA', copas:'Campeón y Supercopa', pts:31, pj:13, pg:9, pe:4, pp:0, gf:24, gc:8,  df:16, csb:true },
@@ -2243,7 +2243,7 @@ const DATA_B_2024D = {
 
 const DATA_B = {
   nombre: 'Primera B',
-  badge: '10° EN LA TABLA',
+  badge: 'Clausura AIFA B 2026',
   badgeClass: 'badge-blue',
   tabla: [
     { pos:'1°',  equipo:'GEBA AZUL',      copas:'Campeón y Supercopa',  pts:30, pj:13, pg:9, pe:3, pp:1, gf:23, gc:3,  df:20 },
@@ -2790,6 +2790,9 @@ const JUG_SUB_IDS = ['tab-jug-totales','tab-jug-anuales','tab-jug-debuts','tab-j
 function showTab(name, btn) {
   document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  // Restore the header's position badge — only a tournament's own Plantel tab hides it.
+  const sectionBadge = document.getElementById('section-badge');
+  if (sectionBadge) sectionBadge.style.display = '';
 
   // Hide all panels + jugadores sub-panels
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -2839,6 +2842,14 @@ function renderTorneosMenu() {
   document.getElementById('torneos-picker-content').innerHTML = `
     <div class="section-title" style="margin-bottom:20px">🏆 Torneos Actuales – ${currentData.nombre}</div>
     <div class="torneos-picker-grid">${cards}</div>`;
+}
+
+// The header's top-right "posición en la tabla" badge is redundant once the
+// user is looking at a tournament's Plantel tab — hidden there, restored on
+// every other tab (Tabla Completa, Fecha a Fecha, Estadísticas Detalladas...).
+function _syncPlantelBadge(tab, plantelTabKeys) {
+  const badge = document.getElementById('section-badge');
+  if (badge) badge.style.display = plantelTabKeys.includes(tab) ? 'none' : '';
 }
 
 function showTorneo(key) {
@@ -3574,7 +3585,9 @@ function renderRecopa() {
     if (tab === 'rc-fases' && !selectedFaseCopa && sortedCopa.length) {
       selectFaseCopa(sortedCopa[0].rival + '|' + sortedCopa[0].posCSB);
     }
+    _syncPlantelBadge(tab, ['rc-plantel']);
   };
+  _syncPlantelBadge('rc-plantel', ['rc-plantel']);
 
   // Auto-select first copa match for Fase por Fase (background, without switching tab)
   selectedFaseCopa = null;
@@ -3896,7 +3909,9 @@ function renderTorneoApertura() {
     document.querySelectorAll('.ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.ap-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'ap-tab-' + tab));
     if (tab === 'fechas' && autoFecha !== null) selectFecha(autoFecha);
+    _syncPlantelBadge(tab, ['plantel']);
   };
+  _syncPlantelBadge('plantel', ['plantel']);
 
   // Live AIFA standings fetch (background, overwrites seed data)
   if (tabla.length) {
@@ -4165,7 +4180,9 @@ function renderTorneoApertura2025A() {
     });
     document.querySelectorAll('.ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     if (tab === 'fechas' && autoFecha !== null) ap25SelectFecha(autoFecha);
+    _syncPlantelBadge(tab, ['plantel']);
   };
+  _syncPlantelBadge('plantel', ['plantel']);
 
   window.ap25SelectFecha = function(n) {
     document.querySelectorAll('.ap-fecha-btn').forEach(b => {
@@ -4435,7 +4452,9 @@ function renderTorneoApt2024DB() {
         b.classList.toggle('active', b.dataset.tab === tab);
       });
       if (tab === 'fechas' && autoFecha !== null) ap24dSelectFecha(autoFecha);
+      _syncPlantelBadge(tab, ['plantel']);
     };
+    _syncPlantelBadge('plantel', ['plantel']);
 
     window.ap24dSelectFecha = function(n) {
       document.querySelectorAll(`#${CONTAINER} .ap-fecha-btn`).forEach(b => {
