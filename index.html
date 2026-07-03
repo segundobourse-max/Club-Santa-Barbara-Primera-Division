@@ -1253,10 +1253,10 @@
     .rc-match-card.final-card { border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.04); min-width:175px; }
     .rc-team-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 0; font-size:0.76rem; }
     .rc-team-row + .rc-team-row { border-top:1px solid rgba(255,255,255,.05); }
-    .rc-team-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#94a3b8; }
-    .rc-team-name.winner { color:#22c55e; font-weight:800; }
+    .rc-team-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#e2e8f0; font-weight:500; }
+    .rc-team-name.winner { color:#22c55e; font-weight:800; text-shadow:0 0 12px rgba(34,197,94,.25); }
     .rc-team-name.csb-name { color:#fbbf24; font-weight:800; }
-    .rc-team-name.csb-name.winner { color:#4ade80; }
+    .rc-team-name.csb-name.winner { color:#4ade80; text-shadow:0 0 12px rgba(74,222,128,.3); }
     .rc-team-name.tbd { color:rgba(255,255,255,.2); font-style:italic; }
     .rc-score { font-size:0.9rem; font-weight:900; min-width:18px; text-align:center; color:#f1f5f9; }
     .rc-score.win { color:#22c55e; }
@@ -3317,7 +3317,8 @@ function renderRecopa() {
     </div>`;
   }
 
-  function rcMatch(t1, g1, t2, g2, meta, isCsb, isPending, isCSBwinner) {
+  // Call convention is rcMatch(team1, team2, goles1, goles2, meta, isCsb, isPending, csbSlot).
+  function rcMatch(t1, t2, g1, g2, meta, isCsb, isPending, isCSBwinner) {
     // Determine winners
     const w1 = g1 !== null && g2 !== null && g1 > g2;
     const w2 = g1 !== null && g2 !== null && g2 > g1;
@@ -3357,10 +3358,10 @@ function renderRecopa() {
     rcMatch('GEBA BLANCO','SANTA BÁRBARA "A"',null,null,'📅 15/08 20:00 · Por definir',isA,true,'t2'),
   ];
   const rightOctavos = [
-    rcMatch('VILO','SHOLEM',null,null,'📅 07/03 19:00 · Club Vilo, Vte. López',false,true),
-    rcMatch('SANTA BÁRBARA "B"','ZAFADOS F.C.',null,null,'📅 07/03 16:00 · Club Santa Bárbara, Talar',!isA,true,'t1'),
-    rcMatch('HEBRAICA','AFALP "B"',null,null,'📅 07/03 14:00 · Sede Hebraica, Pilar',false,true),
-    rcMatch('CISSAB','LASALLE',null,null,'📅 07/03 17:00 · Cissab, Tristán Suárez',false,true),
+    rcMatch('VILO','SHOLEM',0,1,'📅 07/03 19:00 · Club Vilo, Vte. López',false,false),
+    rcMatch('SANTA BÁRBARA "B"','ZAFADOS F.C.',1,0,'📅 07/03 16:00 · Club Santa Bárbara, Talar',!isA,false,'t1'),
+    rcMatch('HEBRAICA','AFALP "B"',3,2,'📅 07/03 14:00 · Sede Hebraica, Pilar',false,false),
+    rcMatch('CISSAB','LASALLE',3,1,'📅 07/03 17:00 · Cissab, Tristán Suárez',false,false),
   ];
   const rightCuartos = [
     rcMatch('SHOLEM','SANTA BÁRBARA "B"',3,0,'📅 23/05 17:00 · Santa Bárbara, C. Marcos',!isA,false,'t2'),
