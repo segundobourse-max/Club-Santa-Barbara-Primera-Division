@@ -2835,6 +2835,12 @@ function showHistoricoTorneo(key) {
     // is over. currentData is already A or B from whichever section the user is in.
     document.getElementById('tab-torneo-apertura').classList.add('active');
     renderTorneoApertura();
+  } else if (key === 'recopa-2026') {
+    // Primera B's Recopa 2026 already finished (Cuartos de Final) and was moved
+    // out of Torneos Actuales — same full component (Plantel copero/Bracket/Fases),
+    // reached from Torneos Antiguos instead.
+    document.getElementById('tab-torneo-recopa').classList.add('active');
+    renderRecopa();
   } else {
     const el = document.getElementById('tab-torneo-historico-' + key);
     if (el) el.classList.add('active');
@@ -3421,8 +3427,15 @@ function renderRecopa() {
   }).join('');
 
   // ── Render ──────────────────────────────────────────────────────────────
+  // A's Recopa 2026 is still active (Torneos Actuales); B's already finished and
+  // was moved to Torneos Antiguos — the back button follows wherever we came from.
+  const fromAntiguosRC = document.querySelectorAll('#main-nav button')[4]?.classList.contains('active');
+  const backBtnRC = fromAntiguosRC
+    ? `<button class="torneo-back" onclick="showTab('graficos', document.querySelectorAll('#main-nav button')[4])">← Torneos Antiguos</button>`
+    : `<button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>`;
+
   document.getElementById('torneo-recopa-content').innerHTML = `
-    <button class="torneo-back" onclick="showTab('posiciones', document.querySelectorAll('#main-nav button')[1])">← Torneos Actuales</button>
+    ${backBtnRC}
     <div class="section-title" style="margin-bottom:20px">🏅 ${name}</div>
 
     <nav class="ap-tab-nav">
@@ -6974,6 +6987,9 @@ function renderGraficos() {
     '2024|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2024d-b')" },
     '2026|Apertura AIFA A': { fn: "showHistoricoTorneo('apertura-2026')" },
     '2026|Apertura AIFA B': { fn: "showHistoricoTorneo('apertura-2026')" },
+    // Only Primera B's Recopa 2026 lives here — A's Recopa is still active in
+    // Torneos Actuales, so this key never appears in SEED_GRAFICOS (A).
+    '2026|Recopa': { fn: "showHistoricoTorneo('recopa-2026')" },
   };
 
   // isSubcampeon MUST be checked before isCampeon — "Subcampeón" contains the
