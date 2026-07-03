@@ -1011,10 +1011,10 @@
     .hist-tc-pos.campeon-txt  { background:linear-gradient(90deg,#f59e0b,#fbbf24); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
     .hist-tc-pos.subcampeon-txt { background:linear-gradient(90deg,#94a3b8,#cbd5e1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
     .hist-tc-pos.ascenso-txt  { background:linear-gradient(90deg,#16a34a,#22c55e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .hist-tc-pos-sub { display:block; font-size:0.5em; font-weight:800; line-height:1.1; margin-top:2px; }
-    /* Combined Campeón+Ascenso / Ascenso-only labels tend to be longer strings —
-       shrink the liga position size a bit so they never overflow the card. */
-    .hist-tc-pos-liga:has(.hist-tc-pos-sub), .hist-tc-pos-liga.ascenso-txt { font-size:1.7rem; }
+    /* Combined Campeón+Ascenso / Ascenso-only labels are longer strings — shrink
+       the liga position size uniformly (same size for the whole label) so they
+       never overflow the card. */
+    .hist-tc-pos-liga.hist-tc-pos-long { font-size:1.7rem; }
     /* footer — minimal: pts/PJ + colored V-E-D record */
     .hist-tc-line1 { font-size:0.82rem; font-weight:700; color:#e2e8f0; margin-bottom:5px; }
     .hist-tc-line2 { font-size:0.82rem; font-weight:800; }
@@ -6928,7 +6928,7 @@ const SEED_GRAFICOS = [
   { competencia:'Apertura AIFA B', anio:2018, pj:13, pg:6,  pe:3, pp:4,  gf:21, gc:19, vi:1, pts:21,  pos:'5°' },
   { competencia:'Clausura AIFA B', anio:2018, pj:13, pg:2,  pe:5, pp:6,  gf:15, gc:22, vi:3, pts:11,  pos:'10°' },
   // 2017
-  { competencia:'Apertura AIFA C', anio:2017, pj:12, pg:8,  pe:2, pp:2,  gf:29, gc:15, vi:2, pts:26,  pos:'2° Puesto y Ascenso' },
+  { competencia:'Apertura AIFA C', anio:2017, pj:12, pg:8,  pe:2, pp:2,  gf:29, gc:15, vi:2, pts:26,  pos:'2° y Ascenso' },
   { competencia:'Clausura AIFA B', anio:2017, pj:13, pg:5,  pe:3, pp:5,  gf:22, gc:20, vi:1, pts:18,  pos:'?' },
   // 2016
   { competencia:'Apertura AIFA C', anio:2016, pj:12, pg:5,  pe:3, pp:4,  gf:22, gc:19, vi:1, pts:18,  pos:'?' },
@@ -6948,13 +6948,13 @@ function renderGraficos() {
     source = SEED_GRAFICOS;
     const csbRow = (DATA_A.tabla || []).find(t => t.csb);
     if (csbRow && !source.some(t => t.anio === 2026 && t.competencia === 'Apertura AIFA A')) {
-      // Podium finishes get their semantic label (Campeón/Subcampeón) instead of a
-      // bare "1°"/"2°" so the shared color logic below picks up gold/plata correctly.
-      const posSemantic = csbRow.pos === '1°' ? 'Campeón' : csbRow.pos === '2°' ? 'Subcampeón' : csbRow.pos;
+      // Keep the plain "2°"/"1°" text, but force the podium color via forceColor
+      // since the text itself has no "Campeón"/"Subcampeón" word to key off of.
+      const forceColor = csbRow.pos === '1°' ? 'oro' : csbRow.pos === '2°' ? 'plata' : null;
       source = [...source, {
         competencia: 'Apertura AIFA A', anio: 2026,
         pj: csbRow.pj, pg: csbRow.pg, pe: csbRow.pe, pp: csbRow.pp,
-        gf: csbRow.gf, gc: csbRow.gc, vi: null, pts: csbRow.pts, pos: posSemantic,
+        gf: csbRow.gf, gc: csbRow.gc, vi: null, pts: csbRow.pts, pos: csbRow.pos, forceColor,
       }];
     }
   }
@@ -6984,8 +6984,8 @@ function renderGraficos() {
 
   function posLabel(pos) {
     if (!pos || pos === '?') return '—';
-    // Combined Campeón + Ascenso — two lines, gold, no "UP" icon.
-    if (isCampeon(pos) && isAscenso(pos)) return '🏆 Campeón<br><span class="hist-tc-pos-sub">y Ascenso</span>';
+    // Combined Campeón + Ascenso — single line, uniform size, gold, no "UP" icon.
+    if (isCampeon(pos) && isAscenso(pos)) return '🏆 Campeón y Ascenso';
     if (isCampeon(pos))    return '🏆 Campeón';
     if (isSubcampeon(pos)) return '🥈 Subcampeón';
     // Ascenso without being champion (2°/3° y Ascenso) — plain text, no "UP" icon,
@@ -6995,6 +6995,8 @@ function renderGraficos() {
   }
 
   function cardIcon(t) {
+    if (t.forceColor === 'oro')   return '🏆';
+    if (t.forceColor === 'plata') return '🥈';
     if (isCampeon(t.pos))    return '🏆';
     if (isSubcampeon(t.pos)) return '🥈';
     if (isAscenso(t.pos))    return '⬆️';
@@ -7014,10 +7016,11 @@ function renderGraficos() {
 
     const cards = (yearGroup?.torneos || []).map(t => {
       const rich    = RICH[`${t.anio}|${t.competencia}`];
-      const esCamp  = isCampeon(t.pos);
-      const esSubc  = isSubcampeon(t.pos);
-      const esAscensoOnly = !esCamp && isAscenso(t.pos);
+      const esCamp  = t.forceColor ? t.forceColor === 'oro'   : isCampeon(t.pos);
+      const esSubc  = t.forceColor ? t.forceColor === 'plata' : isSubcampeon(t.pos);
+      const esAscensoOnly = !esCamp && !esSubc && !t.forceColor && isAscenso(t.pos);
       const posClass = esCamp ? 'campeon-txt' : esSubc ? 'subcampeon-txt' : esAscensoOnly ? 'ascenso-txt' : '';
+      const isLongLabel = isAscenso(t.pos); // "Campeón y Ascenso" / "N° y Ascenso" — longer text, uniform smaller size
       const esCopa  = /recopa|copa/i.test(t.competencia);
       const richBadge = rich ? `<div class="hist-tc-detail-badge">📊 Estadísticas completas</div>` : '';
       const clickFn = rich
@@ -7035,7 +7038,7 @@ function renderGraficos() {
           <span class="hist-tc-tipo ${esCopa ? 'copa' : 'liga'}">${esCopa ? 'Copa' : 'Liga'}</span>
           <span class="hist-tc-name">${cardIcon(t)} ${t.competencia}</span>
         </div>
-        <div class="hist-tc-pos ${esCopa ? 'hist-tc-pos-copa' : 'hist-tc-pos-liga'} ${posClass}">${posLabel(t.pos)}</div>
+        <div class="hist-tc-pos ${esCopa ? 'hist-tc-pos-copa' : 'hist-tc-pos-liga'} ${posClass}${isLongLabel ? ' hist-tc-pos-long' : ''}">${posLabel(t.pos)}</div>
         ${footer}
         ${richBadge}
         <div class="hist-tc-arrow">›</div>
@@ -7049,9 +7052,9 @@ function renderGraficos() {
   }
 
   function grafDetalle(t) {
-    const esCamp = isCampeon(t.pos);
-    const esSubc = isSubcampeon(t.pos);
-    const esAscensoOnly = !esCamp && isAscenso(t.pos);
+    const esCamp = t.forceColor ? t.forceColor === 'oro'   : isCampeon(t.pos);
+    const esSubc = t.forceColor ? t.forceColor === 'plata' : isSubcampeon(t.pos);
+    const esAscensoOnly = !esCamp && !esSubc && !t.forceColor && isAscenso(t.pos);
     const ef = t.gf - t.gc;
     const pct = v => t.pj ? ((v / t.pj) * 100).toFixed(0) + '%' : '—';
     container.innerHTML = `
