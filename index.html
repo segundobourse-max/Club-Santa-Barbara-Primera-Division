@@ -1328,6 +1328,11 @@
     .pp-cond-sup   { color:#3b82f6; background:rgba(59,130,246,0.12); }
     .pp-cond-banco { color:#94a3b8; background:rgba(148,163,184,0.1); }
     .pp-match-stat { font-size:0.78rem; font-weight:800; }
+    .pp-res-badge { display:inline-block; font-size:0.76rem; font-weight:800; padding:2px 7px; border-radius:6px; margin-left:2px; }
+    .pp-res-win  { color:#4ade80; background:rgba(34,197,94,0.14); }
+    .pp-res-draw { color:#fbbf24; background:rgba(245,158,11,0.14); }
+    .pp-res-loss { color:#f87171; background:rgba(239,68,68,0.14); }
+    .pp-res-na   { color:#f1f5f9; background:rgba(255,255,255,0.06); }
     .pp-nido-loading { margin-top:12px; font-size:0.72rem; color:var(--gris-texto); }
     .pp-metrics-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
     .pp-metric-tabs { display:flex; gap:6px; background:rgba(255,255,255,0.03); border:1px solid #1e2a3a; border-radius:999px; padding:3px; }
@@ -2504,6 +2509,7 @@ function _collectPlayerStats(nombre) {
       else if (j.citado) condicion = 'Banco (no ingresó)';
       return {
         torneo, equipo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
+        gf: m.gf, gc: m.gc,
         condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
         esCapitan: /\(c\)/i.test(j.nombre),
       };
@@ -2676,7 +2682,7 @@ function renderPlayerProfile(nombre) {
         <div class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${m.equipo}', '${String(m.fecha).replace(/'/g, "\\'")}')" title="Ver Fecha ${m.fecha} en detalle">
           <div class="pp-match-main">
             <span class="pp-match-torneo">${m.torneo}</span>
-            <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` (${m.resultado})` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
+            <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` <span class="pp-res-badge pp-res-${m.gf != null && m.gc != null ? (m.gf > m.gc ? 'win' : m.gf === m.gc ? 'draw' : 'loss') : 'na'}">${m.resultado}</span>` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
           </div>
           <div class="pp-match-side">
             ${m.esCapitan ? `<span class="pl-cap-badge" title="Capitán">C</span>` : ''}
@@ -4130,6 +4136,7 @@ function renderTorneoApertura2025A() {
       <button class="ap-tab-btn active" data-tab="plantel"  onclick="ap25SwitchTab('plantel')"> <span class="ap-tab-icon">🌟</span> Plantel</button>
       <button class="ap-tab-btn"        data-tab="tabla"    onclick="ap25SwitchTab('tabla')">   <span class="ap-tab-icon">📊</span> Tabla Completa</button>
       <button class="ap-tab-btn"        data-tab="fechas"   onclick="ap25SwitchTab('fechas')">  <span class="ap-tab-icon">📅</span> Fecha a Fecha</button>
+      <button class="ap-tab-btn"        data-tab="detalladas" onclick="ap25SwitchTab('detalladas')"> <span class="ap-tab-icon">🔍</span> Estadísticas Detalladas</button>
     </nav>
 
     <div class="ap-tab-panel active" id="ap25-tab-plantel">
@@ -4144,12 +4151,16 @@ function renderTorneoApertura2025A() {
       <div class="ap-fechas-title">📅 Fechas del Torneo — Apertura 2025</div>
       <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas disponibles</span>'}</div>
       <div id="${FECHA_TARGET}"></div>
+    </div>
+
+    <div class="ap-tab-panel" id="ap25-tab-detalladas">
+      ${buildEstadisticasDetalladasTab((d.apertura || []).filter(m => /^\d+$/.test(String(m.fecha))), 'ap25')}
     </div>`;
 
   const autoFecha = last ? last.fecha : (allFechas.length ? allFechas[0].n : null);
 
   window.ap25SwitchTab = function(tab) {
-    document.querySelectorAll(`#ap25-tab-plantel, #ap25-tab-tabla, #ap25-tab-fechas`).forEach(p => {
+    document.querySelectorAll(`#ap25-tab-plantel, #ap25-tab-tabla, #ap25-tab-fechas, #ap25-tab-detalladas`).forEach(p => {
       p.classList.toggle('active', p.id === 'ap25-tab-' + tab);
     });
     document.querySelectorAll('.ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -4400,6 +4411,7 @@ function renderTorneoApt2024DB() {
         <button class="ap-tab-btn active" data-tab="plantel" onclick="ap24dSwitchTab('plantel')"><span class="ap-tab-icon">🌟</span> Plantel</button>
         <button class="ap-tab-btn"        data-tab="tabla"   onclick="ap24dSwitchTab('tabla')">  <span class="ap-tab-icon">📊</span> Tabla Completa</button>
         <button class="ap-tab-btn"        data-tab="fechas"  onclick="ap24dSwitchTab('fechas')"> <span class="ap-tab-icon">📅</span> Fecha a Fecha</button>
+        <button class="ap-tab-btn"        data-tab="detalladas" onclick="ap24dSwitchTab('detalladas')"> <span class="ap-tab-icon">🔍</span> Estadísticas Detalladas</button>
       </nav>
       <div class="ap-tab-panel active" id="ap24d-tab-plantel">${buildPlantelTab()}</div>
       <div class="ap-tab-panel" id="ap24d-tab-tabla">
@@ -4409,10 +4421,13 @@ function renderTorneoApt2024DB() {
         <div class="ap-fechas-title">📅 Fechas del Torneo — ${name}</div>
         <div class="ap-fecha-nav">${fechaBtns || '<span style="color:var(--gris-texto);font-size:0.82rem">Sin fechas disponibles</span>'}</div>
         <div id="${FECHA_TARGET}"></div>
+      </div>
+      <div class="ap-tab-panel" id="ap24d-tab-detalladas">
+        ${buildEstadisticasDetalladasTab((d.apertura || []).filter(m => /^\d+$/.test(String(m.fecha))), 'ap24d')}
       </div>`;
 
     window.ap24dSwitchTab = function(tab) {
-      ['plantel','tabla','fechas'].forEach(t => {
+      ['plantel','tabla','fechas','detalladas'].forEach(t => {
         const el = document.getElementById('ap24d-tab-' + t);
         if (el) el.classList.toggle('active', t === tab);
       });
