@@ -7666,13 +7666,32 @@ function refreshCurrentView() {
   }
 }
 
+// Race the Apps Script proxy against the GViz CSV export instead of waiting on
+// the proxy first and only falling back when it throws. The proxy is a Google
+// Apps Script Web App — it has real cold-start latency and Google serializes
+// concurrent executions of the same script, so on a first page load (12 calls
+// hitting it at once) it can make the whole refresh stall for several seconds
+// even though it eventually succeeds. Whichever source answers first wins;
+// if the fastest answer comes back empty (the known silent-empty-result bug
+// on some tab names) we wait for the other source instead of trusting it.
 async function fetchCSV(id, tab, range) {
-  // Try proxy first (no CORS issues), fall back to GViz
-  // Always pass sheetId so the proxy looks in the correct spreadsheet
-  if (tab) {
-    try { return await fetchProxy(tab, range, id); } catch(e) {}
-  }
-  return fetchCSVFallback(id, tab, range);
+  const jobs = [fetchCSVFallback(id, tab, range)];
+  if (tab) jobs.push(fetchProxy(tab, range, id));
+  return new Promise((resolve, reject) => {
+    let pending = jobs.length;
+    let bestEmpty = undefined;
+    let lastErr = null;
+    jobs.forEach(job => {
+      job.then(val => {
+        if (val && val.length) { resolve(val); return; }
+        if (bestEmpty === undefined) bestEmpty = val;
+        if (--pending === 0) resolve(bestEmpty);
+      }).catch(err => {
+        lastErr = err;
+        if (--pending === 0) { bestEmpty !== undefined ? resolve(bestEmpty) : reject(lastErr); }
+      });
+    });
+  });
 }
 
 let _refreshing = false;
@@ -7693,16 +7712,16 @@ async function loadLiveData() {
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A21:J550'),
     fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
     fetchGvizByGid(GS.B_HIST, 1913593241), // "Estadísticas Históricas" — by gid, tab-name fetch silently returns empty
-    fetchProxy('Apertura 2026', 'L3:X33',  GS.A_MAIN),  // global player stats table
-    fetchProxy('Apertura 2026', 'L37:V53', GS.A_MAIN),  // standings table
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L3:X33'),  // global player stats table
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L37:V53'), // standings table
     // ── Apertura 2025 A (historical) ──
     fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A1:J18'),    // basic match list
     fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A22:N524'),  // fecha-a-fecha detail
-    fetchProxy('Apertura 2025', 'K3:X30',  GS.A_MAIN), // player stats
-    fetchProxy('Apertura 2025', 'K32:T48', GS.A_MAIN), // standings
+    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'K3:X30'), // player stats
+    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'K32:T48'), // standings
     // ── Apertura 2026 B — global stats + standings from B_HIST ──
-    fetchProxy('APERTURA 2026 AIFA B', 'L1:X35',  GS.B_HIST), // player stats
-    fetchProxy('APERTURA 2026 AIFA B', 'L37:V55', GS.B_HIST), // standings
+    fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'L1:X35'), // player stats
+    fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'L37:V55'), // standings
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
