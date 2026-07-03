@@ -5344,6 +5344,39 @@ function renderJugadoresMenu() {
     </div>`;
 }
 
+// Merge rows that are the same player entered twice under slightly different
+// spellings/casing (e.g. "Tomas del Frade" vs "Tomas Del Frade") — sums every
+// numeric column and recomputes the averages instead of leaving the player split
+// across two rows with partial stats each.
+function _mergeDuplicatePlayerRows(rows, COL) {
+  const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+  const sumFields = ['pj', 'goles', 'asist', 'gmas', 'titular', 'suplente', 'capitan', 'titulos', 'ascensos', 'rojas', 'vallas'];
+  const groups = new Map();
+  const order = [];
+  for (const r of rows) {
+    const key = normName(r[COL.nombre] || '');
+    if (!key) continue;
+    if (!groups.has(key)) { groups.set(key, []); order.push(key); }
+    groups.get(key).push(r);
+  }
+  return order.map(key => {
+    const dupes = groups.get(key);
+    if (dupes.length === 1) return dupes[0];
+    const merged = [...dupes[0]];
+    merged[COL.nombre] = [...dupes].sort((a, b) => b[COL.nombre].length - a[COL.nombre].length)[0][COL.nombre];
+    if (COL.pos !== undefined) merged[COL.pos] = dupes.find(r => r[COL.pos])?.[COL.pos] || dupes[0][COL.pos];
+    sumFields.forEach(f => {
+      if (COL[f] === undefined) return;
+      merged[COL[f]] = String(dupes.reduce((s, r) => s + num(r[COL[f]]), 0));
+    });
+    const pj = num(merged[COL.pj]);
+    if (COL.promGol   !== undefined) merged[COL.promGol]   = pj > 0 ? (num(merged[COL.goles]) / pj).toFixed(2) : '0';
+    if (COL.promAsist !== undefined) merged[COL.promAsist] = pj > 0 ? (num(merged[COL.asist]) / pj).toFixed(2) : '0';
+    if (COL.promGmas  !== undefined) merged[COL.promGmas]  = pj > 0 ? (num(merged[COL.gmas])  / pj).toFixed(2) : '0';
+    return merged;
+  });
+}
+
 // ── Estadísticas Totales (historical sheet) ──────────────────────────────────
 let _jugTotalesData = null;
 let _jugTotalesCols = [];
@@ -5411,7 +5444,7 @@ function renderJugadoresTotales() {
   const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL.nombre] ?? '').toLowerCase().trim());
 
   _jugTotalesCols = SEED_JUG_ESTADISTICAS[0];
-  _jugTotalesData = SEED_JUG_ESTADISTICAS.slice(1).filter(r => !esExcluido(r));
+  _jugTotalesData = _mergeDuplicatePlayerRows(SEED_JUG_ESTADISTICAS.slice(1).filter(r => !esExcluido(r)), JUG_COL);
   _jugTotalesSort = { col: JUG_COL.pj, asc: false };
   _jugTotalRender();
 
@@ -5419,10 +5452,11 @@ function renderJugadoresTotales() {
     .then(rows => {
       if (!rows || rows.length < 2) return;
       _jugTotalesCols = rows[0].map(c => String(c).trim());
-      _jugTotalesData = rows.slice(1)
+      const parsed = rows.slice(1)
         .filter(r => r.some(c => c !== '' && c !== null))
         .map(r => _jugTotalesCols.map((_, i) => String(r[i] ?? '').trim()))
         .filter(r => !EXCLUIR.includes(r[JUG_COL.nombre].toLowerCase().trim()));
+      _jugTotalesData = _mergeDuplicatePlayerRows(parsed, JUG_COL);
       _jugTotalRender();
     })
     .catch(() => {});
@@ -5685,9 +5719,10 @@ function _fetchJugB(tabName) {
       const rows = json.filter(row => Array.isArray(row) && row.some(c => c !== '' && c !== null));
       if (rows.length < 2) throw new Error('empty (' + rows.length + ' rows)');
       _jugBCols = rows[0].map(c => String(c).trim());
-      _jugBData = rows.slice(1)
+      const parsedB = rows.slice(1)
         .map(r => _jugBCols.map((_, i) => String(r[i] ?? '').trim()))
         .filter(r => !EXCLUIR2.includes(r[JUG_COL_B.nombre]?.toLowerCase().trim()));
+      _jugBData = _mergeDuplicatePlayerRows(parsedB, JUG_COL_B);
       _jugBSort = { col: JUG_COL_B.pj, asc: false };
       console.log('[B Totales] loaded', _jugBData.length, 'players');
       _jugBRender();
