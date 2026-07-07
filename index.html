@@ -7749,8 +7749,11 @@ async function loadLiveData() {
          a25Basic, a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
          bClBasic, bClDet, bClGlobal, bClTabla] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
-    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J18'),    // basic match table
-    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N524'),  // fecha-a-fecha + positions
+    // Ranges given extra headroom (17 fixed match rows exactly fit A1:J18 with
+    // zero margin — any appended/moved-in row, like a late-season closer, would
+    // silently fall outside a tight range and never reach the parser).
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J30'),    // basic match table
+    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N700'),  // fecha-a-fecha + positions
     fetchCSV(GS.B_SIM),
     // ── Apertura AIFA B 2026 (finished, archived into DATA_B_APERTURA2026) ──
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A1:J18'),
