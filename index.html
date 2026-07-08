@@ -7990,17 +7990,17 @@ function parseDetailedMatches(rows, startInSection = false) {
   let pCols = null; // dynamic column map, set from player header row
   // Some older seasons leave "Fecha" (matchday number) and "Lugar" blank and
   // only track the calendar date (in the "Dia" column) — isFecha/isVenue below
-  // would never match those rows, so we also trust position: the row directly
-  // after a "Rival|Fecha|Lugar" section header is always the match anchor.
-  let justSawSectionHeader = false;
+  // would never match those rows. But the row immediately BEFORE a player-
+  // column-header row ("Jugador"/"Nombre") is always the match anchor,
+  // regardless of how many times (once, or per-match) the "Rival|Fecha|Lugar"
+  // section header itself repeats — so use a one-row lookahead for that.
   let seq = 0; // synthetic sequential fecha when the sheet's own numbering is blank
 
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     const c0 = String(row[0]??'').trim();
     const c1 = String(row[1]??'').trim();
     const c2 = String(row[2]??'').trim();
-    const rightAfterHeader = justSawSectionHeader;
-    justSawSectionHeader = false;
 
     // Anchor: section/match header row "Rival | Fecha | Lugar"
     // (basic table uses "Rival | Fecha | Local/Visita" — different c2)
@@ -8008,7 +8008,6 @@ function parseDetailedMatches(rows, startInSection = false) {
       inSection = true;
       current = null;
       pCols = null;
-      justSawSectionHeader = true;
       continue;
     }
 
@@ -8048,8 +8047,10 @@ function parseDetailedMatches(rows, startInSection = false) {
       && c2 !== '1'
       && !/^\d+([.,]\d+)?$/.test(c2)          // not a number (excludes cumulative-stats rows)
       && !/^(ARQ|DF[ICD]?|MC[EOI]?|MD|MI|DC|DEL|AT[ADI]?)$/i.test(c2); // not a position code
+    const nextRowC0 = String(rows[i + 1]?.[0] ?? '').trim();
+    const precedesPlayerHeader = /^(Jugador|Nombre)$/i.test(nextRowC0);
 
-    if ((isFecha && isVenue) || rightAfterHeader) {
+    if ((isFecha && isVenue) || precedesPlayerHeader) {
       seq++;
       const res = (row[7]||'').trim();
       const resOk = /^\d+-\d+$/.test(res) ? res : null;
