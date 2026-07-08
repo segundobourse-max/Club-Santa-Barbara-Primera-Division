@@ -4539,29 +4539,45 @@ function renderTorneoHistoricoGeneric(d, name) {
 }
 
 // ── Historical Primera A seasons (2022-2024) — lazy loaders, fetched by gid
-// since we only have the gid from each Sheet's URL, not its exact tab name.
-// Column layout for the player-stats/standings sections may vary slightly by
-// season (K3:X.. was confirmed for Apertura 2025; assuming the same template
-// for these — if Plantel/Tabla come up empty for one of these, the columns
-// likely shifted and the ranges below need adjusting for that specific gid).
+// with exact per-season ranges (column layout genuinely differs season to
+// season — K vs L columns, different row bounds). "Fecha a Fecha" (detailed
+// lineups) is the only match-level range given per season, so the short
+// "basic partidos" summary (rival/fecha/resultado, used for the Tabla tab's
+// "último partido" card and the Fecha buttons' played/pending state) is
+// derived directly from the parsed detailed matches instead of a separate
+// fetch — there's no dedicated short-table range for these older sheets.
 const _historicoGenericLoaded = {};
-async function _loadHistoricoGeneric(key, dataObj, gid) {
+
+function _deriveBasicFromDetailed(detailed) {
+  return detailed.map(m => ({
+    rival: m.rival, fecha: m.fecha, local: '',
+    resultado: m.resultado, gf: m.gf, gc: m.gc,
+    parciales: '', posCSB: '', posRival: '', obs: '',
+  }));
+}
+
+async function _loadHistoricoGeneric(key, dataObj, cfg) {
   if (_historicoGenericLoaded[key]) return;
   try {
-    const [basic, det, global, tabla] = await Promise.allSettled([
-      fetchGvizByGid(GS.A_MAIN, gid, 'A1:J30'),
-      fetchGvizByGid(GS.A_MAIN, gid, 'A22:N700'),
-      fetchGvizByGid(GS.A_MAIN, gid, 'K3:X40'),
-      fetchGvizByGid(GS.A_MAIN, gid, 'K37:V60'),
-    ]);
-    const ok = r => r.status === 'fulfilled' ? r.value : null;
-    if (ok(basic)) { const m = parseMatches(ok(basic)); if (m.length > 0) dataObj.partidos = m; }
+    const jobs = [
+      fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.fecha),
+      fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.plantel),
+    ];
+    if (cfg.tabla) jobs.push(fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.tabla));
+    const [det, global, tabla] = await Promise.allSettled(jobs);
+    const ok = r => r?.status === 'fulfilled' ? r.value : null;
+
     if (ok(det)) try {
       const d = parseDetailedMatches(ok(det), true);
-      if (d.length > 0) dataObj.apertura = d;
+      if (d.length > 0) {
+        dataObj.apertura = d;
+        dataObj.partidos = _deriveBasicFromDetailed(d);
+      }
     } catch(e) { console.warn(`[${key}] parseDetailedMatches:`, e); }
+
     if (ok(global)) { const p = parseGlobalStats(ok(global)); if (p.length > 0) dataObj.jugadores = p; }
-    if (ok(tabla))  { const t = parseTablaSheet(ok(tabla));   if (t.length >= 3) dataObj.tabla = t; }
+    if (tabla && ok(tabla)) { const t = parseTablaSheet(ok(tabla)); if (t.length >= 3) dataObj.tabla = t; }
+
     _historicoGenericLoaded[key] = true;
     console.log(`[${key}] Loaded:`, dataObj.partidos.length, 'partidos,', dataObj.jugadores.length, 'jugadores,', dataObj.tabla.length, 'tabla');
   } catch(e) {
@@ -4569,13 +4585,23 @@ async function _loadHistoricoGeneric(key, dataObj, gid) {
   }
 }
 
+// Ranges given directly by the club from each sheet — column letters/row
+// bounds genuinely vary season to season, not a shared template.
 const HISTORICO_GENERIC = {
-  'clausura-2025a': { d: DATA_A_CL2025, gid: 926298072,  name: 'Clausura AIFA A 2025' },
-  'apertura-2024a': { d: DATA_A_AP2024, gid: 1770964123, name: 'Apertura AIFA A 2024' },
-  'clausura-2024a': { d: DATA_A_CL2024, gid: 1246526834, name: 'Clausura AIFA A 2024' },
-  'apertura-2023a': { d: DATA_A_AP2023, gid: 1450109032, name: 'Apertura AIFA A 2023' },
-  'clausura-2023a': { d: DATA_A_CL2023, gid: 2015539612, name: 'Clausura AIFA A 2023' },
-  'clausura-2022a': { d: DATA_A_CL2022, gid: 556920736,  name: 'Clausura AIFA A 2022' },
+  'clausura-2025a': { d: DATA_A_CL2025, gid: 926298072,  name: 'Clausura AIFA A 2025',
+    plantel: 'L3:X30', fecha: 'A23:J567', tabla: 'L35:U51' },
+  'apertura-2024a': { d: DATA_A_AP2024, gid: 1770964123, name: 'Apertura AIFA A 2024',
+    plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51' },
+  'clausura-2024a': { d: DATA_A_CL2024, gid: 1246526834, name: 'Clausura AIFA A 2024',
+    plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51' },
+  'apertura-2023a': { d: DATA_A_AP2023, gid: 1450109032, name: 'Apertura AIFA A 2023',
+    plantel: 'L3:X29', fecha: 'A22:J524', tabla: 'K33:U49' },
+  'clausura-2023a': { d: DATA_A_CL2023, gid: 2015539612, name: 'Clausura AIFA A 2023',
+    plantel: 'K3:W29', fecha: 'A20:J472', tabla: 'K34:T50' },
+  // No tabla range given for this one — left null; Tabla Completa shows
+  // "Cargando…" until we get that range.
+  'clausura-2022a': { d: DATA_A_CL2022, gid: 556920736,  name: 'Clausura AIFA A 2022',
+    plantel: 'L3:X30', fecha: 'A20:J464', tabla: null },
 };
 
 function openHistoricoGenerico(key) {
@@ -4585,39 +4611,36 @@ function openHistoricoGenerico(key) {
   if (el) el.classList.add('active');
   renderTorneoHistoricoGeneric(cfg.d, cfg.name);
   if (!_historicoGenericLoaded[key]) {
-    _loadHistoricoGeneric(key, cfg.d, cfg.gid).then(() => {
+    _loadHistoricoGeneric(key, cfg.d, cfg).then(() => {
       if (_historicoGenericLoaded[key]) renderTorneoHistoricoGeneric(cfg.d, cfg.name);
     });
   }
 }
 
 // ── Apertura AIFA D 2024 (Primera B) — lazy loader ───────────────────────
+// Ranges confirmed by the club directly (Plantel L3:X31, Fecha a Fecha
+// A22:J501, Tabla L35:V51) — fetched per-range instead of one whole-sheet
+// pull sliced client-side, same approach as the Primera A historical seasons.
 let _bApt2024dLoaded = false;
 async function _loadBApt2024d() {
   if (_bApt2024dLoaded) return;
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${GS.B_HIST}/gviz/tq?tqx=out:csv&gid=1543882063`;
-    console.log('[Apt2024D] Fetching by gid:', url);
-    const r = await fetch(url, { mode: 'cors' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const raw = parseCSV(await r.text());
-    if (!raw || raw.length < 5) throw new Error('empty: ' + (raw?.length ?? 0));
-    // Pad all rows to 24 cols for safe slicing (spreadsheet goes up to col X)
-    const rows = raw.map(row => { const c = [...row]; while (c.length < 24) c.push(''); return c; });
-    const basicRows  = rows.slice(0, 18).map(r => r.slice(0, 10));
-    const detRows    = rows.slice(20).map(r => r.slice(0, 10));
-    const globalRows = rows.slice(0, 35).map(r => r.slice(11, 24));
-    const tablaRows  = rows.slice(36, 55).map(r => r.slice(11, 22));
+    const [det, global, tabla] = await Promise.allSettled([
+      fetchGvizByGid(GS.B_HIST, 1543882063, 'A22:J501'),
+      fetchGvizByGid(GS.B_HIST, 1543882063, 'L3:X31'),
+      fetchGvizByGid(GS.B_HIST, 1543882063, 'L35:V51'),
+    ]);
+    const ok = r => r.status === 'fulfilled' ? r.value : null;
 
-    try { const m = parseMatches(basicRows);           if (m.length > 0)  DATA_B_2024D.partidos  = m;  } catch(e) { console.warn('Apt2024D parseMatches:', e); }
-    try {
-      const det  = parseDetailedMatches(detRows, true);
-      const jugs = parsePlayers(detRows);
-      if (det.length  > 0) DATA_B_2024D.apertura  = det;
-      if (jugs.length > 0) DATA_B_2024D.jugadores = jugs;
+    if (ok(det)) try {
+      const d = parseDetailedMatches(ok(det), true);
+      if (d.length > 0) {
+        DATA_B_2024D.apertura = d;
+        DATA_B_2024D.partidos = _deriveBasicFromDetailed(d);
+      }
     } catch(e) { console.warn('Apt2024D parseDetailedMatches:', e); }
-    try { const g = parseGlobalStats(globalRows);     if (g.length > 0)   DATA_B_2024D.jugadores = g;  } catch(e) { console.warn('Apt2024D parseGlobalStats:', e); }
-    try { const t = parseTablaSheet(tablaRows);       if (t.length >= 3)  DATA_B_2024D.tabla     = t;  } catch(e) { console.warn('Apt2024D parseTablaSheet:', e); }
+    try { const g = parseGlobalStats(ok(global) || []);     if (g.length > 0)   DATA_B_2024D.jugadores = g;  } catch(e) { console.warn('Apt2024D parseGlobalStats:', e); }
+    try { const t = parseTablaSheet(ok(tabla) || []);       if (t.length >= 3)  DATA_B_2024D.tabla     = t;  } catch(e) { console.warn('Apt2024D parseTablaSheet:', e); }
 
     _bApt2024dLoaded = true;
     console.log('[Apt2024D] Loaded:', DATA_B_2024D.partidos.length, 'partidos,', DATA_B_2024D.jugadores.length, 'jugadores,', DATA_B_2024D.tabla.length, 'tabla');
@@ -8108,7 +8131,7 @@ async function loadLiveData() {
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
   const [aSim, aBasic, aDet, bSim, bApBasic, bApDet, aHist, bHist, aGlobal, aTabla,
-         a25Basic, a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
+         a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
          bClBasic, bClDet, bClGlobal, bClTabla] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     // Ranges given extra headroom (17 fixed match rows exactly fit A1:J18 with
@@ -8124,11 +8147,13 @@ async function loadLiveData() {
     fetchGvizByGid(GS.B_HIST, 1913593241), // "Estadísticas Históricas" — by gid, tab-name fetch silently returns empty
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L3:X33'),  // global player stats table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L37:V53'), // standings table
-    // ── Apertura 2025 A (historical) ──
-    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A1:J18'),    // basic match list
-    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'A22:N524'),  // fecha-a-fecha detail
-    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'K3:X30'), // player stats
-    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'K32:T48'), // standings
+    // ── Apertura AIFA A 2025 (historical) — fetched by gid (677112928) with
+    //    the club-confirmed ranges; "basic partidos" derived from the parsed
+    //    detailed matches since there's no separate short-table range here.
+    //    Tabla left on the original tab-name fetch, per instruction to leave it as-is.
+    fetchGvizByGid(GS.A_MAIN, 677112928, 'A21:J505'),  // fecha-a-fecha detail
+    fetchGvizByGid(GS.A_MAIN, 677112928, 'K3:X30'),    // player stats
+    fetchCSV(GS.A_MAIN, 'Apertura 2025', 'K32:T48'),   // standings (left as-is)
     // ── Apertura 2026 B — global stats + standings from B_HIST ──
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'L1:X35'), // player stats
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'L37:V55'), // standings
@@ -8240,14 +8265,13 @@ async function loadLiveData() {
     if (p.masPartidos.length)   DATA_B.topHist.partidos = p.masPartidos;
   }
 
-  // ── Apertura 2025 A ──
-  if (ok(a25Basic)) {
-    const m = parseMatches(ok(a25Basic));
-    if (m.length > 0) DATA_A_2025.partidos = m;
-  }
+  // ── Apertura AIFA A 2025 ──
   if (ok(a25Det)) try {
     const det = parseDetailedMatches(ok(a25Det), true);
-    if (det.length > 0) DATA_A_2025.apertura = det;
+    if (det.length > 0) {
+      DATA_A_2025.apertura = det;
+      DATA_A_2025.partidos = _deriveBasicFromDetailed(det);
+    }
   } catch(e) { console.warn('parseDetailedMatches A25:', e); }
   if (ok(a25Global)) {
     const p = parseGlobalStats(ok(a25Global));
@@ -8259,7 +8283,7 @@ async function loadLiveData() {
   }
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
-  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClBasic:${s(bClBasic)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Basic)}/${s(a25Global)}/${s(a25Tabla)}`);
+  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClBasic:${s(bClBasic)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Det)}/${s(a25Global)}/${s(a25Tabla)}`);
 
   _refreshing = false;
   const now = new Date();
