@@ -1202,6 +1202,8 @@
     .ap-fd-card { background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:20px 24px; margin-bottom:16px; }
     .ap-fd-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.07); }
     .ap-fd-title { font-size:1.15rem; font-weight:800; color:var(--blanco); }
+    .ap-fd-edit-btn { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:var(--dorado); font-size:0.72rem; font-weight:700; padding:6px 12px; border-radius:8px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:background .15s; }
+    .ap-fd-edit-btn:hover { background:rgba(245,158,11,0.2); }
     .ap-fd-score { font-size:2.6rem; font-weight:900; line-height:1; white-space:nowrap; }
     .ap-fd-pending { font-size:1rem; font-weight:700; color:var(--dorado); }
     .ap-fd-meta { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px 18px; }
@@ -1213,6 +1215,33 @@
     .ap-fd-pill { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.09); border-radius:20px; padding:5px 12px; font-size:0.78rem; color:var(--blanco); }
     .ap-fd-pill-ico { font-size:1rem; line-height:1; }
     .ap-fd-pill-lbl { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-texto); margin-right:2px; }
+
+    /* ── Admin-only lineup editor modal ── */
+    .le-overlay { position:fixed; inset:0; background:rgba(5,8,14,0.75); backdrop-filter:blur(3px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .le-modal { background:linear-gradient(160deg,#1a2236,#131825); border:1px solid #263449; border-radius:16px; width:100%; max-width:520px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+    .le-modal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:18px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .le-modal-title { font-size:1rem; font-weight:800; color:var(--blanco); }
+    .le-modal-sub { font-size:0.74rem; color:var(--gris-texto); margin-top:3px; }
+    .le-close { background:transparent; border:none; color:var(--gris-texto); font-size:1.1rem; cursor:pointer; line-height:1; padding:4px; }
+    .le-close:hover { color:var(--blanco); }
+    .le-modal-body { padding:16px 20px; overflow-y:auto; flex:1; }
+    .le-formacion-label { display:flex; flex-direction:column; gap:6px; font-size:0.72rem; color:var(--gris-texto); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px; }
+    .le-formacion-label input { font-family:inherit; background:rgba(255,255,255,0.05); border:1px solid #263449; border-radius:8px; padding:8px 10px; color:var(--blanco); font-size:0.85rem; font-weight:600; text-transform:none; letter-spacing:normal; }
+    .le-count { font-size:0.76rem; font-weight:700; margin-bottom:10px; }
+    .le-roster { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; }
+    .le-row { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:7px 10px; }
+    .le-name { flex:1; font-size:0.8rem; color:#e2e8f0; font-weight:600; }
+    .le-estado, .le-pos { font-family:inherit; background:rgba(255,255,255,0.06); border:1px solid #263449; border-radius:6px; color:var(--blanco); font-size:0.74rem; padding:5px 6px; }
+    .le-pos { width:64px; }
+    .le-pos:disabled { opacity:0.35; }
+    .le-modal-footer { display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid rgba(255,255,255,0.07); }
+    .le-btn { font-family:inherit; font-size:0.8rem; font-weight:700; padding:9px 16px; border-radius:8px; cursor:pointer; border:none; }
+    .le-btn-secondary { background:rgba(255,255,255,0.06); color:var(--gris-texto); }
+    .le-btn-secondary:hover { background:rgba(255,255,255,0.1); }
+    .le-btn-primary { background:var(--dorado); color:#1a1206; }
+    .le-btn-primary:hover { filter:brightness(1.08); }
+    .le-output { margin:0 20px 14px; padding:10px; background:#0a0e16; border:1px solid #263449; border-radius:8px; color:#a5f3c0; font-family:'Courier New',monospace; font-size:0.72rem; min-height:140px; resize:vertical; }
+    #le-copy-btn { margin:0 20px 18px; }
     .ap-fd-pill-val { font-weight:700; }
     .ap-fd-pill.highlight { background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.25); }
     .ap-fd-form-row { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
@@ -2372,6 +2401,18 @@ let currentData = null;
 let activeCharts = [];
 let selectedFecha = null;
 
+// ── Admin-only lineup editor gate ──
+// Visiting the site with ?admin=<ADMIN_KEY> in the URL unlocks the "✏️ Editar
+// alineación" button in Fecha a Fecha. This is NOT real security (static site,
+// no backend) — it just hides the button from regular visitors. The editor
+// only *generates* a code snippet; nothing is written anywhere automatically,
+// so there's no real write-access risk even if someone else finds the link.
+const ADMIN_KEY = 'csbadmin2026';
+const isAdmin = () => new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
+// Tracks which match/torneo the Fecha a Fecha detail panel is currently showing,
+// so the lineup editor knows which roster to offer and how to label its output.
+window._fechaCtx = null;
+
 function destroyCharts() {
   activeCharts.forEach(c => c.destroy());
   activeCharts = [];
@@ -3230,6 +3271,7 @@ function buildFechaDetailHTML(basic, detail) {
     <div class="ap-fd-card">
       <div class="ap-fd-header">
         <div class="ap-fd-title">Santa Bárbara vs ${rivalDisplay}</div>
+        ${isAdmin() ? `<button class="ap-fd-edit-btn" onclick="openLineupEditor()">✏️ Editar alineación</button>` : ''}
         ${played
           ? `<div class="ap-fd-score" style="color:${resColor}">${resultado}</div>`
           : `<div class="ap-fd-pending">⏳ Pendiente</div>`}
@@ -3329,6 +3371,142 @@ function buildFechaDetailHTML(basic, detail) {
   return summary + pitchSection;
 }
 
+// ──────────────────────────────────────────────
+// ADMIN-ONLY LINEUP EDITOR
+// ──────────────────────────────────────────────
+// Lets the site owner (only reachable with ?admin=<ADMIN_KEY> in the URL) pick
+// a formation, the Once Titular and the Banco de Suplentes for whichever match
+// is on screen in "Fecha a Fecha" — without touching Google Sheets. There's no
+// backend here, so this doesn't save anywhere by itself: it generates a ready
+// -to-paste JS object (matching the exact "jugadores" shape used everywhere
+// else) that the owner sends back to have it merged into the site's data.
+const LINEUP_POS_OPTIONS = ['ARQ','DFI','DFC','DFD','DEF','MI','MC','MCO','MD','DC','DEL','ED','EI'];
+
+function openLineupEditor() {
+  const ctx = window._fechaCtx;
+  if (!ctx || !ctx.d) return;
+  const roster = [...(ctx.d.jugadores || [])]
+    .map(j => j.nombre)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, 'es'));
+
+  const existing = (ctx.d.apertura || []).find(m => String(m.fecha) === String(ctx.fecha));
+  const stateFor = nombre => {
+    const j = existing?.jugadores?.find(jj => normName(jj.nombre) === normName(nombre));
+    if (!j) return { estado: 'no', pos: '' };
+    return { estado: j.titular ? 'tit' : j.citado ? 'banco' : 'no', pos: j.pos || '' };
+  };
+
+  const rows = roster.map(nombre => {
+    const st = stateFor(nombre);
+    const id = 'le-' + slugify(nombre);
+    return `
+      <div class="le-row" data-nombre="${nombre.replace(/"/g,'&quot;')}">
+        <span class="le-name">${nombre}</span>
+        <select class="le-estado" id="${id}-estado" onchange="_leToggleRow('${id}')">
+          <option value="no"    ${st.estado==='no'?'selected':''}>No citado</option>
+          <option value="banco" ${st.estado==='banco'?'selected':''}>Banco</option>
+          <option value="tit"   ${st.estado==='tit'?'selected':''}>Titular</option>
+        </select>
+        <select class="le-pos" id="${id}-pos" ${st.estado==='no'?'disabled':''}>
+          <option value="">Pos.</option>
+          ${LINEUP_POS_OPTIONS.map(p => `<option value="${p}" ${st.pos===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'le-overlay';
+  overlay.id = 'le-overlay';
+  overlay.innerHTML = `
+    <div class="le-modal">
+      <div class="le-modal-header">
+        <div>
+          <div class="le-modal-title">✏️ Editar alineación</div>
+          <div class="le-modal-sub">${ctx.torneo || ''} · vs ${existing?.rival || '—'} · Fecha ${ctx.fecha}</div>
+        </div>
+        <button class="le-close" onclick="closeLineupEditor()">✕</button>
+      </div>
+      <div class="le-modal-body">
+        <label class="le-formacion-label">Formación CSB
+          <input type="text" id="le-formacion" placeholder="ej: 4-1-3-2" value="${existing?.formacionCSB || ''}" />
+        </label>
+        <div class="le-count" id="le-count"></div>
+        <div class="le-roster">${rows}</div>
+      </div>
+      <div class="le-modal-footer">
+        <button class="le-btn le-btn-secondary" onclick="closeLineupEditor()">Cancelar</button>
+        <button class="le-btn le-btn-primary" onclick="_leGenerate()">Generar código</button>
+      </div>
+      <textarea class="le-output" id="le-output" readonly style="display:none"></textarea>
+      <button class="le-btn le-btn-primary" id="le-copy-btn" style="display:none" onclick="_leCopy()">📋 Copiar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  _leUpdateCount();
+}
+
+window._leToggleRow = function(id) {
+  const estado = document.getElementById(id + '-estado').value;
+  document.getElementById(id + '-pos').disabled = estado === 'no';
+  _leUpdateCount();
+};
+
+function _leUpdateCount() {
+  const el = document.getElementById('le-count');
+  if (!el) return;
+  const rows = [...document.querySelectorAll('#le-overlay .le-row')];
+  const tit = rows.filter(r => r.querySelector('.le-estado').value === 'tit').length;
+  const banco = rows.filter(r => r.querySelector('.le-estado').value === 'banco').length;
+  el.textContent = `${tit} titulares · ${banco} en el banco`;
+  el.style.color = tit === 11 ? '#22c55e' : '#f59e0b';
+}
+
+function closeLineupEditor() {
+  const el = document.getElementById('le-overlay');
+  if (el) el.remove();
+}
+
+function _leGenerate() {
+  const formacion = document.getElementById('le-formacion').value.trim();
+  const rows = [...document.querySelectorAll('#le-overlay .le-row')];
+  const jugadores = rows.map(row => {
+    const nombre = row.dataset.nombre;
+    const estado = row.querySelector('.le-estado').value;
+    const pos = row.querySelector('.le-pos').value;
+    return {
+      nombre,
+      citado: estado !== 'no',
+      titular: estado === 'tit',
+      entro: false, salio: false,
+      goles: 0, asist: 0, rojas: 0,
+      pos, porQuien: '',
+    };
+  }).filter(j => j.citado);
+
+  const ctx = window._fechaCtx;
+  const lines = jugadores.map(j =>
+    `      {nombre:'${j.nombre.replace(/'/g,"\\'")}',citado:${j.citado},titular:${j.titular},entro:${j.entro},salio:${j.salio},goles:${j.goles},asist:${j.asist},rojas:${j.rojas},pos:'${j.pos}',porQuien:''},`
+  ).join('\n');
+  const code = `// ${ctx?.torneo || ''} — Fecha ${ctx?.fecha} — Formación: ${formacion || '?'}\n` +
+    `// Pegar/actualizar el bloque "jugadores" del partido correspondiente con esto:\n` +
+    `formacionCSB:'${formacion}',\njugadores:[\n${lines}\n    ],`;
+
+  const out = document.getElementById('le-output');
+  out.value = code;
+  out.style.display = 'block';
+  document.getElementById('le-copy-btn').style.display = 'inline-block';
+}
+
+function _leCopy() {
+  const out = document.getElementById('le-output');
+  out.select();
+  navigator.clipboard?.writeText(out.value).catch(() => document.execCommand('copy'));
+  const btn = document.getElementById('le-copy-btn');
+  const original = btn.textContent;
+  btn.textContent = '✅ Copiado';
+  setTimeout(() => { btn.textContent = original; }, 1500);
+}
+
 function renderFechaDetail(basic, detail, targetId = 'ap-fecha-detail') {
   const el = document.getElementById(targetId);
   if (!el) return;
@@ -3342,6 +3520,7 @@ function selectFecha(n) {
   });
   const basic  = (currentData.partidos || []).find(m => String(m.fecha) === String(n));
   const detail = (currentData.apertura  || []).find(m => String(m.fecha) === String(n));
+  window._fechaCtx = { d: currentData, torneo: currentData.badge || currentData.nombre, fecha: n };
   renderFechaDetail(basic, detail);
 }
 
@@ -3355,10 +3534,13 @@ function selectFaseCopa(key) {
   document.querySelectorAll('#rc-fase-nav .ap-fecha-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.key === key);
   });
-  const d = currentData;
+  // Mirror renderRecopa()'s data source: B's Recopa 2026 lives in the archived
+  // Apertura 2026 B object now that DATA_B points at the new Clausura tab.
+  const d = currentData === DATA_A ? currentData : DATA_B_APERTURA2026;
   const copaPartidos = (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
   const basic  = copaPartidos.find(m => (m.rival + '|' + m.posCSB) === key) || null;
   const detail = (d.apertura || []).find(m => !/^\d+$/.test(String(m.fecha)) && m.rival?.toLowerCase() === basic?.rival?.toLowerCase()) || null;
+  window._fechaCtx = { d, torneo: d.badge || d.nombre, fecha: basic?.fecha ?? key };
   renderFechaDetail(basic, detail, 'rc-fase-detail');
 }
 
@@ -4232,6 +4414,7 @@ function renderTorneoApertura2025A() {
     });
     const basic  = (d.partidos || []).find(m => String(m.fecha) === String(n));
     const detail = (d.apertura  || []).find(m => String(m.fecha) === String(n));
+    window._fechaCtx = { d, torneo: d.badge || d.nombre, fecha: n };
     renderFechaDetail(basic, detail, FECHA_TARGET);
   };
 
@@ -4504,6 +4687,7 @@ function renderTorneoApt2024DB() {
       });
       const basic  = (d.partidos || []).find(m => String(m.fecha) === String(n));
       const detail = (d.apertura  || []).find(m => String(m.fecha) === String(n));
+      window._fechaCtx = { d, torneo: d.badge || d.nombre, fecha: n };
       renderFechaDetail(basic, detail, FECHA_TARGET);
     };
 
