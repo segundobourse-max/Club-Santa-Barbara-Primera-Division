@@ -7988,11 +7988,19 @@ function parseDetailedMatches(rows, startInSection = false) {
   let current = null;
   let inSection = startInSection;
   let pCols = null; // dynamic column map, set from player header row
+  // Some older seasons leave "Fecha" (matchday number) and "Lugar" blank and
+  // only track the calendar date (in the "Dia" column) — isFecha/isVenue below
+  // would never match those rows, so we also trust position: the row directly
+  // after a "Rival|Fecha|Lugar" section header is always the match anchor.
+  let justSawSectionHeader = false;
+  let seq = 0; // synthetic sequential fecha when the sheet's own numbering is blank
 
   for (const row of rows) {
     const c0 = String(row[0]??'').trim();
     const c1 = String(row[1]??'').trim();
     const c2 = String(row[2]??'').trim();
+    const rightAfterHeader = justSawSectionHeader;
+    justSawSectionHeader = false;
 
     // Anchor: section/match header row "Rival | Fecha | Lugar"
     // (basic table uses "Rival | Fecha | Local/Visita" — different c2)
@@ -8000,14 +8008,18 @@ function parseDetailedMatches(rows, startInSection = false) {
       inSection = true;
       current = null;
       pCols = null;
+      justSawSectionHeader = true;
       continue;
     }
 
     if (!inSection) continue;
 
-    // Player column header: "Jugador/Nombre | Citado | Titular | ..."
-    // Detect column positions dynamically so A (has Posicion) and B (no Posicion) both work
-    if (/^(Jugador|Nombre)$/i.test(c0) && /^citado$/i.test(c1)) {
+    // Player column header: "Jugador/Nombre | Citado | Titular | ..." — some
+    // older seasons leave Citado/Titular/Entro/Salio unlabeled (blank header
+    // cells, data still follows the same column positions), so c0 alone is
+    // the reliable signal; keyword detection below still finds whichever
+    // columns genuinely have labels (falls back to fixed positions otherwise).
+    if (/^(Jugador|Nombre)$/i.test(c0)) {
       const h = row.map(c => String(c??'').toLowerCase());
       pCols = {
         citado:   h.findIndex(c => c.includes('citado')),
@@ -8037,13 +8049,14 @@ function parseDetailedMatches(rows, startInSection = false) {
       && !/^\d+([.,]\d+)?$/.test(c2)          // not a number (excludes cumulative-stats rows)
       && !/^(ARQ|DF[ICD]?|MC[EOI]?|MD|MI|DC|DEL|AT[ADI]?)$/i.test(c2); // not a position code
 
-    if (isFecha && isVenue) {
+    if ((isFecha && isVenue) || rightAfterHeader) {
+      seq++;
       const res = (row[7]||'').trim();
       const resOk = /^\d+-\d+$/.test(res) ? res : null;
       let gf = null, gc = null;
       if (resOk) { const p = resOk.split('-').map(Number); gf=p[0]; gc=p[1]; }
       current = {
-        rival: c0, fecha: c1, lugar: c2,
+        rival: c0, fecha: (parseInt(c1) > 0 ? c1 : String(seq)), lugar: c2,
         dia: (row[3]||'').trim(), hora: (row[4]||'').trim(),
         formacionCSB: (row[5]||'').trim(), formacionRival: (row[6]||'').trim(),
         resultado: resOk, gf, gc, jugadores: [],
