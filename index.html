@@ -2290,6 +2290,8 @@ const DATA_A_CL2022 = { nombre:'Primera A — Clausura 2022', partidos:[], apert
 // Kept as its own object (same pattern as DATA_A_2025 / DATA_B_2024D) so the
 // historical "Fecha a Fecha"/Plantel view and player-profile match history for
 // this season keep working after DATA_B starts pointing at the new tab.
+const DATA_B_RECOPA2026 = { nombre: 'Recopa AIFA B 2026', partidos: [], apertura: [], jugadores: [], tabla: [] };
+
 const DATA_B_APERTURA2026 = {
   nombre: 'Apertura AIFA B 2026',
   badge: 'Apertura AIFA B 2026',
@@ -3430,33 +3432,28 @@ function selectFaseCopa(key) {
     b.classList.toggle('active', b.dataset.key === key);
   });
   // Mirror renderRecopa()'s data source: A's Recopa 2026 comes from the
-  // centralized "SB en Copas" sheet; B's lives in the archived Apertura 2026 B
-  // object now that DATA_B points at the new Clausura tab.
+  // centralized "SB en Copas" sheet; B's has its own dedicated Recopa sheet
+  // (DATA_B_RECOPA2026), fully isolated from Primera B's league data.
   const isA = currentData === DATA_A;
-  const d = isA ? currentData : DATA_B_APERTURA2026;
-  const copaPartidos = isA ? (COPA_BLOCKS['Recopa 2026'] || []) : (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
+  const copaPartidos = isA ? (COPA_BLOCKS['Recopa 2026'] || []) : (DATA_B_RECOPA2026.apertura || []);
   const basic  = copaPartidos.find(m => (m.rival + '|' + (m.posCSB || m.fecha)) === key) || null;
-  const detail = isA ? basic : ((d.apertura || []).find(m => !/^\d+$/.test(String(m.fecha)) && m.rival?.toLowerCase() === basic?.rival?.toLowerCase()) || null);
+  const detail = basic;
   renderFechaDetail(basic, detail, 'rc-fase-detail');
 }
 
 function renderRecopa() {
   const isA = currentData === DATA_A;
-  // B's Recopa 2026 already finished — its copa fixtures live in the archived
-  // Apertura AIFA B 2026 season data now that DATA_B points at the new
-  // Clausura AIFA B 2026 sheet tab (this view is only reachable for B via
-  // Torneos Antiguos anyway, since there's no live Recopa card for B anymore).
-  const d = isA ? currentData : DATA_B_APERTURA2026;
+  // B's Recopa 2026 has its own dedicated sheet (DATA_B_RECOPA2026), fully
+  // isolated from Primera B's league data — no more filtering DATA_B's
+  // Apertura season by fecha shape.
+  const d = isA ? currentData : DATA_B_RECOPA2026;
   const name = isA ? 'Recopa AIFA A 2026' : 'Recopa AIFA B 2026';
 
-  // Copa matches. Primera A now reads from the centralized "SB en Copas"
-  // sheet (COPA_BLOCKS) instead of filtering DATA_A.apertura by non-numeric
-  // fecha — that sheet doesn't track rival names, only round/date/score, so
-  // "posCSB"/"instancia" (the round) is what labels these matches everywhere.
-  const copaDetailMatches = isA
-    ? (COPA_BLOCKS['Recopa 2026'] || [])
-    : (d.apertura || []).filter(m => !/^\d+$/.test(String(m.fecha)));
-  const copaPartidos = isA ? copaDetailMatches : (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
+  // Copa matches. Primera A reads from the centralized "SB en Copas" sheet
+  // (COPA_BLOCKS); Primera B reads from its own dedicated Recopa sheet. Both
+  // are parsed the same way and already carry posCSB (Instancia) + local.
+  const copaDetailMatches = isA ? (COPA_BLOCKS['Recopa 2026'] || []) : (d.apertura || []);
+  const copaPartidos = copaDetailMatches;
   function buildRecoPlantelTab() {
     const jugs = _aggregatePlayerStats(copaDetailMatches);
     if (!jugs.length) return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel copero…</div>`;
@@ -8495,7 +8492,7 @@ async function loadLiveData() {
   // Fetch each section as a targeted range so parsers receive exactly the right rows
   const [aSim, aBasic, aDet, bSim, bApBasic, bApDet, aHist, bHist, aGlobal, aTabla,
          a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
-         bClBasic, bClDet, bClGlobal, bClTabla, copasSheet] = await Promise.allSettled([
+         bClBasic, bClDet, bClGlobal, bClTabla, copasSheet, bRecopaSheet] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     // Ranges given extra headroom (17 fixed match rows exactly fit A1:J18 with
     // zero margin — any appended/moved-in row, like a late-season closer, would
@@ -8530,6 +8527,10 @@ async function loadLiveData() {
     //    every year, segmented by title row (see parseCopaSheet). Wide range
     //    for headroom since we don't know the exact row count yet.
     fetchGvizByGid(GS.A_MAIN, 1255047736, 'A1:S1000'),
+    // ── Recopa AIFA B 2026 — its own dedicated sheet tab (same B_HIST
+    //    spreadsheet, new gid), same league-style Fecha a Fecha layout, so
+    //    it's parsed the same way as the centralized "SB en Copas" blocks. ──
+    fetchGvizByGid(GS.B_HIST, 1905553016, 'A1:S1000'),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -8680,6 +8681,24 @@ async function loadLiveData() {
       console.log('[Copas] Parsed titles:', Object.keys(blocks).join(', '));
     }
   } catch(e) { console.warn('parseCopaSheet:', e); }
+
+  // ── Recopa AIFA B 2026 — dedicated sheet, isolated entirely from Primera
+  //    B's league data (no more filtering DATA_B_APERTURA2026 by fecha shape). ──
+  if (ok(bRecopaSheet)) try {
+    const det = parseDetailedMatches(ok(bRecopaSheet), true);
+    if (det.length) {
+      const ROUND_SEQUENCE = ['Octavos de Final', 'Cuartos de Final', 'Semifinal', 'Final'];
+      det.forEach((m, i) => {
+        m.posCSB = ROUND_SEQUENCE[i] || `Ronda ${i + 1}`;
+        // Localía por sede: "Nido" = Local, la Final se juega en cancha
+        // neutral, cualquier otra sede = Visitante.
+        m.local = m.posCSB === 'Final' ? 'NEUTRAL' : /nido/i.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
+      });
+      DATA_B_RECOPA2026.apertura = det;
+      DATA_B_RECOPA2026.partidos = _deriveBasicFromDetailed(det);
+      console.log('[Recopa B 2026] Parsed:', det.length, 'partidos');
+    }
+  } catch(e) { console.warn('parseDetailedMatches (Recopa B 2026):', e); }
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
   console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClBasic:${s(bClBasic)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Det)}/${s(a25Global)}/${s(a25Tabla)} Copas:${s(copasSheet)}`);
