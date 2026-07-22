@@ -4731,6 +4731,23 @@ function _stripApertura2026ACopaLeaks(matches) {
     (m.rival || '').toUpperCase().includes(l.rival) && String(m.fecha).trim() === l.fecha));
 }
 
+// Apertura AIFA B 2026's live sheet has the same overlap: 2 copa fixtures are
+// mislabeled with plain matchday numbers "1" and "12", colliding with the
+// real Fecha 1 (SITAS C) and Fecha 12 (HACOAJ) league rows. Those copa rows
+// are now read from the centralized "SB en Copas" sheet instead. Since the
+// wrong rival names aren't known ahead of time, keep only the row matching
+// the expected rival for each of these two fechas — any other row sharing
+// that fecha number is the copa leak and gets dropped.
+function _stripAperturaB2026CopaLeaks(matches) {
+  const expected = { '1': 'SITAS C', '12': 'HACOAJ' };
+  return matches.filter(m => {
+    const f = String(m.fecha ?? '').trim();
+    const want = expected[f];
+    if (!want) return true;
+    return (m.rival || '').toUpperCase().includes(want);
+  });
+}
+
 function _deriveBasicFromDetailed(detailed) {
   return detailed.map(m => ({
     rival: m.rival, fecha: m.fecha, local: _inferLocalFromLugar(m.lugar),
@@ -8549,18 +8566,21 @@ async function loadLiveData() {
   const bApTbl = ok(bApBasic) ? parseHeaderStandings(ok(bApBasic)) : [];
   if (bApTbl.length >= 5) DATA_B_APERTURA2026.tabla = bApTbl;
 
-  // NOTE: intentionally NOT running _ligaOnlyMatches here — Primera B's copa
-  // fixtures were never migrated to the centralized "SB en Copas" sheet (only
-  // Primera A's were), so this archived object's embedded Recopa AIFA B 2026
-  // matches are still their only data source (see renderRecopa()'s B branch).
+  // NOTE: intentionally NOT running the generic _ligaOnlyMatches here —
+  // Primera B's Recopa fixtures were never migrated to the centralized "SB en
+  // Copas" sheet (only Primera A's were), so this archived object's embedded
+  // Recopa AIFA B 2026 matches (non-numeric fecha) are still their only data
+  // source (see renderRecopa()'s B branch). But 2 OTHER copa rows leak in
+  // mislabeled with plain matchday numbers "1"/"12", colliding with the real
+  // Fecha 1 (SITAS C) / Fecha 12 (HACOAJ) league rows — strip those by name.
   if (ok(bApBasic)) {
-    const m = parseMatches(ok(bApBasic));
+    const m = _stripAperturaB2026CopaLeaks(parseMatches(ok(bApBasic)));
     if (m.length > 0) DATA_B_APERTURA2026.partidos = m;
   }
 
   if (ok(bApDet)) try {
     const p   = parsePlayers(ok(bApDet));
-    const det = parseDetailedMatches(ok(bApDet), true);
+    const det = _stripAperturaB2026CopaLeaks(parseDetailedMatches(ok(bApDet), true));
     if (p.length > 0)   DATA_B_APERTURA2026.jugadores = p;
     if (det.length > 0) DATA_B_APERTURA2026.apertura  = det;
   } catch(e) { console.warn('parseDetailedMatches B (Apertura 2026):', e); }
