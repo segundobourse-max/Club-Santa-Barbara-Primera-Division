@@ -4770,17 +4770,31 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
       fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.fecha),
       fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.plantel),
     ];
-    if (cfg.tabla) jobs.push(fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.tabla));
-    const [det, global, tabla] = await Promise.allSettled(jobs);
+    if (cfg.tabla)  jobs.push(fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.tabla));
+    if (cfg.basico) jobs.push(fetchGvizByGid(GS.A_MAIN, cfg.gid, cfg.basico));
+    const [det, global, tabla, basico] = await Promise.allSettled(jobs);
     const ok = r => r?.status === 'fulfilled' ? r.value : null;
 
+    // Some seasons run a real matchday count below/above 15 — cap to that
+    // season's known count so any leftover copa row numbered sequentially
+    // past the last real fecha (a leak, not a real matchday) gets dropped too.
+    const capFecha = m => !cfg.maxFecha || (parseInt(m.fecha) > 0 && parseInt(m.fecha) <= cfg.maxFecha);
+
     if (ok(det)) try {
-      const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true));
+      const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true)).filter(capFecha);
       if (d.length > 0) {
         dataObj.apertura = d;
         dataObj.partidos = _deriveBasicFromDetailed(d);
       }
     } catch(e) { console.warn(`[${key}] parseDetailedMatches:`, e); }
+
+    // When the club gave us the short "resumen" table range too (parciales/
+    // posición/observaciones — data the detailed Fecha a Fecha block never
+    // carries), use it instead of the blank-fields fallback derived above.
+    if (cfg.basico && ok(basico)) try {
+      const b = _ligaOnlyMatches(parseMatches(ok(basico))).filter(capFecha);
+      if (b.length > 0) dataObj.partidos = b;
+    } catch(e) { console.warn(`[${key}] parseMatches (basico):`, e); }
 
     if (ok(global)) { const p = parseGlobalStats(ok(global)); if (p.length > 0) dataObj.jugadores = p; }
     if (tabla && ok(tabla)) { const t = parseTablaSheet(ok(tabla)); if (t.length >= 3) dataObj.tabla = t; }
@@ -4806,7 +4820,7 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
 // bounds genuinely vary season to season, not a shared template.
 const HISTORICO_GENERIC = {
   'clausura-2025a': { d: DATA_A_CL2025, gid: 926298072,  name: 'Clausura AIFA A 2025',
-    plantel: 'L3:X30', fecha: 'A23:J567', tabla: 'L35:U51' },
+    plantel: 'L3:X30', fecha: 'A23:J567', tabla: 'L35:U51', basico: 'A1:J19', maxFecha: 15 },
   'apertura-2024a': { d: DATA_A_AP2024, gid: 1770964123, name: 'Apertura AIFA A 2024',
     plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51' },
   'clausura-2024a': { d: DATA_A_CL2024, gid: 1246526834, name: 'Clausura AIFA A 2024',
