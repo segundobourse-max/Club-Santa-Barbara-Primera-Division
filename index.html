@@ -2291,6 +2291,9 @@ const DATA_B_AP2025 = { nombre:'Primera B — Apertura 2025', partidos:[], apert
 const DATA_B_CL2025 = { nombre:'Primera B — Clausura 2025', partidos:[], apertura:[], jugadores:[], tabla:[] };
 // Supercopa AIFA B 2025 — dedicated copa sheet, same shape as DATA_B_RECOPA2026.
 const DATA_B_SUPERCOPA2025 = { nombre: 'Supercopa AIFA B 2025', partidos: [], apertura: [], jugadores: [], tabla: [] };
+const DATA_B_CL2024C = { nombre: 'Primera B — Clausura AIFA C 2024', partidos: [], apertura: [], jugadores: [], tabla: [] };
+// Recopa AIFA B 2024 — dedicated copa sheet, same shape as the other B copas.
+const DATA_B_RECOPA2024 = { nombre: 'Recopa AIFA B 2024', partidos: [], apertura: [], jugadores: [], tabla: [] };
 
 // Apertura AIFA B 2026 — this season finished and moved to Torneos Antiguos once
 // Clausura AIFA B 2026 (its own new sheet tab) became the live season below.
@@ -2990,6 +2993,10 @@ function showHistoricoTorneo(key) {
     const el = document.getElementById('tab-torneo-copa-historico');
     if (el) el.classList.add('active');
     renderCopaHistorico(DATA_B_SUPERCOPA2025.apertura || [], 'Supercopa AIFA B 2025', DATA_B_SUPERCOPA2025.jugadores || []);
+  } else if (key === 'recopa-2024b') {
+    const el = document.getElementById('tab-torneo-copa-historico');
+    if (el) el.classList.add('active');
+    renderCopaHistorico(DATA_B_RECOPA2024.apertura || [], 'Recopa AIFA B 2024', DATA_B_RECOPA2024.jugadores || []);
   } else {
     const el = document.getElementById('tab-torneo-historico-' + key);
     if (el) el.classList.add('active');
@@ -4427,8 +4434,9 @@ function renderTorneoApertura2025A() {
 // just parameterized so we don't hand-copy this ~250-line component per season.
 // Only one of these is ever on screen at a time, so fixed "gh-" ids are safe —
 // each call fully replaces the shared container's innerHTML.
-function renderTorneoHistoricoGeneric(d, name) {
+function renderTorneoHistoricoGeneric(d, name, fechaLabels) {
   const CONTAINER = 'torneo-historico-generic-content';
+  fechaLabels = fechaLabels || {};
   const FECHA_TARGET = 'gh-fecha-detail';
 
   const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
@@ -4641,7 +4649,7 @@ function renderTorneoHistoricoGeneric(d, name) {
   // ── Tab 3: Fecha a Fecha ────────────────────────────────────────────────
   const allFechas = partidos.map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null })).sort((a,b) => a.n - b.n);
   const fechaBtns = allFechas.map(f =>
-    `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="ghSelectFecha(${f.n})">Fecha ${f.n}</button>`
+    `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="ghSelectFecha(${f.n})">${fechaLabels[f.n] || 'Fecha ' + f.n}</button>`
   ).join('');
 
   // ── Render shell ────────────────────────────────────────────────────────
@@ -4875,6 +4883,11 @@ const HISTORICO_GENERIC = {
     plantel: 'L3:X33', fecha: 'A19:I527', tabla: 'L37:V53' },
   'clausura-2025b': { d: DATA_B_CL2025, sheet: 'B_HIST', gid: 1928858455, name: 'Clausura AIFA B 2025',
     plantel: 'L3:X35', fecha: 'A19:J528', tabla: 'L38:V54' },
+  // The 16th match (vs SHOLEM ROJO) was a promotion/relegation playoff, not a
+  // regular matchday — relabel it without changing the underlying fecha
+  // number used for sorting/matching.
+  'clausura-2024c-b': { d: DATA_B_CL2024C, sheet: 'B_HIST', gid: 1938147752, name: 'Clausura AIFA C 2024',
+    plantel: 'L3:X33', fecha: 'A20:J562', tabla: 'L37:V53', fechaLabels: { 16: 'Promoción' } },
 };
 
 function openHistoricoGenerico(key) {
@@ -4882,10 +4895,10 @@ function openHistoricoGenerico(key) {
   if (!cfg) return;
   const el = document.getElementById('tab-torneo-historico-generic');
   if (el) el.classList.add('active');
-  renderTorneoHistoricoGeneric(cfg.d, cfg.name);
+  renderTorneoHistoricoGeneric(cfg.d, cfg.name, cfg.fechaLabels);
   if (!_historicoGenericLoaded[key]) {
     _loadHistoricoGeneric(key, cfg.d, cfg).then(() => {
-      if (_historicoGenericLoaded[key]) renderTorneoHistoricoGeneric(cfg.d, cfg.name);
+      if (_historicoGenericLoaded[key]) renderTorneoHistoricoGeneric(cfg.d, cfg.name, cfg.fechaLabels);
     });
   }
 }
@@ -7911,7 +7924,10 @@ function renderGraficos() {
     // Copas" sheet (COPA_BLOCKS). No hand-authored bracket (no cuadro image
     // for these), but real round-by-round data via Plantel + Fase por Fase.
     '2025|Recopa':    { fn: "showHistoricoTorneo('copa-recopa-2025')" },
-    '2024|Recopa':    { fn: "showHistoricoTorneo('copa-recopa-2024')" },
+    // 2024 Recopa exists for BOTH A and B under the same competencia name —
+    // must be team-qualified (see the `rich` lookup above) to avoid one
+    // team's card opening the other's tournament.
+    '2024|Recopa|A':  { fn: "showHistoricoTorneo('copa-recopa-2024')" },
     '2023|Recopa':    { fn: "showHistoricoTorneo('copa-recopa-2023')" },
     '2021|Supercopa': { fn: "showHistoricoTorneo('copa-supercopa-2021')" },
     // Primera B 2025 — league seasons via the same generic component, Supercopa
@@ -7919,6 +7935,10 @@ function renderGraficos() {
     '2025|Apertura AIFA B': { fn: "showHistoricoTorneo('apertura-2025b')" },
     '2025|Clausura AIFA B': { fn: "showHistoricoTorneo('clausura-2025b')" },
     '2025|Supercopa':       { fn: "showHistoricoTorneo('supercopa-2025b')" },
+    // Primera B 2024 — Clausura AIFA C via the generic component, Recopa via
+    // its own dedicated sheet. Team-qualified since A also has a 2024 Recopa.
+    '2024|Clausura AIFA C': { fn: "showHistoricoTorneo('clausura-2024c-b')" },
+    '2024|Recopa|B':        { fn: "showHistoricoTorneo('recopa-2024b')" },
   };
 
   // isSubcampeon MUST be checked before isCampeon — "Subcampeón" contains the
@@ -7961,7 +7981,10 @@ function renderGraficos() {
     ).join('');
 
     const cards = (yearGroup?.torneos || []).map(t => {
-      const rich    = RICH[`${t.anio}|${t.competencia}`];
+      // Team-scoped key first (A/B can both have a "Recopa"/"Supercopa" the
+      // same year, e.g. 2024 Recopa exists for both) — fall back to the plain
+      // key for entries that only ever exist for one team (Apertura AIFA D, etc).
+      const rich    = RICH[`${t.anio}|${t.competencia}|${isA ? 'A' : 'B'}`] || RICH[`${t.anio}|${t.competencia}`];
       const esCamp  = t.forceColor ? t.forceColor === 'oro'   : isCampeon(t.pos);
       const esSubc  = t.forceColor ? t.forceColor === 'plata' : isSubcampeon(t.pos);
       const esAscensoOnly = !esCamp && !esSubc && !t.forceColor && isAscenso(t.pos);
@@ -8540,7 +8563,7 @@ async function loadLiveData() {
   const [aSim, aBasic, aDet, bSim, bApBasic, bApDet, aHist, bHist, aGlobal, aTabla,
          a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
          bClBasic, bClDet, bClGlobal, bClTabla, copasSheet, bRecopaSheet,
-         bSupercopa25Det, bSupercopa25Plantel] = await Promise.allSettled([
+         bSupercopa25Det, bSupercopa25Plantel, bRecopa24Det, bRecopa24Plantel] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     // Ranges given extra headroom (17 fixed match rows exactly fit A1:J18 with
     // zero margin — any appended/moved-in row, like a late-season closer, would
@@ -8582,6 +8605,9 @@ async function loadLiveData() {
     // ── Supercopa AIFA B 2025 — own dedicated sheet, club-confirmed ranges. ──
     fetchGvizByGid(GS.B_HIST, 2137113169, 'A5:I35'),
     fetchGvizByGid(GS.B_HIST, 2137113169, 'L3:X31'),
+    // ── Recopa AIFA B 2024 — own dedicated sheet, club-confirmed ranges. ──
+    fetchGvizByGid(GS.B_HIST, 1723997532, 'A5:I35'),
+    fetchGvizByGid(GS.B_HIST, 1723997532, 'L3:X31'),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -8731,45 +8757,45 @@ async function loadLiveData() {
     }
   } catch(e) { console.warn('parseCopaSheet:', e); }
 
+  // Shared by every Primera B copa on its own dedicated sheet (Recopa 2026,
+  // Supercopa 2025, Recopa 2024, ...): parses the Fecha a Fecha rows, assigns
+  // posCSB by position (knockout rounds always progress Octavos → Cuartos →
+  // Semifinal → Final in order) and localía by sede, then optionally loads
+  // Plantel straight from the sheet's own "acumulado" range.
+  function _loadDedicatedCopaSheet(detResult, plantelResult, dataObj, label) {
+    if (ok(detResult)) try {
+      const det = parseDetailedMatches(ok(detResult), true);
+      if (det.length) {
+        const ROUND_SEQUENCE = ['Octavos de Final', 'Cuartos de Final', 'Semifinal', 'Final'];
+        det.forEach((m, i) => {
+          m.posCSB = ROUND_SEQUENCE[i] || `Ronda ${i + 1}`;
+          // Localía por sede: cualquier cancha propia (Nido, Santa Bárbara,
+          // Marcos, Talar) = Local, la Final se juega en cancha neutral,
+          // cualquier otra sede = Visitante.
+          m.local = m.posCSB === 'Final' ? 'NEUTRAL' : CSB_HOME_VENUES.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
+        });
+        dataObj.apertura = det;
+        dataObj.partidos = _deriveBasicFromDetailed(det);
+        console.log(`[${label}] Parsed:`, det.length, 'partidos');
+      }
+    } catch(e) { console.warn(`parseDetailedMatches (${label}):`, e); }
+    if (plantelResult && ok(plantelResult)) {
+      const p = parseGlobalStats(ok(plantelResult));
+      if (p.length > 0) dataObj.jugadores = p;
+    }
+  }
+
   // ── Recopa AIFA B 2026 — dedicated sheet, isolated entirely from Primera
   //    B's league data (no more filtering DATA_B_APERTURA2026 by fecha shape). ──
-  if (ok(bRecopaSheet)) try {
-    const det = parseDetailedMatches(ok(bRecopaSheet), true);
-    if (det.length) {
-      const ROUND_SEQUENCE = ['Octavos de Final', 'Cuartos de Final', 'Semifinal', 'Final'];
-      det.forEach((m, i) => {
-        m.posCSB = ROUND_SEQUENCE[i] || `Ronda ${i + 1}`;
-        // Localía por sede: cualquier cancha propia (Nido, Santa Bárbara,
-        // Marcos, Talar) = Local, la Final se juega en cancha neutral,
-        // cualquier otra sede = Visitante.
-        m.local = m.posCSB === 'Final' ? 'NEUTRAL' : CSB_HOME_VENUES.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
-      });
-      DATA_B_RECOPA2026.apertura = det;
-      DATA_B_RECOPA2026.partidos = _deriveBasicFromDetailed(det);
-      console.log('[Recopa B 2026] Parsed:', det.length, 'partidos');
-    }
-  } catch(e) { console.warn('parseDetailedMatches (Recopa B 2026):', e); }
+  _loadDedicatedCopaSheet(bRecopaSheet, null, DATA_B_RECOPA2026, 'Recopa B 2026');
 
   // ── Supercopa AIFA B 2025 — own dedicated sheet, isolated from Primera B's
   //    league data. Plantel comes straight from the sheet's own "acumulado"
   //    range instead of being aggregated from matches. ──
-  if (ok(bSupercopa25Det)) try {
-    const det = parseDetailedMatches(ok(bSupercopa25Det), true);
-    if (det.length) {
-      const ROUND_SEQUENCE = ['Octavos de Final', 'Cuartos de Final', 'Semifinal', 'Final'];
-      det.forEach((m, i) => {
-        m.posCSB = ROUND_SEQUENCE[i] || `Ronda ${i + 1}`;
-        m.local = m.posCSB === 'Final' ? 'NEUTRAL' : CSB_HOME_VENUES.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
-      });
-      DATA_B_SUPERCOPA2025.apertura = det;
-      DATA_B_SUPERCOPA2025.partidos = _deriveBasicFromDetailed(det);
-      console.log('[Supercopa B 2025] Parsed:', det.length, 'partidos');
-    }
-  } catch(e) { console.warn('parseDetailedMatches (Supercopa B 2025):', e); }
-  if (ok(bSupercopa25Plantel)) {
-    const p = parseGlobalStats(ok(bSupercopa25Plantel));
-    if (p.length > 0) DATA_B_SUPERCOPA2025.jugadores = p;
-  }
+  _loadDedicatedCopaSheet(bSupercopa25Det, bSupercopa25Plantel, DATA_B_SUPERCOPA2025, 'Supercopa B 2025');
+
+  // ── Recopa AIFA B 2024 — same shape as the Supercopa above. ──
+  _loadDedicatedCopaSheet(bRecopa24Det, bRecopa24Plantel, DATA_B_RECOPA2024, 'Recopa B 2024');
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
   console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClBasic:${s(bClBasic)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Det)}/${s(a25Global)}/${s(a25Tabla)} Copas:${s(copasSheet)}`);
