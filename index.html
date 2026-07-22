@@ -2297,7 +2297,7 @@ const DATA_B_APERTURA2026 = {
   badge: 'Apertura AIFA B 2026',
   badgeClass: 'badge-blue',
   tabla: [
-    { pos:'1°',  equipo:'GEBA AZUL',      copas:'Campeón y Supercopa',  pts:30, pj:13, pg:9, pe:3, pp:1, gf:23, gc:3,  df:20 },
+    { pos:'1°',  equipo:'GEBA AZUL',      copas:'Campeón y Supercopa',  pts:34, pj:15, pg:10, pe:4, pp:1, gf:23, gc:3,  df:20 },
     { pos:'2°',  equipo:'LAMROTH HAKOL',  copas:'Ascenso y Supercopa',  pts:27, pj:13, pg:8, pe:3, pp:2, gf:18, gc:10, df:8 },
     { pos:'3°',  equipo:'UNLAM',          copas:'Promoción y Recopa',   pts:24, pj:13, pg:7, pe:3, pp:3, gf:20, gc:13, df:7 },
     { pos:'4°',  equipo:'ITALIANO B',     copas:'Recopa',               pts:23, pj:13, pg:5, pe:8, pp:0, gf:21, gc:14, df:7 },
@@ -4728,21 +4728,18 @@ function _stripApertura2026ACopaLeaks(matches) {
     (m.rival || '').toUpperCase().includes(l.rival) && String(m.fecha).trim() === l.fecha));
 }
 
-// Apertura AIFA B 2026's live sheet has the same overlap: 2 copa fixtures are
-// mislabeled with plain matchday numbers "1" and "12", colliding with the
-// real Fecha 1 (SITAS C) and Fecha 12 (HACOAJ) league rows. Those copa rows
-// are now read from the centralized "SB en Copas" sheet instead. Since the
-// wrong rival names aren't known ahead of time, keep only the row matching
-// the expected rival for each of these two fechas — any other row sharing
-// that fecha number is the copa leak and gets dropped.
+// Apertura AIFA B 2026's live sheet has the same overlap Primera A had: 2
+// copa fixtures (ZAFADOS, SHOLEM — now read from their own dedicated Recopa
+// AIFA B 2026 sheet instead) are mislabeled with plain matchday numbers "1"
+// and "12", colliding with the real Fecha 1 (SITAS C) and Fecha 12 (HACOAJ)
+// league rows. Strip these two specific rival+fecha combinations by name.
 function _stripAperturaB2026CopaLeaks(matches) {
-  const expected = { '1': 'SITAS C', '12': 'HACOAJ' };
-  return matches.filter(m => {
-    const f = String(m.fecha ?? '').trim();
-    const want = expected[f];
-    if (!want) return true;
-    return (m.rival || '').toUpperCase().includes(want);
-  });
+  const leaks = [
+    { rival: 'ZAFADOS', fecha: '1' },
+    { rival: 'SHOLEM',  fecha: '12' },
+  ];
+  return matches.filter(m => !leaks.some(l =>
+    (m.rival || '').toUpperCase().includes(l.rival) && String(m.fecha).trim() === l.fecha));
 }
 
 function _deriveBasicFromDetailed(detailed) {
@@ -8690,9 +8687,10 @@ async function loadLiveData() {
       const ROUND_SEQUENCE = ['Octavos de Final', 'Cuartos de Final', 'Semifinal', 'Final'];
       det.forEach((m, i) => {
         m.posCSB = ROUND_SEQUENCE[i] || `Ronda ${i + 1}`;
-        // Localía por sede: "Nido" = Local, la Final se juega en cancha
-        // neutral, cualquier otra sede = Visitante.
-        m.local = m.posCSB === 'Final' ? 'NEUTRAL' : /nido/i.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
+        // Localía por sede: cualquier cancha propia (Nido, Santa Bárbara,
+        // Marcos, Talar) = Local, la Final se juega en cancha neutral,
+        // cualquier otra sede = Visitante.
+        m.local = m.posCSB === 'Final' ? 'NEUTRAL' : CSB_HOME_VENUES.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
       });
       DATA_B_RECOPA2026.apertura = det;
       DATA_B_RECOPA2026.partidos = _deriveBasicFromDetailed(det);
