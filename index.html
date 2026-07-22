@@ -900,6 +900,20 @@
       background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
       border-radius: 6px; padding: 3px 8px; white-space: nowrap; text-align: center; min-width: 38px;
     }
+    .ultimo-card-link { cursor: pointer; }
+    .ultimo-card-link:hover { border-color: rgba(245,158,11,0.35); transform: translateX(2px); }
+
+    /* ── Resumen: 2-col split (Últimos Partidos / Mini Tabla) ── */
+    .resumen-split { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+    @media (max-width:800px) { .resumen-split { grid-template-columns:1fr; } }
+    .mini-tabla-wrap { background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 16px; overflow-x:auto; }
+    .mini-tabla { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .mini-tabla th { text-align:left; font-size:0.62rem; text-transform:uppercase; letter-spacing:.06em; color:var(--gris-texto); font-weight:700; padding:0 8px 8px; }
+    .mini-tabla th:not(:first-child), .mini-tabla td:not(:nth-child(2)) { text-align:center; }
+    .mini-tabla td { padding:7px 8px; border-top:1px solid rgba(255,255,255,0.05); color:#e2e8f0; }
+    .mini-tabla tr.csb-row td { color:var(--dorado); font-weight:800; }
+    .mini-tabla-gap td { border-top:none; padding:2px 0; }
+    .mini-tabla-gap-dots { color:#334155; font-size:0.7rem; text-align:center; letter-spacing:2px; }
 
     /* ── APERTURA TORNEO PAGE ── */
     .ap-overview {
@@ -3191,16 +3205,16 @@ function formatISOHora(raw) {
   return raw;
 }
 
-function buildFechaDetailHTML(basic, detail) {
+function buildFechaDetailHTML(basic, detail, fechaLabelOverride) {
   const ph = v => (v === '—' || v === null || v === undefined)
     ? `<span class="ap-fd-ph">—</span>` : v;
 
   const rival     = (detail && detail.rival)          || (basic && basic.rival)          || '—';
-  const fecha     = (detail && detail.fecha)          || (basic && basic.fecha)          || '—';
+  const fecha     = fechaLabelOverride || (detail && detail.fecha) || (basic && basic.fecha) || '—';
   const resultado = (detail && detail.resultado)      || (basic && basic.resultado)      || null;
   const gf        = (detail && detail.gf != null) ? detail.gf : (basic ? basic.gf : null);
   const gc        = (detail && detail.gc != null) ? detail.gc : (basic ? basic.gc : null);
-  const local     = (basic && basic.local)            || '—';
+  const local     = ((detail && detail.local) || (basic && basic.local) || '—').toString();
   const dia       = formatISODia((detail && detail.dia) || '—');
   const hora      = formatISOHora((detail && detail.hora) || '—');
   const lugar     = (detail && detail.lugar)          || '—';
@@ -3208,8 +3222,9 @@ function buildFechaDetailHTML(basic, detail) {
   const formRiv   = (detail && detail.formacionRival) || '—';
   const posCSB    = (basic && basic.posCSB)           || '—';
   const posRival  = (basic && basic.posRival)         || '—';
-  const parciales = (basic && basic.parciales && basic.parciales !== '\\-') ? basic.parciales : '—';
-  const obs       = (basic && basic.obs)              || null;
+  const parciales = ((basic && basic.parciales) || (detail && detail.parciales) || '').toString();
+  const parcialesVal = (parciales && parciales !== '\\-' && parciales !== '-') ? parciales : '—';
+  const obs       = (basic && basic.obs) || (detail && detail.obs) || null;
   const jugadores = (detail && detail.jugadores)      || [];
 
   const played   = resultado !== null;
@@ -3221,20 +3236,24 @@ function buildFechaDetailHTML(basic, detail) {
   const posCSBClean    = posCSB    !== '—' ? String(posCSB).replace(/°+$/, '')    : '—';
   const posRivalClean  = posRival  !== '—' ? String(posRival).replace(/°+$/, '')  : '—';
 
-  // localidad: show only the value itself as label (no redundant prefix)
-  const localVal = local !== '—' ? local : null;
-  const localIco = local === 'Local' ? '🏠' : '✈️';
+  // localidad: case-insensitive — the sheet stores "LOCAL"/"VISITANTE" (all
+  // caps) but this used to compare against "Local" exactly, so the house icon
+  // never actually rendered. Normalize casing for display too.
+  const localNorm = local !== '—' ? local.trim().toUpperCase() : '';
+  const isLocal   = localNorm === 'LOCAL';
+  const localVal  = localNorm === 'LOCAL' ? 'Local' : localNorm === 'VISITANTE' ? 'Visitante' : null;
+  const localIco  = isLocal ? '🏠' : '✈️';
 
   const pills = [
     { ico: '📅', lbl: 'Fecha', val: fecha !== '—' ? `${fecha}` : null },
     { ico: '📆', lbl: 'Día',   val: dia !== '—' ? dia : null },
     { ico: '🕐', lbl: 'Hora',  val: hora !== '—' ? hora : null },
     { ico: '📍', lbl: 'Lugar', val: lugar !== '—' ? lugar : null },
-    { ico: localIco, lbl: localVal, val: localVal, highlight: local === 'Local' },
+    { ico: localIco, lbl: localVal, val: localVal, highlight: isLocal },
   ].filter(p => p.val);
 
   const extraMeta = [
-    parciales !== '—'     ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">⏱</span><span class="ap-fd-pill-lbl">Parcial</span><span class="ap-fd-pill-val">${parciales}</span></span>` : '',
+    parcialesVal !== '—'     ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">⏱</span><span class="ap-fd-pill-lbl">Parcial</span><span class="ap-fd-pill-val">${parcialesVal}</span></span>` : '',
     posCSBClean !== '—'   ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">📊</span><span class="ap-fd-pill-lbl">Pos CSB</span><span class="ap-fd-pill-val">${posCSBClean}°</span></span>` : '',
     posRivalClean !== '—' ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">📊</span><span class="ap-fd-pill-lbl">Pos Rival</span><span class="ap-fd-pill-val">${posRivalClean}°</span></span>` : '',
   ].filter(Boolean).join('');
@@ -3348,10 +3367,10 @@ function buildFechaDetailHTML(basic, detail) {
   return summary + pitchSection;
 }
 
-function renderFechaDetail(basic, detail, targetId = 'ap-fecha-detail') {
+function renderFechaDetail(basic, detail, targetId = 'ap-fecha-detail', fechaLabelOverride) {
   const el = document.getElementById(targetId);
   if (!el) return;
-  el.innerHTML = buildFechaDetailHTML(basic, detail);
+  el.innerHTML = buildFechaDetailHTML(basic, detail, fechaLabelOverride);
 }
 
 function selectFecha(n) {
@@ -4548,12 +4567,45 @@ function renderTorneoHistoricoGeneric(d, name) {
 // fetch — there's no dedicated short-table range for these older sheets.
 const _historicoGenericLoaded = {};
 
+// Historical seasons don't have an explicit LOCAL/VISITANTE column like the
+// current-season basic table does — only a venue name ("Lugar"). Infer it
+// from whether that venue is one of the club's own grounds.
+const CSB_HOME_VENUES = /nido|santa\s*b[aá]rb|marcos|talar/i;
+function _inferLocalFromLugar(lugar) {
+  if (!lugar) return '';
+  return CSB_HOME_VENUES.test(lugar) ? 'LOCAL' : 'VISITANTE';
+}
+
 function _deriveBasicFromDetailed(detailed) {
   return detailed.map(m => ({
-    rival: m.rival, fecha: m.fecha, local: '',
+    rival: m.rival, fecha: m.fecha, local: _inferLocalFromLugar(m.lugar),
     resultado: m.resultado, gf: m.gf, gc: m.gc,
     parciales: '', posCSB: '', posRival: '', obs: '',
   }));
+}
+
+// Recopa AIFA A 2025 — holds the copa fixtures that were miscategorized as
+// league matches in the Clausura/Apertura 2025 sheets (see _moveCopaMatches
+// calls below). No bracket UI yet (needs the actual cuadro data, like 2026's),
+// but the matches themselves are isolated here instead of silently discarded.
+const DATA_A_RECOPA2025 = { nombre: 'Recopa AIFA A 2025', partidos: [], apertura: [], jugadores: [], tabla: [] };
+
+// Pulls matches matching `predicate` out of a league season's parsed data and
+// into a copa data object, so liga stats (Plantel/Tabla/Estadísticas
+// Detalladas) stop counting fixtures that actually belonged to the cup.
+// Dedupes on append — some callers (e.g. Apertura 2025 A, which isn't behind
+// a "loaded once" guard) re-parse their whole season on every 60s refresh, so
+// without this the same match would pile up in targetObj on every cycle.
+function _moveCopaMatches(dataObj, targetObj, predicate) {
+  if (!dataObj.apertura || !dataObj.apertura.length) return;
+  const moved = dataObj.apertura.filter(predicate);
+  if (!moved.length) return;
+  dataObj.apertura = dataObj.apertura.filter(m => !predicate(m));
+  dataObj.partidos = _deriveBasicFromDetailed(dataObj.apertura);
+  const existingKeys = new Set((targetObj.apertura || []).map(m => `${m.rival}|${m.fecha}`));
+  const newOnes = moved.filter(m => !existingKeys.has(`${m.rival}|${m.fecha}`));
+  targetObj.apertura = [...(targetObj.apertura || []), ...newOnes];
+  targetObj.partidos = _deriveBasicFromDetailed(targetObj.apertura);
 }
 
 async function _loadHistoricoGeneric(key, dataObj, cfg) {
@@ -4577,6 +4629,16 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
 
     if (ok(global)) { const p = parseGlobalStats(ok(global)); if (p.length > 0) dataObj.jugadores = p; }
     if (tabla && ok(tabla)) { const t = parseTablaSheet(ok(tabla)); if (t.length >= 3) dataObj.tabla = t; }
+
+    // Clausura AIFA A 2025's sheet mixed in 3 copa fixtures (SITAS C, GEBA
+    // Azul, and the Fecha 18 decider vs GEBA) as if they were league matches —
+    // pull them into Recopa 2025 so liga stats/tabla stop counting them.
+    if (key === 'clausura-2025a') {
+      _moveCopaMatches(dataObj, DATA_A_RECOPA2025, m => {
+        const riv = (m.rival || '').toUpperCase();
+        return riv.includes('SITAS C') || riv.includes('GEBA AZUL') || String(m.fecha) === '18';
+      });
+    }
 
     _historicoGenericLoaded[key] = true;
     console.log(`[${key}] Loaded:`, dataObj.partidos.length, 'partidos,', dataObj.jugadores.length, 'jugadores,', dataObj.tabla.length, 'tabla');
@@ -4833,8 +4895,12 @@ function renderTorneoApt2024DB() {
 
     // ── Tab 3: Fecha a Fecha ────────────────────────────────────────────
     const allFechas = partidos.map(m => ({ n: parseInt(m.fecha), played: m.resultado !== null })).sort((a,b) => a.n - b.n);
+    // Fecha 16 was actually the tie-breaker decider match, not a regular
+    // matchday — relabel it without changing the underlying fecha number
+    // used for sorting/matching.
+    const AP24D_FECHA_LABELS = { 16: 'Final Desempate' };
     const fechaBtns = allFechas.map(f =>
-      `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="ap24dSelectFecha(${f.n})">Fecha ${f.n}</button>`
+      `<button class="ap-fecha-btn ${f.played ? 'played' : 'pending'}" data-fecha="${f.n}" onclick="ap24dSelectFecha(${f.n})">${AP24D_FECHA_LABELS[f.n] || 'Fecha ' + f.n}</button>`
     ).join('');
     const autoFecha = last ? last.fecha : (allFechas.length ? allFechas[0].n : null);
 
@@ -4880,7 +4946,7 @@ function renderTorneoApt2024DB() {
       });
       const basic  = (d.partidos || []).find(m => String(m.fecha) === String(n));
       const detail = (d.apertura  || []).find(m => String(m.fecha) === String(n));
-      renderFechaDetail(basic, detail, FECHA_TARGET);
+      renderFechaDetail(basic, detail, FECHA_TARGET, AP24D_FECHA_LABELS[Number(n)]);
     };
 
     if (autoFecha !== null) ap24dSelectFecha(autoFecha);
@@ -4976,6 +5042,29 @@ function renderResumen() {
     </div>`;
   }
 
+  // Compact standings centered on Santa Bárbara: 3 teams above, CSB itself
+  // (highlighted), 3 teams below — instead of the full table.
+  function miniTablaHtml(tabla) {
+    if (!tabla || !tabla.length) {
+      return `<div class="mini-tabla-wrap"><div style="color:var(--gris-texto);font-size:0.82rem;text-align:center;padding:20px">Tabla no disponible</div></div>`;
+    }
+    const idx = tabla.findIndex(t => t.csb);
+    if (idx === -1) return `<div class="mini-tabla-wrap"><div style="color:var(--gris-texto);font-size:0.82rem;text-align:center;padding:20px">Tabla no disponible</div></div>`;
+    const start = Math.max(0, idx - 3);
+    const end = Math.min(tabla.length, idx + 4);
+    const slice = tabla.slice(start, end);
+    const rows = slice.map(t => `<tr class="${t.csb ? 'csb-row' : ''}">
+      <td>${t.pos}</td><td>${t.csb ? '⭐ ' : ''}${t.equipo}</td><td>${t.pts}</td><td>${t.pj}</td>
+      <td style="color:${t.df > 0 ? '#22c55e' : t.df < 0 ? '#ef4444' : 'inherit'}">${t.df > 0 ? '+' : ''}${t.df ?? '–'}</td>
+    </tr>`).join('');
+    return `<div class="mini-tabla-wrap">
+      <table class="mini-tabla">
+        <thead><tr><th>#</th><th>Equipo</th><th>Pts</th><th>PJ</th><th>DF</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
   const container = document.getElementById('resumen-content');
   container.innerHTML = `
     <div class="section-title" style="margin-bottom:16px">${isA ? '🏆' : '⚽'} Resumen – ${d.nombre}</div>
@@ -5067,28 +5156,37 @@ function renderResumen() {
       </div>
     </div>
 
-    <!-- Últimos 5 partidos -->
-    <div class="section-title" style="margin-bottom:14px">🕐 Últimos 5 Partidos</div>
-    <div class="ultimos-grid">
-      ${(() => {
-        const jugados = (d.partidos || []).filter(p => p.resultado !== null && p.gf !== null);
-        const ultimos = jugados.slice(-5).reverse();
-        return ultimos.map(p => {
-          const res = p.gf > p.gc ? 'win' : p.gf < p.gc ? 'loss' : 'draw';
-          const resLabel = p.gf > p.gc ? 'Victoria' : p.gf < p.gc ? 'Derrota' : 'Empate';
-          const esCopa = isNaN(parseInt(p.fecha));
-          const fechaLabel = esCopa ? p.fecha : `Fecha ${p.fecha}`;
-          return `<div class="ultimo-card ${res}">
-            <div class="ultimo-fecha">${fechaLabel}</div>
-            <div>
-              <div class="ultimo-rival">vs ${p.rival}</div>
-              <div class="ultimo-local">${p.local || ''}</div>
-            </div>
-            <div class="ultimo-resultado ${res}">${p.resultado}</div>
-            <div class="ultimo-pos">${p.posCSB || resLabel}</div>
-          </div>`;
-        }).join('') || '<div style="color:#475569;padding:20px;text-align:center;font-size:0.82rem">Sin partidos jugados aún</div>';
-      })()}
+    <!-- Últimos 5 partidos + mini tabla, lado a lado -->
+    <div class="resumen-split">
+      <div>
+        <div class="section-title" style="margin-bottom:14px">🕐 Últimos 5 Partidos</div>
+        <div class="ultimos-grid">
+          ${(() => {
+            const jugados = (d.partidos || []).filter(p => p.resultado !== null && p.gf !== null);
+            const ultimos = jugados.slice(-5).reverse();
+            return ultimos.map(p => {
+              const res = p.gf > p.gc ? 'win' : p.gf < p.gc ? 'loss' : 'draw';
+              const resLabel = p.gf > p.gc ? 'Victoria' : p.gf < p.gc ? 'Derrota' : 'Empate';
+              const esCopa = isNaN(parseInt(p.fecha));
+              const fechaLabel = esCopa ? p.fecha : `Fecha ${p.fecha}`;
+              const fechaArg = String(p.fecha).replace(/'/g, "\\'");
+              return `<div class="ultimo-card ultimo-card-link ${res}" onclick="goToMatchFecha('${isA ? 'a' : 'b'}', '${fechaArg}')" title="Ver en Fecha a Fecha">
+                <div class="ultimo-fecha">${fechaLabel}</div>
+                <div>
+                  <div class="ultimo-rival">vs ${p.rival}</div>
+                  <div class="ultimo-local">${p.local || ''}</div>
+                </div>
+                <div class="ultimo-resultado ${res}">${p.resultado}</div>
+                <div class="ultimo-pos">${p.posCSB || resLabel}</div>
+              </div>`;
+            }).join('') || '<div style="color:#475569;padding:20px;text-align:center;font-size:0.82rem">Sin partidos jugados aún</div>';
+          })()}
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-bottom:14px">📊 Posiciones</div>
+        ${miniTablaHtml(d.tabla)}
+      </div>
     </div>`;
 }
 
@@ -8285,6 +8383,9 @@ async function loadLiveData() {
     if (det.length > 0) {
       DATA_A_2025.apertura = det;
       DATA_A_2025.partidos = _deriveBasicFromDetailed(det);
+      // Fecha 3 vs Rhino was actually a copa fixture, not league — move it to Recopa 2025.
+      _moveCopaMatches(DATA_A_2025, DATA_A_RECOPA2025, m =>
+        String(m.fecha) === '3' && (m.rival || '').toUpperCase().includes('RHINO'));
     }
   } catch(e) { console.warn('parseDetailedMatches A25:', e); }
   if (ok(a25Global)) {
