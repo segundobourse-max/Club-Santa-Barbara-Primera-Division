@@ -7995,7 +7995,7 @@ function renderGraficos() {
       // Team-scoped key first (A/B can both have a "Recopa"/"Supercopa" the
       // same year, e.g. 2024 Recopa exists for both) — fall back to the plain
       // key for entries that only ever exist for one team (Apertura AIFA D, etc).
-      const rich    = RICH[`${t.anio}|${t.competencia}|${isA ? 'A' : 'B'}`] || RICH[`${t.anio}|${t.competencia}`];
+      const rich    = RICH[`${t.anio}|${t.competencia}|${currentData === DATA_B ? 'B' : 'A'}`] || RICH[`${t.anio}|${t.competencia}`];
       const esCamp  = t.forceColor ? t.forceColor === 'oro'   : isCampeon(t.pos);
       const esSubc  = t.forceColor ? t.forceColor === 'plata' : isSubcampeon(t.pos);
       const esAscensoOnly = !esCamp && !esSubc && !t.forceColor && isAscenso(t.pos);
