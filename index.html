@@ -2294,6 +2294,8 @@ const DATA_B_SUPERCOPA2025 = { nombre: 'Supercopa AIFA B 2025', partidos: [], ap
 const DATA_B_CL2024C = { nombre: 'Primera B — Clausura AIFA C 2024', partidos: [], apertura: [], jugadores: [], tabla: [] };
 // Recopa AIFA B 2024 — dedicated copa sheet, same shape as the other B copas.
 const DATA_B_RECOPA2024 = { nombre: 'Recopa AIFA B 2024', partidos: [], apertura: [], jugadores: [], tabla: [] };
+const DATA_B_AP2023 = { nombre: 'Primera B — Apertura AIFA D 2023', partidos: [], apertura: [], jugadores: [], tabla: [] };
+const DATA_B_CL2023 = { nombre: 'Primera B — Clausura AIFA D 2023', partidos: [], apertura: [], jugadores: [], tabla: [] };
 
 // Apertura AIFA B 2026 — this season finished and moved to Torneos Antiguos once
 // Clausura AIFA B 2026 (its own new sheet tab) became the live season below.
@@ -4888,6 +4890,12 @@ const HISTORICO_GENERIC = {
   // number used for sorting/matching.
   'clausura-2024c-b': { d: DATA_B_CL2024C, sheet: 'B_HIST', gid: 1938147752, name: 'Clausura AIFA C 2024',
     plantel: 'L3:X33', fecha: 'A20:J562', tabla: 'L37:V53', fechaLabels: { 16: 'Promoción' } },
+  // No tabla range given for these two — Tabla Completa shows "Cargando…"
+  // until we get that range.
+  'apertura-2023d-b': { d: DATA_B_AP2023, sheet: 'B_HIST', gid: 1429757852, name: 'Apertura AIFA D 2023',
+    plantel: 'L3:X33', fecha: 'A19:J527', tabla: null },
+  'clausura-2023d-b': { d: DATA_B_CL2023, sheet: 'B_HIST', gid: 1471174410, name: 'Clausura AIFA D 2023',
+    plantel: 'L3:X33', fecha: 'A19:J527', tabla: null },
 };
 
 function openHistoricoGenerico(key) {
@@ -7939,6 +7947,9 @@ function renderGraficos() {
     // its own dedicated sheet. Team-qualified since A also has a 2024 Recopa.
     '2024|Clausura AIFA C': { fn: "showHistoricoTorneo('clausura-2024c-b')" },
     '2024|Recopa|B':        { fn: "showHistoricoTorneo('recopa-2024b')" },
+    // Primera B 2023 — league seasons via the generic component.
+    '2023|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2023d-b')" },
+    '2023|Clausura AIFA D': { fn: "showHistoricoTorneo('clausura-2023d-b')" },
   };
 
   // isSubcampeon MUST be checked before isCampeon — "Subcampeón" contains the
