@@ -3424,7 +3424,7 @@ function selectFaseCopa(key) {
   const isA = currentData === DATA_A;
   const d = isA ? currentData : DATA_B_APERTURA2026;
   const copaPartidos = isA ? (COPA_BLOCKS['Recopa 2026'] || []) : (d.partidos || []).filter(m => !/^\d+$/.test(String(m.fecha)));
-  const basic  = copaPartidos.find(m => (m.rival + '|' + m.posCSB) === key) || null;
+  const basic  = copaPartidos.find(m => (m.rival + '|' + (m.posCSB || m.fecha)) === key) || null;
   const detail = isA ? basic : ((d.apertura || []).find(m => !/^\d+$/.test(String(m.fecha)) && m.rival?.toLowerCase() === basic?.rival?.toLowerCase()) || null);
   renderFechaDetail(basic, detail, 'rc-fase-detail');
 }
@@ -3636,9 +3636,9 @@ function renderRecopa() {
   });
 
   const faseBtns = sortedCopa.map(m => {
-    const key = m.rival + '|' + m.posCSB;
+    const key = m.rival + '|' + (m.posCSB || m.fecha);
     const played = m.resultado !== null;
-    const lbl = m.posCSB || 'Copa';
+    const lbl = m.rival || m.posCSB || 'Copa';
     return `<button class="ap-fecha-btn ${played?'played':'pending'}" data-key="${key}" onclick="selectFaseCopa('${key.replace(/'/g,"\\'")}')">
       ${lbl}
     </button>`;
@@ -3685,7 +3685,7 @@ function renderRecopa() {
     document.querySelectorAll('#torneo-recopa-content .ap-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('#torneo-recopa-content .ap-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'rc-tab-' + tab));
     if (tab === 'rc-fases' && !selectedFaseCopa && sortedCopa.length) {
-      selectFaseCopa(sortedCopa[0].rival + '|' + sortedCopa[0].posCSB);
+      selectFaseCopa(sortedCopa[0].rival + '|' + (sortedCopa[0].posCSB || sortedCopa[0].fecha));
     }
     _syncPlantelBadge(tab, ['rc-plantel']);
   };
@@ -3693,7 +3693,7 @@ function renderRecopa() {
 
   // Auto-select first copa match for Fase por Fase (background, without switching tab)
   selectedFaseCopa = null;
-  if (sortedCopa.length) selectFaseCopa(sortedCopa[0].rival + '|' + sortedCopa[0].posCSB);
+  if (sortedCopa.length) selectFaseCopa(sortedCopa[0].rival + '|' + (sortedCopa[0].posCSB || sortedCopa[0].fecha));
 }
 
 // ──────────────────────────────────────────────
@@ -3749,7 +3749,7 @@ function renderCopaHistorico(matches, name) {
 
   const faseBtns = sorted.map((m, i) => {
     const played = m.resultado !== null;
-    const lbl = m.posCSB || 'Copa';
+    const lbl = m.rival || m.posCSB || 'Copa';
     return `<button class="ap-fecha-btn ${played ? 'played' : 'pending'}" data-idx="${i}" onclick="chSelectFase(${i})">${lbl}</button>`;
   }).join('');
 
@@ -8321,24 +8321,39 @@ function parseDetailedMatches(rows, startInSection = false) {
 }
 
 // Parses the centralized "SB en Copas" sheet (all Recopas/Supercopas, every
-// year, one sheet). Structure per season block:
-//   "Recopa 2023"                          <- title row (only col0, rest blank)
-//   ["Fecha a Fecha"]                       <- optional label, ignored
-//   "Competencia | _ | _ | Instancia | Dia | Año | Resultado"  <- sub-header, ignored
-//   "Recopa | _ | _ | 8vos | Sabado | 2023 | 3-1"              <- match row
-//   "Nombre | _ | _ | Entro | Salio | Goles | Asistencia | Rojas [| Penales]"
+// year, one sheet). The club rebuilt it to use the SAME per-match layout as
+// the league "Fecha a Fecha" tabs (Rival|Fecha|Lugar|Dia|Hora|FormCSB|
+// FormRival|Resultado + Nombre/Jugador|...|Goles|Asistencia|Rojas[|Posicion]),
+// just segmented into season blocks by a title row:
+//   "Recopa 2023"                <- title row (only col0, rest blank)
+//   ["Rival"/"Rival|Fecha|Lugar"] <- header row, ignored (parseDetailedMatches
+//                                    already tolerates either form)
+//   "SITAS C | _ | _ | _ | _ | 4-3-3 | 4-3-1-2 | 3-1"  <- match row
+//   "Jugador | Citado | Titular | ... | Posicion"
 //   ...player rows...
-//   (repeats: another match row + Nombre header for the next round, or a new
-//   season title)
-// Unlike parseDetailedMatches's sheets, this one never records the rival's
-// name in the match row — only Competencia/Instancia/Año/Resultado — so
-// `rival` comes back blank; callers should label matches by round instead.
+// Reuses parseDetailedMatches per season chunk instead of a bespoke parser —
+// same lookahead-to-player-header anchor detection, same blank-Fecha/Lugar
+// tolerance already proven on the league sheets.
 // Returns { 'Recopa 2023': [...matches], 'Supercopa 2021': [...], ... }.
 function parseCopaSheet(rows) {
   const blocks = {};
-  let currentTitle = null;
-  let current = null;
-  let pCols = null;
+  // The very first block (Supercopa 2021) sometimes has no title row of its
+  // own reaching us intact — Google's CSV export can merge a lone title cell
+  // into the header row above it when the sheet has certain multi-line cells
+  // upstream. Defaulting here means that first block's matches still get
+  // attributed correctly instead of silently dropped; if a real "Supercopa
+  // 2021" title row does come through, it just overwrites this default.
+  let currentTitle = 'Supercopa 2021';
+  let bufferStart = 0;
+
+  function flush(endIdx) {
+    if (!currentTitle || endIdx <= bufferStart) return;
+    const chunk = rows.slice(bufferStart, endIdx);
+    const matches = parseDetailedMatches(chunk, true);
+    if (matches.length) {
+      blocks[currentTitle] = (blocks[currentTitle] || []).concat(matches);
+    }
+  }
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -8346,92 +8361,14 @@ function parseCopaSheet(rows) {
     const c1 = String(row[1] ?? '').trim();
     const c2 = String(row[2] ?? '').trim();
     const c3 = String(row[3] ?? '').trim();
-
     // Title row: "Recopa 2023" / "Supercopa 2021" — everything else blank
     if (/^(recopa|supercopa)\s+\d{4}$/i.test(c0) && !c1 && !c2 && !c3) {
+      flush(i);
       currentTitle = c0;
-      current = null;
-      pCols = null;
-      continue;
-    }
-
-    if (!currentTitle) continue; // ignore the pivot/summary table before the first title
-
-    if (/^fecha a fecha$/i.test(c0)) continue;
-    if (/^competencia$/i.test(c0)) continue; // sub-header row, positions are fixed below
-
-    // Player column header
-    if (/^(Jugador|Nombre)$/i.test(c0)) {
-      const h = row.map(c => String(c ?? '').toLowerCase());
-      pCols = {
-        entro:    h.findIndex(c => c.includes('entr')),
-        salio:    h.findIndex(c => c.includes('sali')),
-        goles:    h.findIndex(c => c.includes('gol')),
-        asist:    h.findIndex(c => c.includes('asist')),
-        rojas:    h.findIndex(c => c.includes('roja')),
-        penales:  h.findIndex(c => c.includes('penal')),
-      };
-      continue;
-    }
-
-    if (!c0) continue;
-
-    // Match anchor: the row right before a "Nombre" header (same lookahead
-    // trick as parseDetailedMatches — reliable regardless of how many times
-    // the "Competencia" sub-header repeats).
-    const nextC0 = String(rows[i + 1]?.[0] ?? '').trim();
-    if (/^(Jugador|Nombre)$/i.test(nextC0)) {
-      const instancia = c3;
-      // Normalize abbreviations ("8vos"/"4tos") to the full round names used
-      // everywhere else on the site, so the existing roundOrder sort/labels
-      // (which key off "octavos"/"cuartos"/"semi"/"final") keep working.
-      const instanciaFull = /8vos|octavos/i.test(instancia) ? 'Octavos de Final'
-        : /4tos|cuartos/i.test(instancia) ? 'Cuartos de Final'
-        : /semi/i.test(instancia) ? 'Semifinal'
-        : /final/i.test(instancia) ? 'Final'
-        : instancia;
-      const dia = (row[4] || '').trim();
-      const anio = (row[5] || '').trim();
-      const resRaw = (row[6] || '').trim();
-      const resMatch = resRaw.match(/(\d+)\s*-\s*(\d+)/);
-      const gf = resMatch ? Number(resMatch[1]) : null;
-      const gc = resMatch ? Number(resMatch[2]) : null;
-      current = {
-        rival: '', fecha: instanciaFull || 'Copa', lugar: '', hora: '',
-        dia: anio ? `${dia} ${anio}`.trim() : dia,
-        formacionCSB: '', formacionRival: '',
-        resultado: resMatch ? `${gf}-${gc}` : (resRaw || null), gf, gc,
-        posCSB: instanciaFull || 'Copa',
-        competencia: c0, anio, instancia: instanciaFull, penalesRaw: resRaw,
-        jugadores: [],
-      };
-      if (!blocks[currentTitle]) blocks[currentTitle] = [];
-      blocks[currentTitle].push(current);
-      continue;
-    }
-
-    if (!current) continue;
-
-    // Player row — same fixed fallback positions as parseDetailedMatches
-    // (citado=1, titular=2 are never labeled in this sheet either).
-    const ei = pCols && pCols.entro   >= 0 ? pCols.entro   : 3;
-    const si = pCols && pCols.salio   >= 0 ? pCols.salio   : 4;
-    const gi = pCols && pCols.goles   >= 0 ? pCols.goles   : 5;
-    const ai = pCols && pCols.asist   >= 0 ? pCols.asist   : 6;
-    const ri = pCols && pCols.rojas   >= 0 ? pCols.rojas   : 7;
-
-    const citado  = String(row[1] ?? '').trim() === '1';
-    const titular = String(row[2] ?? '').trim() === '1';
-    const entro   = String(row[ei] ?? '').trim() === '1';
-    const salio   = String(row[si] ?? '').trim() === '1';
-    const goles   = parseInt(row[gi] ?? '0') || 0;
-    const asist   = parseInt(row[ai] ?? '0') || 0;
-    const rojas   = parseInt(row[ri] ?? '0') || 0;
-
-    if (citado || titular || entro) {
-      current.jugadores.push({ nombre: c0, citado, titular, entro, salio, goles, asist, rojas, pos: '', porQuien: '' });
+      bufferStart = i + 1;
     }
   }
+  flush(rows.length);
   return blocks;
 }
 
