@@ -904,8 +904,16 @@
     .ultimo-card-link:hover { border-color: rgba(245,158,11,0.35); transform: translateX(2px); }
 
     /* ── Resumen: 2-col split (Últimos Partidos / Mini Tabla) ── */
-    .resumen-split { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+    .resumen-split { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch; }
     @media (max-width:800px) { .resumen-split { grid-template-columns:1fr; } }
+    .ultimos-col, .mini-tabla-col { display:flex; flex-direction:column; height:100%; }
+    .ultimos-col .ultimos-grid { flex:1; }
+    .mini-tabla-badge {
+      font-size:0.72rem; font-weight:800; color:var(--dorado); text-transform:uppercase;
+      letter-spacing:.04em; margin-bottom:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .mini-tabla-col .mini-tabla-wrap { flex:1; display:flex; flex-direction:column; }
+    .mini-tabla-col .mini-tabla-wrap table { flex:1; }
     .mini-tabla-wrap { background:var(--azul-card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 16px; overflow-x:auto; }
     .mini-tabla { width:100%; border-collapse:collapse; font-size:0.8rem; }
     .mini-tabla th { text-align:left; font-size:0.62rem; text-transform:uppercase; letter-spacing:.06em; color:var(--gris-texto); font-weight:700; padding:0 8px 8px; }
@@ -5044,20 +5052,24 @@ function renderResumen() {
 
   // Compact standings centered on Santa Bárbara: 3 teams above, CSB itself
   // (highlighted), 3 teams below — instead of the full table.
-  function miniTablaHtml(tabla) {
+  function miniTablaHtml(tabla, torneoLabel) {
+    const badge = `<div class="mini-tabla-badge">📊 Tabla de Posiciones${torneoLabel ? ' – ' + torneoLabel : ''}</div>`;
     if (!tabla || !tabla.length) {
-      return `<div class="mini-tabla-wrap"><div style="color:var(--gris-texto);font-size:0.82rem;text-align:center;padding:20px">Tabla no disponible</div></div>`;
+      return `${badge}<div class="mini-tabla-wrap"><div style="color:var(--gris-texto);font-size:0.82rem;text-align:center;padding:20px">Tabla no disponible</div></div>`;
     }
     const idx = tabla.findIndex(t => t.csb);
-    if (idx === -1) return `<div class="mini-tabla-wrap"><div style="color:var(--gris-texto);font-size:0.82rem;text-align:center;padding:20px">Tabla no disponible</div></div>`;
-    const start = Math.max(0, idx - 3);
-    const end = Math.min(tabla.length, idx + 4);
+    if (idx === -1) return `${badge}<div class="mini-tabla-wrap"><div style="color:var(--gris-texto);font-size:0.82rem;text-align:center;padding:20px">Tabla no disponible</div></div>`;
+    // ~8-9 rows total (4 above CSB, CSB, 4 below) so the card's bottom edge
+    // lines up with the 5-card "Últimos Partidos" column instead of leaving
+    // empty space beneath it.
+    const start = Math.max(0, idx - 4);
+    const end = Math.min(tabla.length, idx + 5);
     const slice = tabla.slice(start, end);
     const rows = slice.map(t => `<tr class="${t.csb ? 'csb-row' : ''}">
       <td>${t.pos}</td><td>${t.csb ? '⭐ ' : ''}${t.equipo}</td><td>${t.pts}</td><td>${t.pj}</td>
       <td style="color:${t.df > 0 ? '#22c55e' : t.df < 0 ? '#ef4444' : 'inherit'}">${t.df > 0 ? '+' : ''}${t.df ?? '–'}</td>
     </tr>`).join('');
-    return `<div class="mini-tabla-wrap">
+    return `${badge}<div class="mini-tabla-wrap">
       <table class="mini-tabla">
         <thead><tr><th>#</th><th>Equipo</th><th>Pts</th><th>PJ</th><th>DF</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -5158,7 +5170,7 @@ function renderResumen() {
 
     <!-- Últimos 5 partidos + mini tabla, lado a lado -->
     <div class="resumen-split">
-      <div>
+      <div class="ultimos-col">
         <div class="section-title" style="margin-bottom:14px">🕐 Últimos 5 Partidos</div>
         <div class="ultimos-grid">
           ${(() => {
@@ -5183,9 +5195,8 @@ function renderResumen() {
           })()}
         </div>
       </div>
-      <div>
-        <div class="section-title" style="margin-bottom:14px">📊 Posiciones</div>
-        ${miniTablaHtml(d.tabla)}
+      <div class="mini-tabla-col">
+        ${miniTablaHtml(d.tabla, d.badge || d.nombre)}
       </div>
     </div>`;
 }
