@@ -4798,7 +4798,7 @@ function _moveCopaMatches(dataObj, targetObj, predicate) {
 async function _loadHistoricoGeneric(key, dataObj, cfg) {
   if (_historicoGenericLoaded[key]) return;
   try {
-    const sheetId = cfg.sheet || GS.A_MAIN;
+    const sheetId = cfg.sheet ? GS[cfg.sheet] : GS.A_MAIN;
     const jobs = [
       fetchGvizByGid(sheetId, cfg.gid, cfg.fecha),
       fetchGvizByGid(sheetId, cfg.gid, cfg.plantel),
@@ -4868,9 +4868,12 @@ const HISTORICO_GENERIC = {
     plantel: 'L3:X30', fecha: 'A20:J464', tabla: null },
   // Primera B 2025 — same B_HIST spreadsheet as the live/archived B seasons,
   // each on its own gid.
-  'apertura-2025b': { d: DATA_B_AP2025, sheet: GS.B_HIST, gid: 1121583527, name: 'Apertura AIFA B 2025',
+  // sheet: 'B_HIST' is a key into GS, resolved at load time (not here) —
+  // GS itself is declared later in the file, so referencing GS.B_HIST at this
+  // point (module-eval time) would throw a "before initialization" error.
+  'apertura-2025b': { d: DATA_B_AP2025, sheet: 'B_HIST', gid: 1121583527, name: 'Apertura AIFA B 2025',
     plantel: 'L3:X33', fecha: 'A19:I527', tabla: 'L37:V53' },
-  'clausura-2025b': { d: DATA_B_CL2025, sheet: GS.B_HIST, gid: 1928858455, name: 'Clausura AIFA B 2025',
+  'clausura-2025b': { d: DATA_B_CL2025, sheet: 'B_HIST', gid: 1928858455, name: 'Clausura AIFA B 2025',
     plantel: 'L3:X35', fecha: 'A19:J528', tabla: 'L38:V54' },
 };
 
