@@ -3235,7 +3235,16 @@ function buildFechaDetailHTML(basic, detail, fechaLabelOverride) {
     ? `<span class="ap-fd-ph">—</span>` : v;
 
   const rival     = (detail && detail.rival)          || (basic && basic.rival)          || '—';
-  const fecha     = fechaLabelOverride || (detail && detail.fecha) || (basic && basic.fecha) || '—';
+  // Copa matches don't have a meaningful "Fecha" number (it's synthetic, just
+  // sheet order) — show the knockout round (posCSB) instead when set. League
+  // matches also set posCSB, but to the team's league standing ("5°"), never
+  // a round name, so guard on that to avoid showing a standing as "Fecha".
+  const isRoundName = v => /octavos|cuartos|semifinal|final|ronda/i.test(String(v || ''));
+  const fecha     = fechaLabelOverride
+                     || (isRoundName(detail?.posCSB) && detail.posCSB)
+                     || (detail && detail.fecha)
+                     || (isRoundName(basic?.posCSB) && basic.posCSB)
+                     || (basic && basic.fecha) || '—';
   const resultado = (detail && detail.resultado)      || (basic && basic.resultado)      || null;
   const gf        = (detail && detail.gf != null) ? detail.gf : (basic ? basic.gf : null);
   const gc        = (detail && detail.gc != null) ? detail.gc : (basic ? basic.gc : null);
@@ -3263,11 +3272,13 @@ function buildFechaDetailHTML(basic, detail, fechaLabelOverride) {
 
   // localidad: case-insensitive — the sheet stores "LOCAL"/"VISITANTE" (all
   // caps) but this used to compare against "Local" exactly, so the house icon
-  // never actually rendered. Normalize casing for display too.
+  // never actually rendered. Normalize casing for display too. Copa matches
+  // also carry a "NEUTRAL" state (cancha neutral for a Final).
   const localNorm = local !== '—' ? local.trim().toUpperCase() : '';
   const isLocal   = localNorm === 'LOCAL';
-  const localVal  = localNorm === 'LOCAL' ? 'Local' : localNorm === 'VISITANTE' ? 'Visitante' : null;
-  const localIco  = isLocal ? '🏠' : '✈️';
+  const isNeutral = localNorm === 'NEUTRAL';
+  const localVal  = isLocal ? 'Local' : isNeutral ? 'Neutral' : localNorm === 'VISITANTE' ? 'Visitante' : null;
+  const localIco  = isNeutral ? '🏟️' : isLocal ? '🏠' : '✈️';
 
   const pills = [
     { ico: '📅', lbl: 'Fecha', val: fecha !== '—' ? `${fecha}` : null },
@@ -3638,7 +3649,7 @@ function renderRecopa() {
   const faseBtns = sortedCopa.map(m => {
     const key = m.rival + '|' + (m.posCSB || m.fecha);
     const played = m.resultado !== null;
-    const lbl = m.rival || m.posCSB || 'Copa';
+    const lbl = m.posCSB || m.rival || 'Copa';
     return `<button class="ap-fecha-btn ${played?'played':'pending'}" data-key="${key}" onclick="selectFaseCopa('${key.replace(/'/g,"\\'")}')">
       ${lbl}
     </button>`;
@@ -3749,7 +3760,7 @@ function renderCopaHistorico(matches, name) {
 
   const faseBtns = sorted.map((m, i) => {
     const played = m.resultado !== null;
-    const lbl = m.rival || m.posCSB || 'Copa';
+    const lbl = m.posCSB || m.rival || 'Copa';
     return `<button class="ap-fecha-btn ${played ? 'played' : 'pending'}" data-idx="${i}" onclick="chSelectFase(${i})">${lbl}</button>`;
   }).join('');
 
@@ -4691,6 +4702,20 @@ function _inferLocalFromLugar(lugar) {
   return CSB_HOME_VENUES.test(lugar) ? 'LOCAL' : 'VISITANTE';
 }
 
+// League sheets sometimes still have leftover copa rows mixed in (a "Fecha"
+// cell reading "Recopa"/"Supercopa"/"Copa"/a round name instead of a plain
+// match number) — now that every Copa also lives in its own centralized
+// sheet (COPA_BLOCKS), those rows would double-count in liga stats/tabla/
+// Fecha a Fecha if left in. Keep only matches whose fecha is a real matchday
+// number; anything else (round names, "Recopa 2026", etc.) gets dropped.
+function _ligaOnlyMatches(matches) {
+  return matches.filter(m => {
+    const f = String(m.fecha ?? '').trim();
+    if (/recopa|supercopa|copa/i.test(f)) return false;
+    return /^\d+$/.test(f);
+  });
+}
+
 function _deriveBasicFromDetailed(detailed) {
   return detailed.map(m => ({
     rival: m.rival, fecha: m.fecha, local: _inferLocalFromLugar(m.lugar),
@@ -4735,7 +4760,7 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
     const ok = r => r?.status === 'fulfilled' ? r.value : null;
 
     if (ok(det)) try {
-      const d = parseDetailedMatches(ok(det), true);
+      const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true));
       if (d.length > 0) {
         dataObj.apertura = d;
         dataObj.partidos = _deriveBasicFromDetailed(d);
@@ -4810,7 +4835,7 @@ async function _loadBApt2024d() {
     const ok = r => r.status === 'fulfilled' ? r.value : null;
 
     if (ok(det)) try {
-      const d = parseDetailedMatches(ok(det), true);
+      const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true));
       if (d.length > 0) {
         DATA_B_2024D.apertura = d;
         DATA_B_2024D.partidos = _deriveBasicFromDetailed(d);
@@ -8469,13 +8494,13 @@ async function loadLiveData() {
 
   // PRIMERA A basic match list (A1:J18)
   if (ok(aBasic)) {
-    const m = parseMatches(ok(aBasic));
+    const m = _ligaOnlyMatches(parseMatches(ok(aBasic)));
     if (m.length > 0) DATA_A.partidos = m;
   }
 
   // PRIMERA A detailed match data (A22:N524) — used only for positions + fecha-a-fecha
   if (ok(aDet)) try {
-    const det = parseDetailedMatches(ok(aDet), true);
+    const det = _ligaOnlyMatches(parseDetailedMatches(ok(aDet), true));
     if (det.length > 0) DATA_A.apertura = det;
   } catch(e) { console.warn('parseDetailedMatches A:', e); }
 
@@ -8495,6 +8520,10 @@ async function loadLiveData() {
   const bApTbl = ok(bApBasic) ? parseHeaderStandings(ok(bApBasic)) : [];
   if (bApTbl.length >= 5) DATA_B_APERTURA2026.tabla = bApTbl;
 
+  // NOTE: intentionally NOT running _ligaOnlyMatches here — Primera B's copa
+  // fixtures were never migrated to the centralized "SB en Copas" sheet (only
+  // Primera A's were), so this archived object's embedded Recopa AIFA B 2026
+  // matches are still their only data source (see renderRecopa()'s B branch).
   if (ok(bApBasic)) {
     const m = parseMatches(ok(bApBasic));
     if (m.length > 0) DATA_B_APERTURA2026.partidos = m;
@@ -8522,13 +8551,13 @@ async function loadLiveData() {
   if (bClTbl.length >= 5) DATA_B.tabla = bClTbl;
 
   if (ok(bClBasic)) {
-    const m = parseMatches(ok(bClBasic));
+    const m = _ligaOnlyMatches(parseMatches(ok(bClBasic)));
     if (m.length > 0) DATA_B.partidos = m;
   }
 
   if (ok(bClDet)) try {
     const p   = parsePlayers(ok(bClDet));
-    const det = parseDetailedMatches(ok(bClDet), true);
+    const det = _ligaOnlyMatches(parseDetailedMatches(ok(bClDet), true));
     if (p.length > 0)   DATA_B.jugadores = p;
     if (det.length > 0) DATA_B.apertura  = det;
   } catch(e) { console.warn('parseDetailedMatches B (Clausura 2026):', e); }
@@ -8563,7 +8592,7 @@ async function loadLiveData() {
 
   // ── Apertura AIFA A 2025 ──
   if (ok(a25Det)) try {
-    const det = parseDetailedMatches(ok(a25Det), true);
+    const det = _ligaOnlyMatches(parseDetailedMatches(ok(a25Det), true));
     if (det.length > 0) {
       DATA_A_2025.apertura = det;
       DATA_A_2025.partidos = _deriveBasicFromDetailed(det);
@@ -8585,6 +8614,19 @@ async function loadLiveData() {
   if (ok(copasSheet)) try {
     const blocks = parseCopaSheet(ok(copasSheet));
     if (Object.keys(blocks).length) {
+      // The sheet no longer labels each match's round (Instancia) — knockout
+      // cups always progress Octavos → Cuartos → Semifinal → Final in order
+      // and stop the moment the team is eliminated, so position within each
+      // title's chronological match list maps directly to the round reached.
+      const ROUND_SEQUENCE = ['Octavos de Final', 'Cuartos de Final', 'Semifinal', 'Final'];
+      for (const matches of Object.values(blocks)) {
+        matches.forEach((m, i) => {
+          m.posCSB = ROUND_SEQUENCE[i] || `Ronda ${i + 1}`;
+          // Localía por sede: "Nido" = Local, la Final se juega en cancha
+          // neutral, cualquier otra sede = Visitante.
+          m.local = m.posCSB === 'Final' ? 'NEUTRAL' : /nido/i.test(m.lugar || '') ? 'LOCAL' : 'VISITANTE';
+        });
+      }
       COPA_BLOCKS = blocks;
       console.log('[Copas] Parsed titles:', Object.keys(blocks).join(', '));
     }
