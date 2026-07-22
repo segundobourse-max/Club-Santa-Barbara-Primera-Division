@@ -8688,6 +8688,11 @@ async function loadLiveData() {
   let _nidoQuery   = '';
   let _nidoRank    = null;
   let _nidoLoading = false;
+  let _nidoPos     = 'todas';
+  let _nidoPosOpen = false;
+
+  const POSICIONES = ['ARQ', 'LI', 'LD', 'DFC', 'MC', 'DEL'];
+  const normPos = p => String(p || '').trim().toUpperCase();
 
   const pf = v => { const n = parseFloat(String(v || '').replace(',', '.')); return isNaN(n) ? 0 : n; };
 
@@ -8800,6 +8805,9 @@ async function loadLiveData() {
 
   function filteredData() {
     let data = activeDataset();
+    if (_nidoPos !== 'todas') {
+      data = data.filter(p => normPos(p.pos) === _nidoPos);
+    }
     if (_nidoQuery) {
       const q = normName(_nidoQuery);
       data = data.filter(p => normName(p.nombre).includes(q));
@@ -8979,6 +8987,20 @@ async function loadLiveData() {
       return `<button onclick="window._nidoTeam('${f.key}')" style="padding:6px 15px;border-radius:20px;background:${bg};color:${cl};border:${bd};font-size:12px;font-weight:${fw};cursor:pointer;transition:all .15s;">${f.label}</button>`;
     }).join('');
 
+    const posOptions = ['todas', ...POSICIONES];
+    const posLabel = _nidoPos === 'todas' ? 'TODAS' : _nidoPos;
+    const posOpen = _nidoPosOpen;
+    const posMenu = posOptions.map(p => {
+      const active = _nidoPos === p;
+      const lbl = p === 'todas' ? 'TODAS' : p;
+      return `<div onclick="window._nidoPosSelect('${p}')" style="padding:7px 14px;font-size:12px;font-weight:${active ? '700' : '500'};color:${active ? '#eab308' : '#d1d5db'};background:${active ? 'rgba(234,179,8,0.12)' : 'transparent'};cursor:pointer;white-space:nowrap;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='${active ? 'rgba(234,179,8,0.12)' : 'transparent'}'">${lbl}</div>`;
+    }).join('');
+    const posDropdown = `
+      <div style="position:relative;display:inline-block;">
+        <button onclick="window._nidoPosToggle()" style="padding:6px 15px;border-radius:20px;background:${_nidoPos !== 'todas' ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)'};color:${_nidoPos !== 'todas' ? '#eab308' : '#9ca3af'};border:1px solid ${_nidoPos !== 'todas' ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.08)'};font-size:12px;font-weight:${_nidoPos !== 'todas' ? '700' : '500'};cursor:pointer;display:flex;align-items:center;gap:5px;">POS: ${posLabel} <span style="font-size:9px;opacity:.7;">▾</span></button>
+        ${posOpen ? `<div style="position:absolute;top:calc(100% + 4px);left:0;z-index:20;background:#1a1d29;border:1px solid rgba(255,255,255,0.1);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);overflow:hidden;min-width:110px;">${posMenu}</div>` : ''}
+      </div>`;
+
     const rankBtns = RANK_METRICS.map(m => {
       const active = _nidoRank === m.key;
       const bg = active ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.05)';
@@ -8998,6 +9020,10 @@ async function loadLiveData() {
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
           <span style="font-size:11px;color:#4b5563;font-weight:600;letter-spacing:.05em;white-space:nowrap;">PLANTEL</span>
           ${teamBtns}
+        </div>
+        <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+          ${posDropdown}
         </div>
         <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
@@ -9055,6 +9081,8 @@ async function loadLiveData() {
   };
 
   window._nidoTeam = function(t) { _nidoTeam = t; _renderNidoContent(); };
+  window._nidoPosToggle = function() { _nidoPosOpen = !_nidoPosOpen; _renderNidoContent(); };
+  window._nidoPosSelect = function(p) { _nidoPos = p; _nidoPosOpen = false; _renderNidoContent(); };
   // Only refresh the results table on each keystroke — never touch the input's
   // parent innerHTML, or the DOM node (and keyboard focus) would be destroyed.
   window._nidoSearch = function(q) {
