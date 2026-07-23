@@ -8707,18 +8707,33 @@ async function loadLiveData() {
   const aTbl = ok(aSim) ? parseSimStandings(ok(aSim), 5) : [];
   if (aTbl.length >= 10) DATA_A.tabla = aTbl;
 
-  // Apertura AIFA A 2026 (finished, archived into DATA_A_APERTURA2026) —
-  // basic match list (A1:J18)
-  if (ok(aBasic)) {
-    const m = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseMatches(ok(aBasic))));
-    if (m.length > 0) DATA_A_APERTURA2026.partidos = m;
-  }
-
-  // Apertura AIFA A 2026 detailed match data (A22:N524) — positions + fecha-a-fecha
+  // Apertura AIFA A 2026 detailed match data — positions + fecha-a-fecha, now
+  // fetched by gid (see loadLiveData's fetchGvizByGid(GS.A_MAIN, 2018022084, ...)).
+  // partidos is derived from this (guaranteed real resultado/local) rather
+  // than the old 'Apertura 2026' tab-name basic table below, which the club
+  // reset to blank placeholder rows when they moved Fecha a Fecha onto its
+  // own gid — it still parses as non-empty, just with every result blank.
   if (ok(aDet)) try {
     const det = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseDetailedMatches(ok(aDet), true)));
-    if (det.length > 0) DATA_A_APERTURA2026.apertura = det;
+    if (det.length > 0) {
+      DATA_A_APERTURA2026.apertura = det;
+      DATA_A_APERTURA2026.partidos = _deriveBasicFromDetailed(det);
+    }
   } catch(e) { console.warn('parseDetailedMatches A (Apertura 2026):', e); }
+
+  // The old basic table is stale for resultado/local (see above), but if it
+  // still carries real Observaciones/Parciales, cherry-pick just those onto
+  // the already-correct partidos derived from the detailed match data.
+  if (ok(aBasic)) {
+    const m = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseMatches(ok(aBasic))));
+    const byKey = new Map(m.map(x => [`${(x.rival || '').toUpperCase()}|${x.fecha}`, x]));
+    for (const p of DATA_A_APERTURA2026.partidos) {
+      const src = byKey.get(`${(p.rival || '').toUpperCase()}|${p.fecha}`);
+      if (!src) continue;
+      if (src.obs) p.obs = src.obs;
+      if (src.parciales) p.parciales = src.parciales;
+    }
+  }
 
   // Apertura AIFA A 2026 global player stats (L3:X33) — exact range, row 0 = header
   if (ok(aGlobal)) {
