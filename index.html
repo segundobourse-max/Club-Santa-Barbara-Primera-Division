@@ -4761,18 +4761,34 @@ function _stripApertura2026ACopaLeaks(matches) {
 
 // Apertura AIFA B 2026's live sheet has 2 leftover copa fixtures (ZAFADOS,
 // SHOLEM — now read from their own dedicated Recopa AIFA B 2026 sheet
-// instead) mixed into the league table with a blank/garbled Fecha column.
-// Confirmed via a raw console dump: ZAFADOS is merged into the header cell
-// itself ("Rival\nZAFADOS F.C." collapsed by the CSV parser into one row —
-// a known multi-line-cell artifact), and SHOLEM is a normal row but with a
-// blank Fecha. Both leak into parseDetailedMatches' sequential fallback
-// numbering (used whenever a match's own Fecha cell is blank), silently
-// shifting every match after them by one slot — which is what actually made
-// SHOLEM's synthetic fecha collide with HACOAJ's real Fecha 12. Stripping
-// them from the RAW rows before parsing (rather than filtering the parsed
-// matches afterward) is what's needed to stop that shift from happening at
-// all, not just hide its symptom.
-function _stripAperturaB2026CopaRows(rows) {
+// instead) mixed into the league table's DETAILED (Fecha a Fecha) range,
+// leaking into parseDetailedMatches' sequential fallback numbering and
+// shifting every match after them by one slot — which is what made SHOLEM's
+// synthetic fecha collide with HACOAJ's real Fecha 12, and ZAFADOS collide
+// with SITAS C's Fecha 1. Name-based stripping wasn't reliable (ZAFADOS was
+// merged into the header cell itself, a multi-line-cell CSV artifact), so
+// this strips by the exact sheet row spans the club confirmed directly:
+//   Fecha 1 (SITAS C): A55:J85     Fecha 12 (HACOAJ): A427:I458
+//   ZAFADOS (copa):    A22:J53     SHOLEM (copa):     A365:J395
+// The detailed table is fetched as 'A21:J550' (see loadLiveData), so row 21
+// of the sheet is index 0 of the fetched array — offset every sheet row
+// number by -21 to land on the matching array index.
+function _stripAperturaB2026CopaRowsDetailed(rows) {
+  const FETCH_START_ROW = 21;
+  const copaRowSpans = [ [22, 53], [365, 395] ]; // ZAFADOS, SHOLEM
+  return rows.filter((row, i) => {
+    const sheetRow = FETCH_START_ROW + i;
+    return !copaRowSpans.some(([start, end]) => sheetRow >= start && sheetRow <= end);
+  });
+}
+
+// The short "resumen" basic table (A1:J18) has its own copy of the same 2
+// leaks, but as a completely separate, much smaller range — row numbers
+// from the detailed table don't apply here. ZAFADOS shows up merged into
+// this table's own header cell, and SHOLEM as a normal row with a blank
+// Fecha, so name-based stripping (safe here since the table is tiny and
+// content is stable) is what actually removes them.
+function _stripAperturaB2026CopaRowsBasic(rows) {
   return rows.filter(row => !/zafados|\bsholem\b/i.test(String(row[0] ?? '')));
 }
 
@@ -8677,14 +8693,15 @@ async function loadLiveData() {
   // Recopa AIFA B 2026 now lives entirely in its own dedicated sheet
   // (DATA_B_RECOPA2026, see below) — this Apertura table's 2 leftover copa
   // rows (ZAFADOS, SHOLEM) are pure leaks with no purpose here anymore, and
-  // get stripped from the RAW rows before parsing (see _stripAperturaB2026CopaRows).
+  // get stripped from the RAW rows before parsing (see
+  // _stripAperturaB2026CopaRowsBasic / _stripAperturaB2026CopaRowsDetailed).
   if (ok(bApBasic)) {
-    const m = parseMatches(_stripAperturaB2026CopaRows(ok(bApBasic)));
+    const m = parseMatches(_stripAperturaB2026CopaRowsBasic(ok(bApBasic)));
     if (m.length > 0) DATA_B_APERTURA2026.partidos = m;
   }
 
   if (ok(bApDet)) try {
-    const cleanRows = _stripAperturaB2026CopaRows(ok(bApDet));
+    const cleanRows = _stripAperturaB2026CopaRowsDetailed(ok(bApDet));
     const p   = parsePlayers(cleanRows);
     const det = parseDetailedMatches(cleanRows, true);
     if (p.length > 0)   DATA_B_APERTURA2026.jugadores = p;
