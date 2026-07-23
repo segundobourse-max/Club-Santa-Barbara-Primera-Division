@@ -2163,8 +2163,8 @@ const SEED_APERTURA_A = [
 // below. Kept as its own object (same pattern as DATA_B_APERTURA2026) so the
 // historical "Fecha a Fecha"/Plantel view and player-profile match history
 // for this season keep working after DATA_A starts pointing at the new tab.
-// historico/topHist/titulos/proximos stay on DATA_A itself (club-wide,
-// season-independent identity data) rather than being duplicated here.
+// historico/titulos stay on DATA_A itself (club-wide, season-independent
+// identity data) rather than being duplicated here.
 const DATA_A_APERTURA2026 = {
   nombre: 'Apertura AIFA A 2026',
   badge: 'Apertura AIFA A 2026',
@@ -2231,16 +2231,12 @@ const DATA_A_APERTURA2026 = {
     { nombre:'Juan B. Basavilbaso', pos:'DFI', citado:3,  titular:1,  sup:2,  goles:0,  asist:1, rojas:0 },
     { nombre:'Juan Cruz Aleixo',    pos:'ARQ', citado:0,  titular:0,  sup:0,  goles:0,  asist:0, rojas:0 },
   ],
-  proximos: [
-    { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
-    { fecha:'Fecha 15', rival:'SITAS', local:'LOCAL', rivalPos:'8°' },
-  ],
   apertura: SEED_APERTURA_A,
 };
 
 // Clausura AIFA A 2026 — the new live season (Recopa AIFA A 2026 keeps running
-// in parallel via COPA_BLOCKS, unaffected by this). historico/topHist/titulos
-// are club-wide identity data, unrelated to any single season, so they live
+// in parallel via COPA_BLOCKS, unaffected by this). historico/titulos are
+// club-wide identity data, unrelated to any single season, so they live
 // here rather than on DATA_A_APERTURA2026 (same split as Primera B's
 // DATA_B/DATA_B_APERTURA2026).
 const DATA_A = {
@@ -2255,29 +2251,6 @@ const DATA_A = {
   jugadores: [],
   apertura: [],
   historico: { pj:266, pg:123, pe:57, pp:87, gf:501, gc:365, vi:57 },
-  topHist: {
-    partidos: [
-      { nombre:'Tomas Elhaiek',      valor:215 },
-      { nombre:'Felipe Bello',       valor:204 },
-      { nombre:'Juan Moyano',        valor:171 },
-      { nombre:'Mateo Schwartz',     valor:153 },
-      { nombre:'Theo Jurs',          valor:137 },
-    ],
-    goles: [
-      { nombre:'Felipe Bello',       valor:76 },
-      { nombre:'Tomas Elhaiek',      valor:48 },
-      { nombre:'Ramiro Hermida',     valor:41 },
-      { nombre:'Lorenzo Pellegrino', valor:37 },
-      { nombre:'Justo Gottlieb',     valor:26 },
-    ],
-    asist: [
-      { nombre:'Felipe Bello',       valor:32  },
-      { nombre:'Ramiro Hermida',     valor:27  },
-      { nombre:'Tomas Elhaiek',      valor:24  },
-      { nombre:'Marcos Gicovate',    valor:14  },
-      { nombre:'Adrian Cavallero',   valor:12  },
-    ],
-  },
   titulos: [
     { nombre:'Campeón Apertura AIFA B', anio:'2019' },
     { nombre:'Campeón Copa Maradona',   anio:'2020' },
@@ -2420,35 +2393,8 @@ const DATA_B = {
   jugadores: [],
   historico: { pj:122, pg:65, pe:27, pp:29, gf:242, gc:151, vi:37 },
   graficos: [],
-  topHist: {
-    partidos: [
-      { nombre:'Joaquin Cadenas',       valor:99 },
-      { nombre:'Teo Bellotti',          valor:87 },
-      { nombre:'Mateo Alfonso',         valor:81 },
-      { nombre:'Esteban Fernandez King',valor:70 },
-      { nombre:'Manuel Diaz Bridge',    valor:65 },
-    ],
-    goles: [
-      { nombre:'Vicente Fiore',         valor:31 },
-      { nombre:'Juan Vigano',           valor:19 },
-      { nombre:'Joaquin Cadenas',       valor:15 },
-      { nombre:'Segundo Bourse',        valor:14 },
-      { nombre:'Guillermo Diaz Mayer',  valor:13 },
-    ],
-    asist: [
-      { nombre:'Segundo Bourse',        valor:22 },
-      { nombre:'Joaquin Cadenas',       valor:21 },
-      { nombre:'Carlos Marcelo Cecchi', valor:14 },
-      { nombre:'Vicente Fiore',         valor:9  },
-      { nombre:'Tomas Mayer',           valor:6  },
-    ],
-  },
   titulos: [
     { nombre:'Campeón Apertura AIFA D', anio:'2024' },
-  ],
-  proximos: [
-    { fecha:'Fecha 14', rival:'P.A.C', local:'VISITANTE', rivalPos:'12°' },
-    { fecha:'Fecha 15', rival:'SITAS B', local:'LOCAL', rivalPos:'' },
   ],
   apertura: [],
 };
@@ -3250,20 +3196,6 @@ function buildPitch(titulares) {
     <div class="ap-pitch-arc" style="right:0;bottom:0;width:5%;padding-top:3.5%;border-radius:100% 0 0 0;border-bottom:none;border-right:none"></div>
   `;
   return `<div class="ap-pitch">${markings}${markers}</div>`;
-}
-
-function formatISODate(raw) {
-  if (!raw || raw === '—') return raw || '—';
-  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return raw;
-    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    const dd = String(d.getUTCDate()).padStart(2,'0');
-    const mm = meses[d.getUTCMonth()];
-    const yy = d.getUTCFullYear();
-    return `${dd} de ${mm}, ${yy}`;
-  }
-  return raw;
 }
 
 function formatISODia(raw) {
@@ -5641,54 +5573,6 @@ function parseEstHistSheetB(rows) {
   };
 }
 
-async function fetchResumenHistorico(d, sheetId) {
-  try {
-    const rows = await fetchCSVFallback(sheetId, 'Estadisticas Historicas');
-    if (!rows || rows.length < 3) return false;
-    const { historico, goleadores, asistidores, masPartidos } = parseEstHistSheet(rows);
-    let changed = false;
-    if (historico && historico.pj > 0)    { d.historico = historico; changed = true; }
-    if (goleadores.length)  { d.topHist.goles    = goleadores;  changed = true; }
-    if (asistidores.length) { d.topHist.asist    = asistidores; changed = true; }
-    if (masPartidos.length) { d.topHist.partidos = masPartidos; changed = true; }
-    return changed;
-  } catch(e) { return false; }
-}
-
-// ──────────────────────────────────────────────
-// RENDER: TABLA
-// ──────────────────────────────────────────────
-function copaColor(copa) {
-  if (!copa) return '';
-  if (copa.includes('Descenso')) return 'color:var(--rojo)';
-  if (copa.includes('Campeón') || copa.includes('Ascenso')) return 'color:var(--dorado)';
-  if (copa.includes('Recopa') || copa.includes('Promoción')) return 'color:var(--verde)';
-  if (copa.includes('Copa de Honor')) return 'color:var(--azul-claro)';
-  return '';
-}
-
-function renderTabla() {
-  const d = currentData;
-  document.getElementById('pos-title').textContent = '🏅 Tabla de Posiciones – ' + d.nombre;
-  document.getElementById('tabla-body').innerHTML = d.tabla.map(t => {
-    const rc = t.csb ? 'csb-row' : '';
-    const df = t.df > 0 ? '+' + t.df : '' + t.df;
-    const dfColor = t.df > 0 ? 'var(--verde)' : t.df < 0 ? 'var(--rojo)' : 'inherit';
-    return `<tr class="${rc}">
-      <td><strong>${t.pos}</strong></td>
-      <td>${t.csb ? '<strong>⭐ ' + t.equipo + '</strong>' : t.equipo}</td>
-      <td style="font-size:0.72rem;${copaColor(t.copas)}">${t.copas || ''}</td>
-      <td><strong style="color:var(--blanco)">${t.pts}</strong></td>
-      <td>${t.pj}</td>
-      <td style="color:var(--verde)">${t.pg}</td>
-      <td>${t.pe}</td>
-      <td style="color:var(--rojo)">${t.pp}</td>
-      <td>${t.gf}</td><td>${t.gc}</td>
-      <td style="font-weight:600;color:${dfColor}">${df}</td>
-    </tr>`;
-  }).join('');
-}
-
 // ──────────────────────────────────────────────
 // RENDER: PARTIDOS
 // ──────────────────────────────────────────────
@@ -7915,26 +7799,9 @@ function renderInferiores() {
     </div>`;
 }
 
-function renderJugSubWip(key, title, desc) {
-  const backBtn = `<button class="torneo-back" onclick="showTab('jugadores', document.querySelectorAll('#main-nav button')[2])" style="margin-bottom:20px">← Estadísticas Jugadores</button>`;
-  document.getElementById('jug-' + key + '-content').innerHTML = `
-    ${backBtn}
-    <div class="section-title" style="margin-bottom:24px">${title} – ${currentData.nombre}</div>
-    <div class="torneo-wip">
-      <div class="torneo-wip-icon">🚧</div>
-      <div class="torneo-wip-title">Contenido en desarrollo</div>
-      <div class="torneo-wip-sub">${desc}</div>
-    </div>`;
-}
-
 // ──────────────────────────────────────────────
 // RENDER: GRÁFICOS
 // ──────────────────────────────────────────────
-const CHART_DEFAULTS = {
-  color: '#94a3b8',
-  grid: 'rgba(255,255,255,0.06)',
-};
-
 // ──────────────────────────────────────────────
 // SEED: HISTORIAL DE TORNEOS
 // ──────────────────────────────────────────────
@@ -8875,23 +8742,18 @@ async function loadLiveData() {
     if (t.length >= 5) DATA_B.tabla = t;
   }
 
-  // Estadisticas Historicas
+  // Estadisticas Historicas — only historico (club all-time record) and B's
+  // graficos (season-by-season history) are used; the sheet's own
+  // goleadores/asistidores/masPartidos mini-tables aren't (Resumen's Top 5
+  // reads from Estadísticas Totales instead, see _top5FromTotales).
   if (aHist.status === 'fulfilled' && aHist.value?.length > 3) {
     const p = parseEstHistSheet(aHist.value);
-    console.log('A_Hist parsed:', p.historico, 'gol:', p.goleadores[0], 'par:', p.masPartidos[0]);
-    if (p.historico?.pj > 0)    DATA_A.historico        = p.historico;
-    if (p.goleadores.length)    DATA_A.topHist.goles    = p.goleadores;
-    if (p.asistidores.length)   DATA_A.topHist.asist    = p.asistidores;
-    if (p.masPartidos.length)   DATA_A.topHist.partidos = p.masPartidos;
+    if (p.historico?.pj > 0) DATA_A.historico = p.historico;
   }
   if (bHist.status === 'fulfilled' && bHist.value?.length > 3) {
     const p = parseEstHistSheetB(bHist.value);
-    console.log('B_Hist parsed:', p.historico, 'torneos:', p.torneos.length, 'gol:', p.goleadores[0]);
-    if (p.historico?.pj > 0)    DATA_B.historico        = p.historico;
-    if (p.torneos?.length)      DATA_B.graficos         = p.torneos;
-    if (p.goleadores.length)    DATA_B.topHist.goles    = p.goleadores;
-    if (p.asistidores.length)   DATA_B.topHist.asist    = p.asistidores;
-    if (p.masPartidos.length)   DATA_B.topHist.partidos = p.masPartidos;
+    if (p.historico?.pj > 0) DATA_B.historico = p.historico;
+    if (p.torneos?.length)   DATA_B.graficos  = p.torneos;
   }
 
   // ── Apertura AIFA A 2025 ──
