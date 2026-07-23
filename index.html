@@ -4143,8 +4143,13 @@ function renderTorneoApertura2025A() {
                    : '<span class="ap-mc-badge draw">Empate</span>';
 
   // ── Tab 1: Plantel ──────────────────────────────────────────────────────
+  // Liga-only stats: aggregated strictly from league matches (numeric fecha)
+  // so Recopa/copa goals and appearances never bleed into the Plantel view —
+  // d.jugadores is the club's own raw aggregate sheet, which counts copa
+  // matches too, so it's only a fallback until the real matches are in.
+  const ligaDetailMatches2025A = (d.apertura || []).filter(m => /^\d+$/.test(String(m.fecha)));
   function buildPlantelTab() {
-    const jugs = d.jugadores || [];
+    const jugs = ligaDetailMatches2025A.length ? _aggregatePlayerStats(ligaDetailMatches2025A) : (d.jugadores || []);
     if (!jugs.length) {
       return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
     }
@@ -4423,8 +4428,13 @@ function renderTorneoHistoricoGeneric(d, name, fechaLabels) {
                    : '<span class="ap-mc-badge draw">Empate</span>';
 
   // ── Tab 1: Plantel ──────────────────────────────────────────────────────
+  // Liga-only stats: aggregated strictly from league matches (numeric fecha)
+  // so Recopa/copa goals and appearances never bleed into the Plantel view —
+  // d.jugadores is the club's own raw aggregate sheet, which counts copa
+  // matches too, so it's only a fallback until the real matches are in.
+  const ligaDetailMatchesGH = (d.apertura || []).filter(m => /^\d+$/.test(String(m.fecha)));
   function buildPlantelTab() {
-    const jugs = d.jugadores || [];
+    const jugs = ligaDetailMatchesGH.length ? _aggregatePlayerStats(ligaDetailMatchesGH) : (d.jugadores || []);
     if (!jugs.length) {
       return `<div style="color:#475569;padding:40px;text-align:center">Cargando plantel…</div>`;
     }
@@ -8586,7 +8596,10 @@ async function loadLiveData() {
     // zero margin — any appended/moved-in row, like a late-season closer, would
     // silently fall outside a tight range and never reach the parser).
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J30'),    // basic match table
-    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A22:N700'),  // fecha-a-fecha + positions
+    // Fecha a Fecha stopped resolving via the 'Apertura 2026' tab name (data
+    // "disappeared") — the club moved/restructured that block onto its own
+    // gid. Fetched directly by gid now, club-confirmed range.
+    fetchGvizByGid(GS.A_MAIN, 2018022084, 'A22:J524'), // fecha-a-fecha + positions
     fetchCSV(GS.B_SIM),
     // ── Apertura AIFA B 2026 (finished, archived into DATA_B_APERTURA2026) ──
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A1:J18'),
