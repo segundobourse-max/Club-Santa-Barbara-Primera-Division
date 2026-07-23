@@ -8538,42 +8538,38 @@ function parseCopaSheet(rows) {
   return blocks;
 }
 
-// "SB en Copas" also has a short "resumen" table (club-confirmed A1:I16) above
-// the detailed Fecha a Fecha block, covering every copa edition (Supercopa
-// 2021, Recopa 2023-2026, ...) with data the detailed block doesn't carry:
-// Observaciones, Resultados parciales, and the rival's Categoria (posCSB
-// column here, not the round — that gets overwritten by position afterward
-// in loadLiveData same as the detailed blocks). Same title-segmentation as
-// parseCopaSheet, but each chunk is a single row per match (parseMatches),
-// not a match-anchor-plus-player-rows block.
+// "SB en Copas" also has a short "resumen" table (club-confirmed A1:I16)
+// above the detailed Fecha a Fecha block, covering every copa edition
+// (Supercopa 2021, Recopa 2023-2026, ...) in ONE flat grid — not segmented by
+// title rows like the detailed block. Columns (club-confirmed via screenshot):
+//   Competencia | Rival | Instancia | Local/Visita | Resultado |
+//   Resultados Parciales | Division del Rival | Observaciones | Año
+// Instancia/Local/Resultado here are the authoritative source (explicit, not
+// inferred by position/sede like the detailed block does) — the merge step
+// in loadLiveData overrides COPA_BLOCKS' guessed posCSB/local/resultado with
+// these once matched by title ("<Competencia> <Año>") + rival name.
 function parseCopaBasicSheet(rows) {
-  const blocks = {};
-  let currentTitle = 'Supercopa 2021';
-  let bufferStart = 0;
-
-  function flush(endIdx) {
-    if (!currentTitle || endIdx <= bufferStart) return;
-    const chunk = rows.slice(bufferStart, endIdx);
-    const matches = parseMatches(chunk);
-    if (matches.length) {
-      blocks[currentTitle] = (blocks[currentTitle] || []).concat(matches);
-    }
+  const out = [];
+  for (const row of rows) {
+    const competencia = String(row[0] ?? '').trim();
+    const rival       = String(row[1] ?? '').trim();
+    const instancia   = String(row[2] ?? '').trim();
+    const anio        = String(row[8] ?? '').trim();
+    if (!/^(recopa|supercopa)$/i.test(competencia) || !rival || !/^\d{4}$/.test(anio)) continue;
+    const localRaw = String(row[3] ?? '').trim();
+    const { resultado, gf, gc, penales } = _parseResultado(row[4]);
+    out.push({
+      title: `${competencia} ${anio}`,
+      rival: rival.toUpperCase(),
+      posCSB: instancia,
+      local: /neutral/i.test(localRaw) ? 'NEUTRAL' : /local/i.test(localRaw) ? 'LOCAL' : 'VISITANTE',
+      resultado, gf, gc, penales,
+      parciales: String(row[5] ?? '').trim(),
+      categoriaRival: String(row[6] ?? '').trim(),
+      obs: String(row[7] ?? '').trim(),
+    });
   }
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const c0 = String(row[0] ?? '').trim();
-    const c1 = String(row[1] ?? '').trim();
-    const c2 = String(row[2] ?? '').trim();
-    const c3 = String(row[3] ?? '').trim();
-    if (/^(recopa|supercopa)\s+\d{4}$/i.test(c0) && !c1 && !c2 && !c3) {
-      flush(i);
-      currentTitle = c0;
-      bufferStart = i + 1;
-    }
-  }
-  flush(rows.length);
-  return blocks;
+  return out;
 }
 
 // Populated once by loadLiveData() from the centralized "SB en Copas" sheet.
@@ -8873,24 +8869,29 @@ async function loadLiveData() {
     }
   } catch(e) { console.warn('parseCopaSheet:', e); }
 
-  // "SB en Copas" short resumen table — Observaciones/Parciales/Categoría del
-  // rival for every edition, matched to COPA_BLOCKS by position within each
-  // title (both tables list that edition's matches in the same chronological
-  // order). posRival here is the rival's Categoria, not their league
-  // position — kept as its own field (categoriaRival) so it doesn't collide
-  // with posCSB, which COPA_BLOCKS already uses for the round name (Instancia).
+  // "SB en Copas" short resumen table — Instancia/Local/Resultado/Parciales/
+  // División del Rival/Observaciones for every edition, matched to COPA_BLOCKS
+  // by title ("<Competencia> <Año>") + rival name (both tables share those,
+  // but not necessarily the same row order, so match by identity not position).
+  // Instancia/Local/Resultado here are explicit (club-entered), so they
+  // override the detailed block's guessed round-by-position/sede-by-lugar.
   if (ok(copasBasicSheet)) try {
-    const basicBlocks = parseCopaBasicSheet(ok(copasBasicSheet));
-    for (const [title, basicMatches] of Object.entries(basicBlocks)) {
-      const detailMatches = COPA_BLOCKS[title];
-      if (!detailMatches) continue;
-      basicMatches.forEach((bm, i) => {
-        const dm = detailMatches[i];
-        if (!dm) return;
-        if (bm.obs)       dm.obs = bm.obs;
+    const basicMatches = parseCopaBasicSheet(ok(copasBasicSheet));
+    const byTitle = {};
+    for (const bm of basicMatches) (byTitle[bm.title] = byTitle[bm.title] || []).push(bm);
+    for (const [title, detailMatches] of Object.entries(COPA_BLOCKS)) {
+      const rows = byTitle[title];
+      if (!rows) continue;
+      for (const dm of detailMatches) {
+        const bm = rows.find(r => r.rival === (dm.rival || '').toUpperCase());
+        if (!bm) continue;
+        if (bm.posCSB)    dm.posCSB    = bm.posCSB;
+        if (bm.local)     dm.local     = bm.local;
+        if (bm.resultado) { dm.resultado = bm.resultado; dm.gf = bm.gf; dm.gc = bm.gc; dm.penales = bm.penales; }
         if (bm.parciales) dm.parciales = bm.parciales;
-        dm.categoriaRival = bm.posRival || '';
-      });
+        if (bm.obs)       dm.obs       = bm.obs;
+        dm.categoriaRival = bm.categoriaRival || '';
+      }
     }
   } catch(e) { console.warn('parseCopaBasicSheet:', e); }
 
