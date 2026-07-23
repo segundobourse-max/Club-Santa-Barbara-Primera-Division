@@ -4840,8 +4840,18 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
     // past the last real fecha (a leak, not a real matchday) gets dropped too.
     const capFecha = m => !cfg.maxFecha || (parseInt(m.fecha) > 0 && parseInt(m.fecha) <= cfg.maxFecha);
 
+    // Some copa leaks collide with a real matchday number instead of landing
+    // past it, so capFecha alone can't catch them — club-confirmed rival +
+    // resultado pairs to drop by name instead. Already centralized elsewhere
+    // (COPA_BLOCKS / the dedicated Recopa sheets), so no data is lost by
+    // just dropping them here.
+    const excludeMatches = cfg.excludeMatches || [];
+    const notExcluded = m => !excludeMatches.some(e =>
+      (m.rival || '').toUpperCase().includes(e.rival.toUpperCase()) &&
+      String(m.resultado || '').trim() === e.resultado);
+
     if (ok(det)) try {
-      const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true)).filter(capFecha);
+      const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true)).filter(capFecha).filter(notExcluded);
       if (d.length > 0) {
         dataObj.apertura = d;
         dataObj.partidos = _deriveBasicFromDetailed(d);
@@ -4852,7 +4862,7 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
     // posición/observaciones — data the detailed Fecha a Fecha block never
     // carries), use it instead of the blank-fields fallback derived above.
     if (cfg.basico && ok(basico)) try {
-      const b = _ligaOnlyMatches(parseMatches(ok(basico))).filter(capFecha);
+      const b = _ligaOnlyMatches(parseMatches(ok(basico))).filter(capFecha).filter(notExcluded);
       if (b.length > 0) dataObj.partidos = b;
     } catch(e) { console.warn(`[${key}] parseMatches (basico):`, e); }
 
@@ -4882,9 +4892,11 @@ const HISTORICO_GENERIC = {
   'clausura-2025a': { d: DATA_A_CL2025, gid: 926298072,  name: 'Clausura AIFA A 2025',
     plantel: 'L3:X30', fecha: 'A23:J567', tabla: 'L35:U51', basico: 'A1:J19', maxFecha: 15 },
   'apertura-2024a': { d: DATA_A_AP2024, gid: 1770964123, name: 'Apertura AIFA A 2024',
-    plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51', basico: 'A1:I18', maxFecha: 15 },
+    plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51', basico: 'A1:I18', maxFecha: 15,
+    excludeMatches: [{ rival: 'ARQUITECTURA', resultado: '2-0' }] },
   'clausura-2024a': { d: DATA_A_CL2024, gid: 1246526834, name: 'Clausura AIFA A 2024',
-    plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51', basico: 'A1:I18', maxFecha: 15 },
+    plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51', basico: 'A1:I18', maxFecha: 15,
+    excludeMatches: [{ rival: 'SITAS', resultado: '1-1' }] },
   'apertura-2023a': { d: DATA_A_AP2023, gid: 1450109032, name: 'Apertura AIFA A 2023',
     plantel: 'L3:X29', fecha: 'A22:J524', tabla: 'K33:U49' },
   'clausura-2023a': { d: DATA_A_CL2023, gid: 2015539612, name: 'Clausura AIFA A 2023',
