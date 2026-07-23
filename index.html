@@ -4841,14 +4841,15 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
     const capFecha = m => !cfg.maxFecha || (parseInt(m.fecha) > 0 && parseInt(m.fecha) <= cfg.maxFecha);
 
     // Some copa leaks collide with a real matchday number instead of landing
-    // past it, so capFecha alone can't catch them — club-confirmed rival +
-    // resultado pairs to drop by name instead. Already centralized elsewhere
+    // past it, so capFecha alone can't catch them — club-confirmed rival (+
+    // resultado when given, to disambiguate from a real league match against
+    // the same rival) to drop by name instead. Already centralized elsewhere
     // (COPA_BLOCKS / the dedicated Recopa sheets), so no data is lost by
     // just dropping them here.
     const excludeMatches = cfg.excludeMatches || [];
     const notExcluded = m => !excludeMatches.some(e =>
       (m.rival || '').toUpperCase().includes(e.rival.toUpperCase()) &&
-      String(m.resultado || '').trim() === e.resultado);
+      (!e.resultado || String(m.resultado || '').trim() === e.resultado));
 
     if (ok(det)) try {
       const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true)).filter(capFecha).filter(notExcluded);
@@ -4898,13 +4899,14 @@ const HISTORICO_GENERIC = {
     plantel: 'K3:W30', fecha: 'A21:J535', tabla: 'K35:T51', basico: 'A1:I18', maxFecha: 15,
     excludeMatches: [{ rival: 'SITAS', resultado: '1-1' }] },
   'apertura-2023a': { d: DATA_A_AP2023, gid: 1450109032, name: 'Apertura AIFA A 2023',
-    plantel: 'L3:X29', fecha: 'A22:J524', tabla: 'K33:U49' },
+    plantel: 'L3:X29', fecha: 'A22:J524', tabla: 'K33:U49', basico: 'A1:J18',
+    excludeMatches: [{ rival: 'SITAS C' }, { rival: 'LA NEGRA' }] },
   'clausura-2023a': { d: DATA_A_CL2023, gid: 2015539612, name: 'Clausura AIFA A 2023',
-    plantel: 'K3:W29', fecha: 'A20:J472', tabla: 'K34:T50' },
+    plantel: 'K3:W29', fecha: 'A20:J472', tabla: 'K34:T50', basico: 'A1:I17' },
   // No tabla range given for this one — left null; Tabla Completa shows
   // "Cargando…" until we get that range.
   'clausura-2022a': { d: DATA_A_CL2022, gid: 556920736,  name: 'Clausura AIFA A 2022',
-    plantel: 'L3:X30', fecha: 'A20:J464', tabla: null },
+    plantel: 'L3:X30', fecha: 'A20:J464', tabla: null, basico: 'A1:J16' },
   // Primera B 2025 — same B_HIST spreadsheet as the live/archived B seasons,
   // each on its own gid.
   // sheet: 'B_HIST' is a key into GS, resolved at load time (not here) —
@@ -8649,10 +8651,11 @@ async function loadLiveData() {
          bSupercopa25Det, bSupercopa25Plantel, bRecopa24Det, bRecopa24Plantel,
          bRecopa21Det, bRecopa21Plantel] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
-    // Ranges given extra headroom (17 fixed match rows exactly fit A1:J18 with
-    // zero margin — any appended/moved-in row, like a late-season closer, would
-    // silently fall outside a tight range and never reach the parser).
-    fetchCSV(GS.A_MAIN, 'Apertura 2026', 'A1:J30'),    // basic match table
+    // The 'Apertura 2026' tab name stopped resolving to useful data (the club
+    // moved/restructured that block onto its own gid, same one the detailed
+    // Fecha a Fecha below now uses) — both the basic table (Observaciones,
+    // club-confirmed A1:J18) and the detailed block are fetched from there now.
+    fetchGvizByGid(GS.A_MAIN, 2018022084, 'A1:J18'),   // basic match table
     // Fecha a Fecha stopped resolving via the 'Apertura 2026' tab name (data
     // "disappeared") — the club moved/restructured that block onto its own
     // gid. Fetched directly by gid now, club-confirmed range.
@@ -8728,12 +8731,12 @@ async function loadLiveData() {
   const aTbl = ok(aSim) ? parseSimStandings(ok(aSim), 5) : [];
   if (aTbl.length >= 10) DATA_A.tabla = aTbl;
 
-  // Apertura AIFA A 2026 detailed match data — positions + fecha-a-fecha, now
+  // Apertura AIFA A 2026 detailed match data — positions + fecha-a-fecha,
   // fetched by gid (see loadLiveData's fetchGvizByGid(GS.A_MAIN, 2018022084, ...)).
-  // partidos is derived from this (guaranteed real resultado/local) rather
-  // than the old 'Apertura 2026' tab-name basic table below, which the club
-  // reset to blank placeholder rows when they moved Fecha a Fecha onto its
-  // own gid — it still parses as non-empty, just with every result blank.
+  // partidos is derived from this first (guaranteed real resultado/local),
+  // then enriched below with Observaciones/Parciales from the basic table —
+  // both now come from the same restructured gid, so this is mostly a safety
+  // net at this point rather than working around stale data.
   if (ok(aDet)) try {
     const det = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseDetailedMatches(ok(aDet), true)));
     if (det.length > 0) {
@@ -8742,9 +8745,8 @@ async function loadLiveData() {
     }
   } catch(e) { console.warn('parseDetailedMatches A (Apertura 2026):', e); }
 
-  // The old basic table is stale for resultado/local (see above), but if it
-  // still carries real Observaciones/Parciales, cherry-pick just those onto
-  // the already-correct partidos derived from the detailed match data.
+  // Cherry-pick Observaciones/Parciales (club-confirmed A1:J18) onto the
+  // already-correct partidos derived from the detailed match data above.
   if (ok(aBasic)) {
     const m = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseMatches(ok(aBasic))));
     const byKey = new Map(m.map(x => [`${(x.rival || '').toUpperCase()}|${x.fecha}`, x]));
