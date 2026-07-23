@@ -4774,8 +4774,20 @@ function _stripApertura2026ACopaLeaks(matches) {
 // blank, so blank separator rows anywhere in the range shift every
 // subsequent array index and corrupt that math. Checking every cell for the
 // rival name instead is index-agnostic and matches the confirmed content.
+// A THIRD leak was found via a live console dump: the detailed table's own
+// title+header row is itself getting merged into a single garbled row by the
+// same multi-line-cell CSV artifact (row[0] literally reads "Fecha a Fecha
+// Rival", row[7] literally reads "Resultado Final" — every cell holding its
+// own column label instead of match data). Since its Fecha cell is blank
+// too, it gets treated as a real match anchor and inherits synthetic fecha
+// "1" (first anchor found), colliding with SITAS C's real Fecha 1 exactly
+// like ZAFADOS did — this is what was still showing after the ZAFADOS/SHOLEM
+// fix. Its resultado ("Resultado Final") is a literal column label no real
+// match could ever have, so it's a safe, distinctive marker to strip on.
 function _stripAperturaB2026CopaRowsDetailed(rows) {
-  return rows.filter(row => !/zafados|\bsholem\b/i.test(row.join('|')));
+  return rows.filter(row =>
+    !/zafados|\bsholem\b/i.test(row.join('|')) &&
+    !/^resultado\s*final$/i.test(String(row[7] ?? '').trim()));
 }
 
 // The short "resumen" basic table (A1:J18) has its own copy of the same 2
