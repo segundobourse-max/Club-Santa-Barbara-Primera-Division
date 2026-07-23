@@ -5334,14 +5334,21 @@ function renderResumen() {
   // ── TOP 5 lists — derived from "Estadísticas Totales" (same source/merge
   // rules as the Jugadores → Estadísticas Totales tab), not an independent
   // computation, so both stay 100% in sync. Ensures the loader has run (seed
-  // data renders immediately, then a silent re-render once the real sheet
-  // data replaces it) and re-renders only if Resumen is still the active view.
+  // data renders immediately, then a ONE-TIME silent re-render once the real
+  // sheet data replaces it) and re-renders only if Resumen is still the active
+  // view. Guarded by _jugTotalesA/BReady so this never fires more than once —
+  // the promise below is memoized/already-resolved after the first load, so
+  // without the guard every renderResumen() call would re-attach a .then()
+  // that immediately re-triggers renderResumen(), an infinite render loop.
   const totalesRows = isA ? _jugTotalesData : _jugBData;
   const totalesCol  = isA ? JUG_COL : JUG_COL_B;
   const { partidos: byPartidos, goles: byGoles, asist: byAsist } = _top5FromTotales(totalesRows, totalesCol);
-  (isA ? _ensureJugTotalesA() : _ensureJugTotalesB()).then(() => {
-    if (currentData === d && document.getElementById('tab-resumen')?.classList.contains('active')) renderResumen();
-  });
+  if (!(isA ? _jugTotalesAReady : _jugTotalesBReady)) {
+    (isA ? _ensureJugTotalesA() : _ensureJugTotalesB()).then(() => {
+      if (isA) _jugTotalesAReady = true; else _jugTotalesBReady = true;
+      if (currentData === d && document.getElementById('tab-resumen')?.classList.contains('active')) renderResumen();
+    });
+  }
 
   function top10Row(jug, i) {
     const rowClass = i === 0 ? 'rank-1-row' : i === 1 ? 'rank-2-row' : i === 2 ? 'rank-3-row' : '';
@@ -6433,6 +6440,7 @@ function renderJugadoresTotales() {
 // Totales" data source, so both stay in sync instead of computing independently).
 // Memoized: the real fetch only ever runs once no matter who triggers it first.
 let _jugTotalesLoadPromise = null;
+let _jugTotalesAReady = false; // true once the real (non-seed) fetch resolves
 function _ensureJugTotalesA() {
   if (_jugTotalesLoadPromise) return _jugTotalesLoadPromise;
   const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
@@ -6692,6 +6700,7 @@ function renderJugadoresTotalesB() {
 // Totales" data source). Memoized: the real fetch only ever runs once no matter
 // who triggers it first.
 let _jugTotalesBLoadPromise = null;
+let _jugTotalesBReady = false; // true once the real fetch resolves
 function _ensureJugTotalesB() {
   if (_jugTotalesBLoadPromise) return _jugTotalesBLoadPromise;
   // Sheet stores tab names without accents (same as 'Estadisticas Historicas' pattern)
