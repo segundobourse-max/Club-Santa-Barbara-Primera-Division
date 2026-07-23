@@ -4761,25 +4761,21 @@ function _stripApertura2026ACopaLeaks(matches) {
 
 // Apertura AIFA B 2026's live sheet has 2 leftover copa fixtures (ZAFADOS,
 // SHOLEM — now read from their own dedicated Recopa AIFA B 2026 sheet
-// instead) mixed into the league table's DETAILED (Fecha a Fecha) range,
-// leaking into parseDetailedMatches' sequential fallback numbering and
-// shifting every match after them by one slot — which is what made SHOLEM's
-// synthetic fecha collide with HACOAJ's real Fecha 12, and ZAFADOS collide
-// with SITAS C's Fecha 1. Name-based stripping wasn't reliable (ZAFADOS was
-// merged into the header cell itself, a multi-line-cell CSV artifact), so
-// this strips by the exact sheet row spans the club confirmed directly:
-//   Fecha 1 (SITAS C): A55:J85     Fecha 12 (HACOAJ): A427:I458
-//   ZAFADOS (copa):    A22:J53     SHOLEM (copa):     A365:J395
-// The detailed table is fetched as 'A21:J550' (see loadLiveData), so row 21
-// of the sheet is index 0 of the fetched array — offset every sheet row
-// number by -21 to land on the matching array index.
+// instead) mixed into the league table's DETAILED (Fecha a Fecha) range.
+// Confirmed via a raw console dump of the fetched rows:
+//   ["ZAFADOS F.C.","","","07/03/2026","","4-3-3","4-5-1","1-0","",""]
+//   ["SHOLEM","","","23/5","","5-2-2-1","4-4-2","0-3","",""]
+// Both have a genuinely blank Fecha cell (not a row-alignment artifact), so
+// parseDetailedMatches' sequential fallback numbering assigns them a
+// synthetic fecha based on their position among anchors — which is what
+// made SHOLEM collide with HACOAJ's real Fecha 12, and ZAFADOS with SITAS
+// C's Fecha 1. Stripping by exact sheet row number was tried first but is
+// unreliable here: parseCSV silently drops any row where every cell is
+// blank, so blank separator rows anywhere in the range shift every
+// subsequent array index and corrupt that math. Checking every cell for the
+// rival name instead is index-agnostic and matches the confirmed content.
 function _stripAperturaB2026CopaRowsDetailed(rows) {
-  const FETCH_START_ROW = 21;
-  const copaRowSpans = [ [22, 53], [365, 395] ]; // ZAFADOS, SHOLEM
-  return rows.filter((row, i) => {
-    const sheetRow = FETCH_START_ROW + i;
-    return !copaRowSpans.some(([start, end]) => sheetRow >= start && sheetRow <= end);
-  });
+  return rows.filter(row => !/zafados|\bsholem\b/i.test(row.join('|')));
 }
 
 // The short "resumen" basic table (A1:J18) has its own copy of the same 2
@@ -8619,7 +8615,14 @@ async function loadLiveData() {
     fetchCSV(GS.B_SIM),
     // ── Apertura AIFA B 2026 (finished, archived into DATA_B_APERTURA2026) ──
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A1:J18'),
-    fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A21:J550'),
+    // NOTE: this one is fetchCSVFallback (GViz only), NOT the racing fetchCSV()
+    // helper. _stripAperturaB2026CopaRowsDetailed strips leaked copa rows by
+    // their absolute sheet row number, which only lines up correctly if blank
+    // separator rows inside the range are preserved exactly as-is — fetchProxy
+    // (the Apps Script path fetchCSV also races) silently drops blank rows,
+    // which would shift every row index after the first blank row and corrupt
+    // the row-number math. GViz-by-tab-name doesn't drop anything.
+    fetchCSVFallback(GS.B_HIST, 'APERTURA 2026 AIFA B', 'A21:J550'),
     fetchProxy('Estadisticas Historicas', null, GS.A_MAIN),
     fetchGvizByGid(GS.B_HIST, 1913593241), // "Estadísticas Históricas" — by gid, tab-name fetch silently returns empty
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L3:X33'),  // global player stats table
