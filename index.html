@@ -3411,8 +3411,17 @@ function selectFecha(n) {
   document.querySelectorAll('.ap-fecha-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.fecha === String(n));
   });
-  const basic  = (currentData.partidos || []).find(m => String(m.fecha) === String(n));
-  const detail = (currentData.apertura  || []).find(m => String(m.fecha) === String(n));
+  // Mirror renderTorneoApertura()'s own data-source resolution — this used to
+  // just read currentData directly, which was harmless while DATA_A/DATA_B
+  // WERE the Apertura 2026 data. Now that Clausura 2026 lives there instead
+  // and the finished Apertura is archived separately, that hardcoded read
+  // silently showed the (empty) live season's Fecha a Fecha instead of the
+  // archived one whenever "Torneos Antiguos" was open.
+  const isA = currentData === DATA_A;
+  const fromAntiguos = document.querySelectorAll('#main-nav button')[4]?.classList.contains('active');
+  const d = fromAntiguos ? (isA ? DATA_A_APERTURA2026 : DATA_B_APERTURA2026) : currentData;
+  const basic  = (d.partidos || []).find(m => String(m.fecha) === String(n));
+  const detail = (d.apertura  || []).find(m => String(m.fecha) === String(n));
   renderFechaDetail(basic, detail);
 }
 
