@@ -4849,7 +4849,8 @@ async function _loadHistoricoGeneric(key, dataObj, cfg) {
     const excludeMatches = cfg.excludeMatches || [];
     const notExcluded = m => !excludeMatches.some(e =>
       (m.rival || '').toUpperCase().includes(e.rival.toUpperCase()) &&
-      (!e.resultado || String(m.resultado || '').trim() === e.resultado));
+      (!e.resultado || String(m.resultado || '').trim() === e.resultado) &&
+      (!e.penales || String(m.penales || '').trim() === e.penales));
 
     if (ok(det)) try {
       const d = _ligaOnlyMatches(parseDetailedMatches(ok(det), true)).filter(capFecha).filter(notExcluded);
@@ -4903,7 +4904,9 @@ const HISTORICO_GENERIC = {
     excludeMatches: [{ rival: 'SITAS C' }, { rival: 'LA NEGRA' }] },
   'clausura-2023a': { d: DATA_A_CL2023, gid: 2015539612, name: 'Clausura AIFA A 2023',
     plantel: 'K3:W29', fecha: 'A20:J472', tabla: 'K34:T50', basico: 'A1:I17',
-    excludeMatches: [{ rival: 'REGATAS', resultado: '2-2' }] },
+    // Both REGATAS matches this season drew 2-2 — the copa one was decided by
+    // penales (1-3), so that's the actual disambiguator, not the resultado.
+    excludeMatches: [{ rival: 'REGATAS', resultado: '2-2', penales: '1-3' }] },
   // No tabla range given for this one — left null; Tabla Completa shows
   // "Cargando…" until we get that range.
   'clausura-2022a': { d: DATA_A_CL2022, gid: 556920736,  name: 'Clausura AIFA A 2022',
