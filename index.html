@@ -2299,6 +2299,8 @@ const DATA_B_CL2023 = { nombre: 'Primera B — Clausura AIFA D 2023', partidos: 
 const DATA_B_AP2021 = { nombre: 'Primera B — Apertura AIFA D 2021', partidos: [], apertura: [], jugadores: [], tabla: [] };
 const DATA_B_AP2022 = { nombre: 'Primera B — Apertura AIFA D 2022', partidos: [], apertura: [], jugadores: [], tabla: [] };
 const DATA_B_CL2022 = { nombre: 'Primera B — Clausura AIFA D 2022', partidos: [], apertura: [], jugadores: [], tabla: [] };
+// Recopa AIFA B 2021 — dedicated copa sheet, same shape as the other B copas.
+const DATA_B_RECOPA2021 = { nombre: 'Recopa AIFA B 2021', partidos: [], apertura: [], jugadores: [], tabla: [] };
 
 // Apertura AIFA B 2026 — this season finished and moved to Torneos Antiguos once
 // Clausura AIFA B 2026 (its own new sheet tab) became the live season below.
@@ -3002,6 +3004,10 @@ function showHistoricoTorneo(key) {
     const el = document.getElementById('tab-torneo-copa-historico');
     if (el) el.classList.add('active');
     renderCopaHistorico(DATA_B_RECOPA2024.apertura || [], 'Recopa AIFA B 2024', DATA_B_RECOPA2024.jugadores || []);
+  } else if (key === 'recopa-2021b') {
+    const el = document.getElementById('tab-torneo-copa-historico');
+    if (el) el.classList.add('active');
+    renderCopaHistorico(DATA_B_RECOPA2021.apertura || [], 'Recopa AIFA B 2021', DATA_B_RECOPA2021.jugadores || []);
   } else {
     const el = document.getElementById('tab-torneo-historico-' + key);
     if (el) el.classList.add('active');
@@ -8617,7 +8623,8 @@ async function loadLiveData() {
   const [aSim, aBasic, aDet, bSim, bApBasic, bApDet, aHist, bHist, aGlobal, aTabla,
          a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
          bClBasic, bClDet, bClGlobal, bClTabla, copasSheet, bRecopaSheet,
-         bSupercopa25Det, bSupercopa25Plantel, bRecopa24Det, bRecopa24Plantel] = await Promise.allSettled([
+         bSupercopa25Det, bSupercopa25Plantel, bRecopa24Det, bRecopa24Plantel,
+         bRecopa21Det, bRecopa21Plantel] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
     // Ranges given extra headroom (17 fixed match rows exactly fit A1:J18 with
     // zero margin — any appended/moved-in row, like a late-season closer, would
@@ -8669,6 +8676,9 @@ async function loadLiveData() {
     // ── Recopa AIFA B 2024 — own dedicated sheet, club-confirmed ranges. ──
     fetchGvizByGid(GS.B_HIST, 1723997532, 'A5:I35'),
     fetchGvizByGid(GS.B_HIST, 1723997532, 'L3:X31'),
+    // ── Recopa AIFA B 2021 — own dedicated sheet, club-confirmed ranges. ──
+    fetchGvizByGid(GS.B_HIST, 222048409, 'A5:J27'),
+    fetchGvizByGid(GS.B_HIST, 222048409, 'L3:X23'),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -8858,6 +8868,9 @@ async function loadLiveData() {
 
   // ── Recopa AIFA B 2024 — same shape as the Supercopa above. ──
   _loadDedicatedCopaSheet(bRecopa24Det, bRecopa24Plantel, DATA_B_RECOPA2024, 'Recopa B 2024');
+
+  // ── Recopa AIFA B 2021 — same shape as the other dedicated B copas. ──
+  _loadDedicatedCopaSheet(bRecopa21Det, bRecopa21Plantel, DATA_B_RECOPA2021, 'Recopa B 2021');
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
   console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClBasic:${s(bClBasic)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Det)}/${s(a25Global)}/${s(a25Tabla)} Copas:${s(copasSheet)}`);
