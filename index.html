@@ -2296,6 +2296,9 @@ const DATA_B_CL2024C = { nombre: 'Primera B — Clausura AIFA C 2024', partidos:
 const DATA_B_RECOPA2024 = { nombre: 'Recopa AIFA B 2024', partidos: [], apertura: [], jugadores: [], tabla: [] };
 const DATA_B_AP2023 = { nombre: 'Primera B — Apertura AIFA D 2023', partidos: [], apertura: [], jugadores: [], tabla: [] };
 const DATA_B_CL2023 = { nombre: 'Primera B — Clausura AIFA D 2023', partidos: [], apertura: [], jugadores: [], tabla: [] };
+const DATA_B_AP2021 = { nombre: 'Primera B — Apertura AIFA D 2021', partidos: [], apertura: [], jugadores: [], tabla: [] };
+const DATA_B_AP2022 = { nombre: 'Primera B — Apertura AIFA D 2022', partidos: [], apertura: [], jugadores: [], tabla: [] };
+const DATA_B_CL2022 = { nombre: 'Primera B — Clausura AIFA D 2022', partidos: [], apertura: [], jugadores: [], tabla: [] };
 
 // Apertura AIFA B 2026 — this season finished and moved to Torneos Antiguos once
 // Clausura AIFA B 2026 (its own new sheet tab) became the live season below.
@@ -4896,6 +4899,12 @@ const HISTORICO_GENERIC = {
     plantel: 'L3:X33', fecha: 'A19:J527', tabla: null },
   'clausura-2023d-b': { d: DATA_B_CL2023, sheet: 'B_HIST', gid: 1471174410, name: 'Clausura AIFA D 2023',
     plantel: 'L3:X33', fecha: 'A19:J527', tabla: null },
+  'apertura-2021d-b': { d: DATA_B_AP2021, sheet: 'B_HIST', gid: 1452349318, name: 'Apertura AIFA D 2021',
+    plantel: 'L3:X34', fecha: 'A18:J268', tabla: null },
+  'apertura-2022d-b': { d: DATA_B_AP2022, sheet: 'B_HIST', gid: 1019846861, name: 'Apertura AIFA D 2022',
+    plantel: 'L3:X28', fecha: 'A16:J422', tabla: null },
+  'clausura-2022d-b': { d: DATA_B_CL2022, sheet: 'B_HIST', gid: 1338541016, name: 'Clausura AIFA D 2022',
+    plantel: 'L3:X28', fecha: 'A16:J422', tabla: null },
 };
 
 function openHistoricoGenerico(key) {
@@ -7839,6 +7848,10 @@ const SEED_GRAFICOS_B = [
   // 2023
   { competencia:'Apertura AIFA D',           anio:2023, pj:15, pg:8,  pe:4, pp:3, gf:36, gc:14, vi:4, pts:28,   pos:'11°' },
   { competencia:'Clausura AIFA D',           anio:2023, pj:14, pg:9,  pe:5, pp:0, gf:25, gc:9,  vi:7, pts:32,   pos:'5°' },
+  // 2022 — only Clausura AIFA D has a season summary so far; Apertura AIFA D
+  // 2022 is loadable (see HISTORICO_GENERIC) but has no tile until that
+  // summary is provided.
+  { competencia:'Clausura AIFA D',           anio:2022, pj:12, pg:5,  pe:4, pp:3, gf:25, gc:18, vi:null, pts:19, pos:'5°' },
   // 2021
   { competencia:'Apertura AIFA D',           anio:2021, pj:12, pg:7,  pe:2, pp:2, gf:27, gc:14, vi:3, pts:23,   pos:'4°' },
 ];
@@ -7950,6 +7963,12 @@ function renderGraficos() {
     // Primera B 2023 — league seasons via the generic component.
     '2023|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2023d-b')" },
     '2023|Clausura AIFA D': { fn: "showHistoricoTorneo('clausura-2023d-b')" },
+    // Apertura AIFA D 2021 already has a seed tile below — just wire the data.
+    '2021|Apertura AIFA D': { fn: "showHistoricoTorneo('apertura-2021d-b')" },
+    // Clausura AIFA D 2022 gets a new seed tile (see SEED_GRAFICOS_B) since none
+    // existed yet. Apertura AIFA D 2022's season summary hasn't been given yet,
+    // so it's loadable by key but has no tile until that data arrives.
+    '2022|Clausura AIFA D': { fn: "showHistoricoTorneo('clausura-2022d-b')" },
   };
 
   // isSubcampeon MUST be checked before isCampeon — "Subcampeón" contains the
