@@ -3251,6 +3251,7 @@ function buildFechaDetailHTML(basic, detail, fechaLabelOverride) {
   const formRiv   = (detail && detail.formacionRival) || '—';
   const posCSB    = (basic && basic.posCSB)           || '—';
   const posRival  = (basic && basic.posRival)         || '—';
+  const categoriaRival = (detail && detail.categoriaRival) || (basic && basic.categoriaRival) || null;
   const parciales = ((basic && basic.parciales) || (detail && detail.parciales) || '').toString();
   const parcialesVal = (parciales && parciales !== '\\-' && parciales !== '-') ? parciales : '—';
   const obs       = (basic && basic.obs) || (detail && detail.obs) || null;
@@ -3287,6 +3288,7 @@ function buildFechaDetailHTML(basic, detail, fechaLabelOverride) {
     parcialesVal !== '—'     ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">⏱</span><span class="ap-fd-pill-lbl">Parcial</span><span class="ap-fd-pill-val">${parcialesVal}</span></span>` : '',
     posCSBClean !== '—'   ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">📊</span><span class="ap-fd-pill-lbl">Pos CSB</span><span class="ap-fd-pill-val">${posCSBClean}°</span></span>` : '',
     posRivalClean !== '—' ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">📊</span><span class="ap-fd-pill-lbl">Pos Rival</span><span class="ap-fd-pill-val">${posRivalClean}°</span></span>` : '',
+    categoriaRival ? `<span class="ap-fd-pill"><span class="ap-fd-pill-ico">🏷️</span><span class="ap-fd-pill-lbl">Categoría Rival</span><span class="ap-fd-pill-val">${categoriaRival}</span></span>` : '',
   ].filter(Boolean).join('');
 
   const formRow = (formCSB !== '—' || formRiv !== '—') ? `
@@ -8536,6 +8538,44 @@ function parseCopaSheet(rows) {
   return blocks;
 }
 
+// "SB en Copas" also has a short "resumen" table (club-confirmed A1:I16) above
+// the detailed Fecha a Fecha block, covering every copa edition (Supercopa
+// 2021, Recopa 2023-2026, ...) with data the detailed block doesn't carry:
+// Observaciones, Resultados parciales, and the rival's Categoria (posCSB
+// column here, not the round — that gets overwritten by position afterward
+// in loadLiveData same as the detailed blocks). Same title-segmentation as
+// parseCopaSheet, but each chunk is a single row per match (parseMatches),
+// not a match-anchor-plus-player-rows block.
+function parseCopaBasicSheet(rows) {
+  const blocks = {};
+  let currentTitle = 'Supercopa 2021';
+  let bufferStart = 0;
+
+  function flush(endIdx) {
+    if (!currentTitle || endIdx <= bufferStart) return;
+    const chunk = rows.slice(bufferStart, endIdx);
+    const matches = parseMatches(chunk);
+    if (matches.length) {
+      blocks[currentTitle] = (blocks[currentTitle] || []).concat(matches);
+    }
+  }
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const c0 = String(row[0] ?? '').trim();
+    const c1 = String(row[1] ?? '').trim();
+    const c2 = String(row[2] ?? '').trim();
+    const c3 = String(row[3] ?? '').trim();
+    if (/^(recopa|supercopa)\s+\d{4}$/i.test(c0) && !c1 && !c2 && !c3) {
+      flush(i);
+      currentTitle = c0;
+      bufferStart = i + 1;
+    }
+  }
+  flush(rows.length);
+  return blocks;
+}
+
 // Populated once by loadLiveData() from the centralized "SB en Copas" sheet.
 let COPA_BLOCKS = {};
 
@@ -8587,8 +8627,8 @@ async function loadLiveData() {
 
   // Fetch each section as a targeted range so parsers receive exactly the right rows
   const [aSim, aBasic, aDet, bSim, bApBasic, bApDet, aHist, bHist, aGlobal, aTabla,
-         a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
-         bClDet, bClGlobal, bClTabla, aClDet, aClGlobal, aClTabla, copasSheet, bRecopaSheet,
+         a25Det, a25Global, a25Tabla, a25Basico, bApGlobal, bApTabla,
+         bClDet, bClGlobal, bClTabla, aClDet, aClGlobal, aClTabla, copasSheet, copasBasicSheet, bRecopaSheet,
          bSupercopa25Det, bSupercopa25Plantel, bRecopa24Det, bRecopa24Plantel,
          bRecopa21Det, bRecopa21Plantel] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
@@ -8616,12 +8656,14 @@ async function loadLiveData() {
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L3:X33'),  // global player stats table
     fetchCSV(GS.A_MAIN, 'Apertura 2026', 'L37:V53'), // standings table
     // ── Apertura AIFA A 2025 (historical) — fetched by gid (677112928) with
-    //    the club-confirmed ranges; "basic partidos" derived from the parsed
-    //    detailed matches since there's no separate short-table range here.
-    //    Tabla left on the original tab-name fetch, per instruction to leave it as-is.
+    //    the club-confirmed ranges. Tabla left on the original tab-name fetch,
+    //    per instruction to leave it as-is.
     fetchGvizByGid(GS.A_MAIN, 677112928, 'A21:J505'),  // fecha-a-fecha detail
     fetchGvizByGid(GS.A_MAIN, 677112928, 'K3:X30'),    // player stats
     fetchCSV(GS.A_MAIN, 'Apertura 2025', 'K32:T48'),   // standings (left as-is)
+    // Short "resumen" table (club-confirmed A1:I17) — carries Observaciones/
+    // Parciales/posición missing from the detailed block above.
+    fetchGvizByGid(GS.A_MAIN, 677112928, 'A1:I17'),
     // ── Apertura 2026 B — global stats + standings from B_HIST ──
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'L1:X35'), // player stats
     fetchCSV(GS.B_HIST, 'APERTURA 2026 AIFA B', 'L37:V55'), // standings
@@ -8643,6 +8685,10 @@ async function loadLiveData() {
     //    every year, segmented by title row (see parseCopaSheet). Wide range
     //    for headroom since we don't know the exact row count yet.
     fetchGvizByGid(GS.A_MAIN, 1255047736, 'A1:S1000'),
+    // ── Same sheet's short "resumen" table (club-confirmed A1:I16) — carries
+    //    Observaciones/Parciales/Categoría del rival for every copa edition,
+    //    which the detailed block above doesn't have. See parseCopaBasicSheet.
+    fetchGvizByGid(GS.A_MAIN, 1255047736, 'A1:I16'),
     // ── Recopa AIFA B 2026 — its own dedicated sheet tab (same B_HIST
     //    spreadsheet, new gid), same league-style Fecha a Fecha layout, so
     //    it's parsed the same way as the centralized "SB en Copas" blocks. ──
@@ -8789,6 +8835,13 @@ async function loadLiveData() {
         String(m.fecha) === '3' && (m.rival || '').toUpperCase().includes('RHINO'));
     }
   } catch(e) { console.warn('parseDetailedMatches A25:', e); }
+  // Short "resumen" table — real parciales/posición/observaciones instead of
+  // the blank-fields fallback _deriveBasicFromDetailed leaves in .partidos.
+  if (ok(a25Basico)) try {
+    const b = _ligaOnlyMatches(parseMatches(ok(a25Basico))).filter(m =>
+      !(String(m.fecha) === '3' && (m.rival || '').toUpperCase().includes('RHINO')));
+    if (b.length > 0) DATA_A_2025.partidos = b;
+  } catch(e) { console.warn('parseMatches A25 (basico):', e); }
   if (ok(a25Global)) {
     const p = parseGlobalStats(ok(a25Global));
     if (p.length > 0) DATA_A_2025.jugadores = p;
@@ -8819,6 +8872,27 @@ async function loadLiveData() {
       console.log('[Copas] Parsed titles:', Object.keys(blocks).join(', '));
     }
   } catch(e) { console.warn('parseCopaSheet:', e); }
+
+  // "SB en Copas" short resumen table — Observaciones/Parciales/Categoría del
+  // rival for every edition, matched to COPA_BLOCKS by position within each
+  // title (both tables list that edition's matches in the same chronological
+  // order). posRival here is the rival's Categoria, not their league
+  // position — kept as its own field (categoriaRival) so it doesn't collide
+  // with posCSB, which COPA_BLOCKS already uses for the round name (Instancia).
+  if (ok(copasBasicSheet)) try {
+    const basicBlocks = parseCopaBasicSheet(ok(copasBasicSheet));
+    for (const [title, basicMatches] of Object.entries(basicBlocks)) {
+      const detailMatches = COPA_BLOCKS[title];
+      if (!detailMatches) continue;
+      basicMatches.forEach((bm, i) => {
+        const dm = detailMatches[i];
+        if (!dm) return;
+        if (bm.obs)       dm.obs = bm.obs;
+        if (bm.parciales) dm.parciales = bm.parciales;
+        dm.categoriaRival = bm.posRival || '';
+      });
+    }
+  } catch(e) { console.warn('parseCopaBasicSheet:', e); }
 
   // Shared by every Primera B copa on its own dedicated sheet (Recopa 2026,
   // Supercopa 2025, Recopa 2024, ...): parses the Fecha a Fecha rows, assigns
