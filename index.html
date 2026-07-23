@@ -7884,6 +7884,7 @@ const SEED_GRAFICOS_B = [
   { competencia:'Clausura AIFA D',           anio:2022, pj:12, pg:5,  pe:4, pp:3, gf:25, gc:18, vi:null, pts:19, pos:'5°' },
   // 2021
   { competencia:'Apertura AIFA D',           anio:2021, pj:12, pg:7,  pe:2, pp:2, gf:27, gc:14, vi:3, pts:23,   pos:'4°' },
+  { competencia:'Recopa',                    anio:2021, pj:1,  pg:0,  pe:0, pp:1, gf:0,  gc:4,  vi:0, pts:null, pos:'Octavos de Final' },
 ];
 
 const SEED_GRAFICOS = [
@@ -7999,6 +8000,7 @@ function renderGraficos() {
     // existed yet. Apertura AIFA D 2022's season summary hasn't been given yet,
     // so it's loadable by key but has no tile until that data arrives.
     '2022|Clausura AIFA D': { fn: "showHistoricoTorneo('clausura-2022d-b')" },
+    '2021|Recopa':          { fn: "showHistoricoTorneo('recopa-2021b')" },
   };
 
   // isSubcampeon MUST be checked before isCampeon — "Subcampeón" contains the
