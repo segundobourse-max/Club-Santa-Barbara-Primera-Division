@@ -1335,6 +1335,16 @@
     .pp-rank-top { box-shadow: 0 0 0 1px rgba(255,255,255,0.02); }
     .pp-rank-label { color:var(--gris-texto); font-weight:600; font-size:0.74rem; }
     .pp-effectiveness { margin-top: 16px; }
+    .pp-kpi-tab { cursor:pointer; transition:background .15s, border-color .15s; border:1px solid transparent; }
+    .pp-kpi-tab:hover { background:rgba(255,255,255,0.04); }
+    .pp-kpi-active { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.08); }
+    .pp-detail-header { font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--gris-texto); margin:14px 0 8px; }
+    .pp-year-group { margin-bottom:10px; border:1px solid #1e2a3a; border-radius:10px; overflow:hidden; }
+    .pp-year-summary { cursor:pointer; padding:10px 14px; font-weight:800; font-size:0.88rem; color:#f1f5f9; background:rgba(255,255,255,0.03); list-style:none; }
+    .pp-year-summary::-webkit-details-marker { display:none; }
+    .pp-year-count { color:var(--gris-texto); font-weight:600; font-size:0.78rem; }
+    .pp-torneo-group { padding:8px 12px 12px; }
+    .pp-torneo-label { font-size:0.72rem; font-weight:700; color:var(--dorado); text-transform:uppercase; letter-spacing:.04em; margin:8px 0 6px; }
     .pp-match-list { display:flex; flex-direction:column; gap:8px; max-height: 560px; overflow-y:auto; }
     .pp-match-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid #1e2a3a; flex-wrap:wrap; }
     .pp-match-row-link { cursor:pointer; transition:border-color .15s, background .15s; }
@@ -2513,6 +2523,76 @@ function ppFilterMetrics(cat, btn) {
   }
 }
 
+// ── Every tournament data source that carries a real Fecha a Fecha (.apertura
+// array of match objects) — used to build a player's COMPLETE career match
+// history across every season/category currently loaded on the site, not
+// just the 2 live + 2 archived ones. Primera A's centralized copas
+// (COPA_BLOCKS) have a different shape ({title: matches[]}, no wrapper
+// object) and are combined in separately by _collectAllMatchesForPlayer.
+function _allPlayerTorneoSources() {
+  const core = [
+    { d: DATA_A, equipo: 'a', torneo: 'Clausura AIFA A 2026' },
+    { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', torneo: 'Apertura AIFA A 2026' },
+    { d: DATA_B, equipo: 'b', torneo: 'Clausura AIFA B 2026' },
+    { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', torneo: 'Apertura AIFA B 2026' },
+  ];
+  // Every historical league season (Torneos Antiguos), both categories —
+  // reached only through "Torneos Antiguos" navigation, not goToMatchFecha,
+  // so equipo stays null (no direct deep-link target for these yet).
+  const generic = Object.values(HISTORICO_GENERIC).map(cfg => ({ d: cfg.d, equipo: null, torneo: cfg.name }));
+  // Dedicated copa sheets (own Plantel/Fecha a Fecha, outside COPA_BLOCKS).
+  const copasDedicadas = [DATA_A_RECOPA2025, DATA_A_2025, DATA_B_2024D,
+    DATA_B_RECOPA2026, DATA_B_SUPERCOPA2025, DATA_B_RECOPA2024, DATA_B_RECOPA2021]
+    .map(d => ({ d, equipo: null, torneo: d.nombre }));
+  return [...core, ...generic, ...copasDedicadas];
+}
+
+// Flat list of every match (across every source above, plus the centralized
+// Primera A copas in COPA_BLOCKS) where this player appears in .jugadores.
+function _collectAllMatchesForPlayer(target) {
+  const rows = _allPlayerTorneoSources()
+    .flatMap(({ d, equipo, torneo }) => (d.apertura || []).map(m => ({ m, torneo, equipo })));
+  const copaRows = Object.entries(COPA_BLOCKS)
+    .flatMap(([title, matches]) => (matches || []).map(m => ({ m, torneo: title, equipo: null })));
+  return [...rows, ...copaRows]
+    .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target));
+}
+
+// Best-effort títulos list: there's no per-player "which titles" data source
+// anywhere in the sheets (only a raw career count from El Nido) — derived
+// instead from each tournament's own standings (league: Santa Bárbara's row
+// is 1° / says Campeón) or bracket (copa: won the Final), cross-referenced
+// against whether the player actually appeared in that tournament/match.
+function _collectPlayerTitulos(target) {
+  const wasInSquad = (d) => (d.apertura || []).some(m =>
+    (m.jugadores || []).some(j => normName(j.nombre) === target && (j.citado || j.titular || j.entro)));
+  const out = [];
+  for (const { d, torneo } of _allPlayerTorneoSources()) {
+    const csbRow = (d.tabla || []).find(t => t.csb);
+    const isChampion = csbRow && (/campe[oó]n/i.test(csbRow.copas || '') || csbRow.pos === '1°');
+    if (isChampion && wasInSquad(d)) {
+      out.push({ anio: (torneo.match(/\d{4}/) || [])[0] || '', torneo, categoria: /\bB\b/.test(torneo) ? 'Primera B' : 'Primera A' });
+    }
+  }
+  const copaSources = [
+    ...Object.entries(COPA_BLOCKS).map(([title, matches]) => ({ torneo: title, matches })),
+    ...[DATA_A_RECOPA2025, DATA_B_RECOPA2026, DATA_B_SUPERCOPA2025, DATA_B_RECOPA2024, DATA_B_RECOPA2021]
+      .map(d => ({ torneo: d.nombre, matches: d.apertura })),
+  ];
+  for (const { torneo, matches } of copaSources) {
+    const final = (matches || []).find(m => /\bfinal\b/i.test(m.posCSB || ''));
+    if (!final) continue;
+    const won = final.penales
+      ? Number(String(final.penales).split('-')[0] || 0) > Number(String(final.penales).split('-')[1] || 0)
+      : final.gf != null && final.gc != null && final.gf > final.gc;
+    const playedFinal = (final.jugadores || []).some(j => normName(j.nombre) === target && (j.citado || j.titular || j.entro));
+    if (won && playedFinal) {
+      out.push({ anio: (torneo.match(/\d{4}/) || [])[0] || '', torneo, categoria: /\bB\b/.test(torneo) ? 'Primera B' : 'Primera A' });
+    }
+  }
+  return out.sort((a, b) => (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0));
+}
+
 // ── Aggregate every known data source for a single player, cross-team ──────
 // Career totals + títulos always come from "El Nido" (centralized DB), summing
 // Primera A + Primera B when the player has history in both. Rankings are kept
@@ -2553,32 +2633,36 @@ function _collectPlayerStats(nombre) {
   // (every player who ever appears in either category), not only double-team players.
   const rankGen = nidoReady && merged.length ? rankSet(merged) : null;
 
-  // Fecha a fecha — both squad sheets are always loaded in background, so the
-  // match log covers every category the player appeared in, newest first. Each
-  // row keeps its source team so the profile can deep-link back into that
-  // tournament's "Fecha a Fecha" tab with the exact date pre-selected.
-  const partidos = [
-      { d: DATA_A, equipo: 'a', torneo: 'Clausura AIFA A 2026' },
-      { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', torneo: 'Apertura AIFA A 2026' },
-      { d: DATA_B, equipo: 'b', torneo: 'Clausura AIFA B 2026' },
-      { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', torneo: 'Apertura AIFA B 2026' },
-    ]
-    .flatMap(({ d, equipo, torneo }) => (d.apertura || []).map(m => ({ m, torneo, equipo })))
-    .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target))
+  // Fecha a fecha — every tournament/season currently loaded on the site
+  // (live + archived + Torneos Antiguos + every copa), not just the 2 live +
+  // 2 archived ones. Each row keeps its source team so the profile can
+  // deep-link back into that tournament's "Fecha a Fecha" tab with the exact
+  // date pre-selected — only the 4 core sources support that today (equipo
+  // stays null for the rest, so those rows render without the deep-link).
+  const partidos = _collectAllMatchesForPlayer(target)
     .map(({ m, torneo, equipo }) => {
       const j = m.jugadores.find(jj => normName(jj.nombre) === target);
       let condicion = 'No citado';
       if (j.titular) condicion = 'Titular';
       else if (j.entro) condicion = 'Ingresó desde el banco';
       else if (j.citado) condicion = 'Banco (no ingresó)';
+      const anio = (torneo.match(/\d{4}/) || [])[0] || '';
+      const localNorm = String(m.local || _inferLocalFromLugar(m.lugar) || '').toUpperCase();
       return {
-        torneo, equipo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
-        gf: m.gf, gc: m.gc,
+        torneo, anio, equipo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
+        gf: m.gf, gc: m.gc, local: localNorm,
         condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
         esCapitan: /\(c\)/i.test(j.nombre),
       };
     })
-    .sort((a, b) => (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
+    .sort((a, b) => (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0) || (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
+
+  // Slices of the same match list for the clickable Goles/Asistencias/Rojas
+  // stat tabs — no separate data source, just filtered views of `partidos`.
+  const golesList = partidos.filter(p => p.goles > 0);
+  const asistList = partidos.filter(p => p.asist > 0);
+  const rojasList = partidos.filter(p => p.rojas > 0);
+  const titulosList = _collectPlayerTitulos(target);
 
   // Titular/suplente/rojas breakdown — career totals, same source as pj/goles/asist
   // below (El Nido's "Jugadores Estadisticas" accumulated sheet), not just the
@@ -2631,7 +2715,7 @@ function _collectPlayerStats(nombre) {
     pj, titular, sup, goles, asist, rojas, titulos,
     promGol, promAsist, efectividadGA,
     hasA, hasB, rankA, rankB, rankGen,
-    partidos, porCategoria,
+    partidos, golesList, asistList, rojasList, titulosList, porCategoria,
     found: !!(meA || meB || nidoA || nidoB),
     nidoReady,
   };
@@ -2679,6 +2763,71 @@ function _ppRankGroup(rankSet, groupLabel, accent) {
   </div>`;
 }
 
+// Groups an already-sorted (newest-first) partidos list into <details> Año →
+// Torneo accordions. Native <details>/<summary> gives free expand/collapse
+// without any extra JS/state to manage.
+function _ppGroupByYearHtml(partidos, rowFn) {
+  const byYear = new Map();
+  for (const p of partidos) {
+    const y = p.anio || 'Sin año';
+    if (!byYear.has(y)) byYear.set(y, new Map());
+    const byTorneo = byYear.get(y);
+    if (!byTorneo.has(p.torneo)) byTorneo.set(p.torneo, []);
+    byTorneo.get(p.torneo).push(p);
+  }
+  return [...byYear.entries()].map(([anio, byTorneo], i) => `
+    <details class="pp-year-group" ${i === 0 ? 'open' : ''}>
+      <summary class="pp-year-summary">📅 ${anio} <span class="pp-year-count">(${[...byTorneo.values()].reduce((n, arr) => n + arr.length, 0)})</span></summary>
+      ${[...byTorneo.entries()].map(([torneo, rows]) => `
+        <div class="pp-torneo-group">
+          <div class="pp-torneo-label">${torneo} <span class="pp-year-count">(${rows.length})</span></div>
+          ${rows.map(rowFn).join('')}
+        </div>`).join('')}
+    </details>`).join('');
+}
+
+// Row formatters for the 4 clickable stat tabs (Goles/Asistencias/Títulos/Rojas).
+function _ppStatRowHtml(kind, p) {
+  const localIco = p.local === 'LOCAL' ? '🏠' : p.local === 'NEUTRAL' ? '🏟️' : p.local === 'VISITANTE' ? '✈️' : '';
+  if (kind === 'titulos') {
+    return `<div class="pp-match-row">
+      <div class="pp-match-main"><span class="pp-match-torneo">${p.anio}</span><span class="pp-match-rival">${p.torneo}</span></div>
+      <div class="pp-match-side"><span class="pp-match-cond">${p.categoria}</span></div>
+    </div>`;
+  }
+  const statVal = kind === 'goles' ? p.goles : kind === 'asist' ? p.asist : null;
+  const statIco = kind === 'goles' ? '⚽' : kind === 'asist' ? '🎯' : '🟥';
+  return `<div class="pp-match-row">
+    <div class="pp-match-main">
+      <span class="pp-match-torneo">${p.anio} · ${p.torneo}${p.fecha ? ' • Fecha ' + p.fecha : ''}</span>
+      <span class="pp-match-rival">vs ${p.rival}</span>
+    </div>
+    <div class="pp-match-side">
+      ${statVal != null ? `<span class="pp-match-stat">${statIco}${statVal > 1 ? ' ×' + statVal : ''}</span>` : `<span class="pp-match-stat">${statIco}</span>`}
+      ${localIco ? `<span class="pp-match-cond">${localIco}</span>` : ''}
+    </div>
+  </div>`;
+}
+
+const PP_DETAIL_LABELS = { goles: '⚽ Goles', asist: '🎯 Asistencias', rojas: '🟥 Rojas', titulos: '🏆 Títulos' };
+
+// Toggles the detail panel below the KPI grid for one of the 4 clickable
+// stats — clicking the already-active one collapses it. Swaps only
+// #pp-detail-panel's innerHTML (no full profile re-render), same pattern as
+// ppFilterMetrics().
+window.ppShowDetail = function(kind) {
+  const panel = document.getElementById('pp-detail-panel');
+  if (!panel) return;
+  document.querySelectorAll('.pp-kpi-tab').forEach(el => el.classList.remove('pp-kpi-active'));
+  if (window._ppDetailKind === kind) { window._ppDetailKind = null; panel.innerHTML = ''; return; }
+  window._ppDetailKind = kind;
+  document.getElementById('pp-kpi-' + kind)?.classList.add('pp-kpi-active');
+  const list = (window._ppDetailLists && window._ppDetailLists[kind]) || [];
+  panel.innerHTML = `
+    <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${list.length})</div>
+    ${list.length ? list.map(p => _ppStatRowHtml(kind, p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+};
+
 function renderPlayerProfile(nombre) {
   let overlay = document.getElementById('player-profile-overlay');
   if (!overlay) {
@@ -2694,12 +2843,17 @@ function renderPlayerProfile(nombre) {
   const initials = s.nombre.trim().split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const posLabel = POS_NOMBRE[s.pos] || s.pos || 'Posición sin definir';
 
-  const kpi = (id, icon, val, label, color) => `
-    <div class="hist-kpi"><div class="hist-kpi-icon">${icon}</div><div class="hist-kpi-val pp-metric-val" id="${id}" style="${color ? `color:${color}` : ''}">${val}</div><div class="hist-kpi-label" id="${id}-label">${label}</div></div>`;
+  const kpi = (id, icon, val, label, color, kind) => `
+    <div class="hist-kpi${kind ? ' pp-kpi-tab' : ''}" ${kind ? `onclick="ppShowDetail('${kind}')" id="pp-kpi-${kind}"` : ''}><div class="hist-kpi-icon">${icon}</div><div class="hist-kpi-val pp-metric-val" id="${id}" style="${color ? `color:${color}` : ''}">${val}</div><div class="hist-kpi-label" id="${id}-label">${label}</div></div>`;
 
   // Stash per-category numbers so the Totales/Primera A/Primera B tabs can swap
   // the on-screen values instantly without re-rendering the whole profile.
   window._ppMetricsData = s.porCategoria;
+
+  // Stash the 4 clickable-stat detail lists so ppShowDetail() can swap the
+  // panel below without a full re-render (same pattern as _ppMetricsData).
+  window._ppDetailLists = { goles: s.golesList, asist: s.asistList, rojas: s.rojasList, titulos: s.titulosList };
+  window._ppDetailKind = null;
 
   const metricsTabs = `
     <div class="pp-metric-tabs" id="pp-metric-tabs">
@@ -2711,11 +2865,11 @@ function renderPlayerProfile(nombre) {
   const metrics = `
     <div class="hist-kpis" style="grid-template-columns:repeat(4,1fr)">
       ${kpi('pp-m-pj',      '📋', s.pj,   'Partidos (' + s.titular + ' tit · ' + s.sup + ' sup)')}
-      ${kpi('pp-m-goles',   '⚽', s.goles, 'Goles', '#22c55e')}
-      ${kpi('pp-m-asist',   '🎯', s.asist, 'Asistencias', '#3b82f6')}
+      ${kpi('pp-m-goles',   '⚽', s.goles, 'Goles', '#22c55e', 'goles')}
+      ${kpi('pp-m-asist',   '🎯', s.asist, 'Asistencias', '#3b82f6', 'asist')}
       ${kpi('pp-m-ga',      '🔥', s.goles + s.asist, 'G+A', '#a855f7')}
-      ${kpi('pp-m-titulos', '🏆', s.titulos, 'Títulos', '#fbbf24')}
-      ${kpi('pp-m-rojas',   '🟥', s.rojas, 'Rojas', '#ef4444')}
+      ${kpi('pp-m-titulos', '🏆', s.titulos, 'Títulos', '#fbbf24', 'titulos')}
+      ${kpi('pp-m-rojas',   '🟥', s.rojas, 'Rojas', '#ef4444', 'rojas')}
       ${kpi('pp-m-promgol', '📈', s.promGol.toFixed(2).replace('.', ','), 'Prom. Gol/Partido', '#22c55e')}
       ${kpi('pp-m-promasist','🎯', s.promAsist.toFixed(2).replace('.', ','), 'Prom. Asist/Partido', '#3b82f6')}
     </div>
@@ -2724,7 +2878,8 @@ function renderPlayerProfile(nombre) {
       <div class="hd-meter-track"><div class="hd-meter-fill" id="pp-m-meter" style="width:${Math.min(100, s.efectividadGA).toFixed(0)}%"></div></div>
       <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct" id="pp-m-pct">${s.efectividadGA.toFixed(0)}%</span><span>100%</span></div>
     </div>
-    ${!s.nidoReady ? `<div class="pp-nido-loading">⏳ Sincronizando con El Nido…</div>` : ''}`;
+    ${!s.nidoReady ? `<div class="pp-nido-loading">⏳ Sincronizando con El Nido…</div>` : ''}
+    <div id="pp-detail-panel"></div>`;
 
   // Left column: rendimiento por categoría (equipo). Stacked A above B if the
   // player has "doble camiseta"; a single labeled block otherwise.
@@ -2741,10 +2896,13 @@ function renderPlayerProfile(nombre) {
     </div>` : '';
 
   // Every row is a deep link straight into that tournament's Fecha a Fecha tab,
-  // with the exact date pre-selected (formación, incidencias, observaciones).
-  const matchRows = s.partidos.length
-    ? s.partidos.map(m => `
-        <div class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${m.equipo}', '${String(m.fecha).replace(/'/g, "\\'")}')" title="Ver Fecha ${m.fecha} en detalle">
+  // with the exact date pre-selected (formación, incidencias, observaciones) —
+  // only when the source tournament supports it (m.equipo set); historical
+  // Torneos Antiguos rows render the same info without the deep-link.
+  function matchRowHtml(m) {
+    const clickable = !!m.equipo;
+    return `
+        <div class="pp-match-row${clickable ? ' pp-match-row-link' : ''}" ${clickable ? `onclick="goToMatchFecha('${m.equipo}', '${String(m.fecha).replace(/'/g, "\\'")}')" title="Ver Fecha ${m.fecha} en detalle"` : ''}>
           <div class="pp-match-main">
             <span class="pp-match-torneo">${m.torneo}</span>
             <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` <span class="pp-res-badge pp-res-${m.gf != null && m.gc != null ? (m.gf > m.gc ? 'win' : m.gf === m.gc ? 'draw' : 'loss') : 'na'}">${m.resultado}</span>` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
@@ -2755,10 +2913,15 @@ function renderPlayerProfile(nombre) {
             ${m.goles ? `<span class="pp-match-stat" style="color:#22c55e">⚽${m.goles > 1 ? ' ×' + m.goles : ''}</span>` : ''}
             ${m.asist ? `<span class="pp-match-stat" style="color:#3b82f6">🎯${m.asist > 1 ? ' ×' + m.asist : ''}</span>` : ''}
             ${m.rojas ? `<span class="pp-match-stat" style="color:#ef4444">🟥</span>` : ''}
-            <span class="pp-match-arrow">›</span>
+            ${clickable ? '<span class="pp-match-arrow">›</span>' : ''}
           </div>
-        </div>`).join('')
-    : `<div class="hist-empty">No se encontraron partidos registrados para esta temporada.</div>`;
+        </div>`;
+  }
+
+  // Historial de Partidos — grouped by year, then by torneo within the year,
+  // as a native <details> accordion (no extra JS needed for expand/collapse).
+  const matchRows = s.partidos.length ? _ppGroupByYearHtml(s.partidos, matchRowHtml)
+    : `<div class="hist-empty">No se encontraron partidos registrados.</div>`;
 
   overlay.innerHTML = `
     <div class="pp-wrap">
