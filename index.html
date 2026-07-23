@@ -2158,9 +2158,16 @@ const SEED_APERTURA_A = [
 ];
 
 
-const DATA_A = {
-  nombre: 'Primera A',
-  badge: 'Clausura AIFA A 2026',
+// Apertura AIFA A 2026 — this season finished and moved to Torneos Antiguos
+// once Clausura AIFA A 2026 (its own new sheet tab) became the live season
+// below. Kept as its own object (same pattern as DATA_B_APERTURA2026) so the
+// historical "Fecha a Fecha"/Plantel view and player-profile match history
+// for this season keep working after DATA_A starts pointing at the new tab.
+// historico/topHist/titulos/proximos stay on DATA_A itself (club-wide,
+// season-independent identity data) rather than being duplicated here.
+const DATA_A_APERTURA2026 = {
+  nombre: 'Apertura AIFA A 2026',
+  badge: 'Apertura AIFA A 2026',
   badgeClass: 'badge-gold',
   tabla: [
     { pos:'1°',  equipo:'SANTA BARBARA', copas:'Campeón y Supercopa', pts:31, pj:13, pg:9, pe:4, pp:0, gf:24, gc:8,  df:16, csb:true },
@@ -2224,6 +2231,29 @@ const DATA_A = {
     { nombre:'Juan B. Basavilbaso', pos:'DFI', citado:3,  titular:1,  sup:2,  goles:0,  asist:1, rojas:0 },
     { nombre:'Juan Cruz Aleixo',    pos:'ARQ', citado:0,  titular:0,  sup:0,  goles:0,  asist:0, rojas:0 },
   ],
+  proximos: [
+    { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
+    { fecha:'Fecha 15', rival:'SITAS', local:'LOCAL', rivalPos:'8°' },
+  ],
+  apertura: SEED_APERTURA_A,
+};
+
+// Clausura AIFA A 2026 — the new live season (Recopa AIFA A 2026 keeps running
+// in parallel via COPA_BLOCKS, unaffected by this). historico/topHist/titulos
+// are club-wide identity data, unrelated to any single season, so they live
+// here rather than on DATA_A_APERTURA2026 (same split as Primera B's
+// DATA_B/DATA_B_APERTURA2026).
+const DATA_A = {
+  nombre: 'Primera A',
+  badge: 'Clausura AIFA A 2026',
+  badgeClass: 'badge-gold',
+  // Brand-new sheet tab — no seed data available yet, these fill in live from
+  // loadLiveData() (see fetchGvizByGid(GS.A_MAIN, 618783090, ...)). Every
+  // render site already has a "Cargando…" fallback for empty arrays.
+  tabla: [],
+  partidos: [],
+  jugadores: [],
+  apertura: [],
   historico: { pj:266, pg:123, pe:57, pp:87, gf:501, gc:365, vi:57 },
   topHist: {
     partidos: [
@@ -2252,11 +2282,6 @@ const DATA_A = {
     { nombre:'Campeón Apertura AIFA B', anio:'2019' },
     { nombre:'Campeón Copa Maradona',   anio:'2020' },
   ],
-  proximos: [
-    { fecha:'Fecha 14', rival:'GEBA', local:'VISITANTE', rivalPos:'13°' },
-    { fecha:'Fecha 15', rival:'SITAS', local:'LOCAL', rivalPos:'8°' },
-  ],
-  apertura: SEED_APERTURA_A,
 };
 
 // ── Apertura 2025 A historical data (loaded dynamically from GSheet) ──
@@ -2478,9 +2503,10 @@ function closePlayerProfile() {
 // "Fecha a Fecha" tab, with the exact date pre-selected (formación, incidencias, etc).
 function goToMatchFecha(equipo, fecha) {
   closePlayerProfile();
-  // 'b-ap2026' = archived Apertura AIFA B 2026 (now in Torneos Antiguos, its own
-  // data source) vs 'b' = the live Clausura AIFA B 2026 season in Torneos Actuales.
-  currentData = equipo === 'a' ? DATA_A : DATA_B;
+  // 'a-ap2026'/'b-ap2026' = archived Apertura AIFA 2026 (now in Torneos
+  // Antiguos, its own data source) vs 'a'/'b' = the live Clausura AIFA 2026
+  // season in Torneos Actuales.
+  currentData = equipo.startsWith('a') ? DATA_A : DATA_B;
 
   document.getElementById('landing').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
@@ -2491,8 +2517,8 @@ function goToMatchFecha(equipo, fecha) {
   badge.className = 'header-section-badge ' + currentData.badgeClass;
   destroyCharts();
 
-  if (equipo === 'b-ap2026') {
-    showHistoricoTorneo('apertura-2026'); // marks "Torneos Antiguos" active + renders from DATA_B_APERTURA2026
+  if (equipo === 'a-ap2026' || equipo === 'b-ap2026') {
+    showHistoricoTorneo('apertura-2026'); // marks "Torneos Antiguos" active + renders from the archived DATA_*_APERTURA2026
   } else {
     showTorneo('apertura');       // renders the tab + auto-selects the last played date
   }
@@ -2586,7 +2612,8 @@ function _collectPlayerStats(nombre) {
   // row keeps its source team so the profile can deep-link back into that
   // tournament's "Fecha a Fecha" tab with the exact date pre-selected.
   const partidos = [
-      { d: DATA_A, equipo: 'a', torneo: 'Primera A' },
+      { d: DATA_A, equipo: 'a', torneo: 'Clausura AIFA A 2026' },
+      { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', torneo: 'Apertura AIFA A 2026' },
       { d: DATA_B, equipo: 'b', torneo: 'Clausura AIFA B 2026' },
       { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', torneo: 'Apertura AIFA B 2026' },
     ]
@@ -2916,21 +2943,22 @@ function showJugSub(key) {
 function renderTorneosMenu() {
   const isA = currentData === DATA_A;
   // Apertura ended for both categories — its data lives in Torneos Antiguos now.
-  // A: only the still-running Recopa 2026 stays active.
-  // B: the tracked "current season" slot now represents Clausura AIFA B 2026
-  //    (same live sheet feed, relabeled); its Recopa already finished and moved
-  //    to Torneos Antiguos too, so it's dropped from Torneos Actuales.
+  // Both A and B's tracked "current season" slot now represents their Clausura
+  // AIFA 2026 (same live sheet feed pattern, relabeled). A's Recopa 2026 keeps
+  // running in parallel (still active); B's Recopa already finished and moved
+  // to Torneos Antiguos, so it's dropped from Torneos Actuales.
+  const ligaCard = `<div class="torneo-card" onclick="showTorneo('apertura')">
+         <div class="torneo-card-icon">🥇</div>
+         <div class="torneo-card-name">Clausura AIFA ${isA ? 'A' : 'B'} 2026</div>
+         <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2026</div>
+       </div>`;
   const cards = isA
-    ? `<div class="torneo-card" onclick="showTorneo('recopa')">
+    ? ligaCard + `<div class="torneo-card" onclick="showTorneo('recopa')">
          <div class="torneo-card-icon">🏅</div>
          <div class="torneo-card-name">Recopa 2026</div>
          <div class="torneo-card-sub">Torneo copa · Temporada 2026</div>
        </div>`
-    : `<div class="torneo-card" onclick="showTorneo('apertura')">
-         <div class="torneo-card-icon">🥇</div>
-         <div class="torneo-card-name">Clausura AIFA B 2026</div>
-         <div class="torneo-card-sub">Liga oficial AIFA · Temporada 2026</div>
-       </div>`;
+    : ligaCard;
   document.getElementById('torneos-picker-content').innerHTML = `
     <div class="section-title" style="margin-bottom:20px">🏆 Torneos Actuales – ${currentData.nombre}</div>
     <div class="torneos-picker-grid">${cards}</div>`;
@@ -3832,15 +3860,17 @@ function renderCopaHistorico(matches, name, jugadoresOverride) {
 // ──────────────────────────────────────────────
 function renderTorneoApertura() {
   const isA = currentData === DATA_A;
-  // A's Apertura already finished — only reachable from Torneos Antiguos now.
-  // B's tracked current-season slot is Clausura AIFA B 2026 (Torneos Actuales,
-  // its own new sheet tab, fetched into DATA_B), while the finished Apertura
-  // AIFA B 2026 season now lives in its own archived DATA_B_APERTURA2026 and
+  // Both A and B's tracked current-season slot is now their respective
+  // Clausura 2026 (Torneos Actuales, its own new sheet tab, fetched into
+  // DATA_A/DATA_B), while the finished Apertura 2026 season for each team
+  // now lives in its own archived DATA_A_APERTURA2026/DATA_B_APERTURA2026 and
   // stays viewable historically from Torneos Antiguos.
   const fromAntiguos = document.querySelectorAll('#main-nav button')[4]?.classList.contains('active');
-  const d = isA ? currentData : (fromAntiguos ? DATA_B_APERTURA2026 : DATA_B);
+  const d = fromAntiguos
+    ? (isA ? DATA_A_APERTURA2026 : DATA_B_APERTURA2026)
+    : currentData;
   const name = isA
-    ? 'Apertura AIFA A 2026'
+    ? (fromAntiguos ? 'Apertura AIFA A 2026' : 'Clausura AIFA A 2026')
     : (fromAntiguos ? 'Apertura AIFA B 2026' : 'Clausura AIFA B 2026');
 
   const partidos = (d.partidos || []).filter(m => /^\d+$/.test(m.fecha));
@@ -4036,11 +4066,12 @@ function renderTorneoApertura() {
     { color:'#fb923c', label:'Copa de Honor' },
     { color:'#ef4444', label:'Descenso' },
   ];
-  const aifaUrl = isA
-    ? 'https://www.aifa.ar/torneo/division-a-apertura-2026/posiciones'
-    : 'https://www.aifa.ar/torneo/division-b-apertura-2026/posiciones';
-
-  const aifaSlug = isA ? 'division-a-apertura-2026' : 'division-b-apertura-2026';
+  // Archived view (Torneos Antiguos) always points at the finished Apertura;
+  // otherwise it's whichever team's live Clausura 2026.
+  const aifaSlug = fromAntiguos
+    ? (isA ? 'division-a-apertura-2026' : 'division-b-apertura-2026')
+    : (isA ? 'division-a-clausura-2026' : 'division-b-clausura-2026');
+  const aifaUrl = `https://www.aifa.ar/torneo/${aifaSlug}/posiciones`;
 
   function copaBadge(copa) {
     if (!copa || copa === '-' || copa === '–') return '<span style="color:rgba(255,255,255,.15)">—</span>';
@@ -7926,14 +7957,16 @@ function renderGraficos() {
   const container = document.getElementById('graf-content');
 
   // Use B's live data (from sheet) or B seed; A uses SEED_GRAFICOS plus the just-finished
-  // Apertura AIFA A 2026, computed live from the standings table (Torneo Apertura moved
-  // here now that the season is over — no card for it in "Torneos Actuales" anymore).
+  // Apertura AIFA A 2026, computed live from ITS OWN archived standings table
+  // (DATA_A_APERTURA2026, not the live DATA_A — which now points at Clausura
+  // AIFA A 2026 instead — no card for the finished Apertura in "Torneos
+  // Actuales" anymore, so this is what surfaces it in Torneos Antiguos/Gráficos).
   let source;
   if (currentData === DATA_B) {
     source = DATA_B.graficos.length ? DATA_B.graficos : SEED_GRAFICOS_B;
   } else {
     source = SEED_GRAFICOS;
-    const csbRow = (DATA_A.tabla || []).find(t => t.csb);
+    const csbRow = (DATA_A_APERTURA2026.tabla || []).find(t => t.csb);
     if (csbRow && !source.some(t => t.anio === 2026 && t.competencia === 'Apertura AIFA A')) {
       // Keep the plain "2°"/"1°" text, but force the podium color via forceColor
       // since the text itself has no "Campeón"/"Subcampeón" word to key off of.
@@ -8624,7 +8657,7 @@ async function loadLiveData() {
   // Fetch each section as a targeted range so parsers receive exactly the right rows
   const [aSim, aBasic, aDet, bSim, bApBasic, bApDet, aHist, bHist, aGlobal, aTabla,
          a25Det, a25Global, a25Tabla, bApGlobal, bApTabla,
-         bClDet, bClGlobal, bClTabla, copasSheet, bRecopaSheet,
+         bClDet, bClGlobal, bClTabla, aClDet, aClGlobal, aClTabla, copasSheet, bRecopaSheet,
          bSupercopa25Det, bSupercopa25Plantel, bRecopa24Det, bRecopa24Plantel,
          bRecopa21Det, bRecopa21Plantel] = await Promise.allSettled([
     fetchCSV(GS.A_SIM),
@@ -8665,6 +8698,13 @@ async function loadLiveData() {
     fetchGvizByGid(GS.B_HIST, 266944794, 'A19:J561'),
     fetchGvizByGid(GS.B_HIST, 266944794, 'L3:X33'),
     fetchGvizByGid(GS.B_HIST, 266944794, 'L37:V53'),
+    // ── Clausura AIFA A 2026 (live season, its own new tab — fetched by gid).
+    //    Club-confirmed ranges; no separate short "basic" table, so partidos
+    //    is derived from the detailed Fecha a Fecha (_deriveBasicFromDetailed),
+    //    same pattern as Clausura AIFA B 2026 above. ──
+    fetchGvizByGid(GS.A_MAIN, 618783090, 'A22:I532'),
+    fetchGvizByGid(GS.A_MAIN, 618783090, 'L3:X29'),
+    fetchGvizByGid(GS.A_MAIN, 618783090, 'L33:V49'),
     // ── Centralized "SB en Copas" sheet (Primera A) — every Recopa/Supercopa,
     //    every year, segmented by title row (see parseCopaSheet). Wide range
     //    for headroom since we don't know the exact row count yet.
@@ -8686,31 +8726,53 @@ async function loadLiveData() {
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
 
-  // PRIMERA A standings
+  // PRIMERA A standings — the simulator sheet always tracks whichever season
+  // is currently live, so this still feeds the live DATA_A (now Clausura).
   const aTbl = ok(aSim) ? parseSimStandings(ok(aSim), 5) : [];
   if (aTbl.length >= 10) DATA_A.tabla = aTbl;
 
-  // PRIMERA A basic match list (A1:J18)
+  // Apertura AIFA A 2026 (finished, archived into DATA_A_APERTURA2026) —
+  // basic match list (A1:J18)
   if (ok(aBasic)) {
     const m = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseMatches(ok(aBasic))));
-    if (m.length > 0) DATA_A.partidos = m;
+    if (m.length > 0) DATA_A_APERTURA2026.partidos = m;
   }
 
-  // PRIMERA A detailed match data (A22:N524) — used only for positions + fecha-a-fecha
+  // Apertura AIFA A 2026 detailed match data (A22:N524) — positions + fecha-a-fecha
   if (ok(aDet)) try {
     const det = _stripApertura2026ACopaLeaks(_ligaOnlyMatches(parseDetailedMatches(ok(aDet), true)));
-    if (det.length > 0) DATA_A.apertura = det;
-  } catch(e) { console.warn('parseDetailedMatches A:', e); }
+    if (det.length > 0) DATA_A_APERTURA2026.apertura = det;
+  } catch(e) { console.warn('parseDetailedMatches A (Apertura 2026):', e); }
 
-  // PRIMERA A global player stats (L3:X33) — exact range, row 0 = header
+  // Apertura AIFA A 2026 global player stats (L3:X33) — exact range, row 0 = header
   if (ok(aGlobal)) {
     const p = parseGlobalStats(ok(aGlobal));
-    if (p.length > 0) DATA_A.jugadores = p;
+    if (p.length > 0) DATA_A_APERTURA2026.jugadores = p;
   }
 
-  // PRIMERA A standings from sheet (L37:V53)
+  // Apertura AIFA A 2026 standings from sheet (L37:V53)
   if (ok(aTabla)) {
     const t = parseTablaSheet(ok(aTabla));
+    if (t.length >= 5) DATA_A_APERTURA2026.tabla = t;
+  }
+
+  // PRIMERA A — Clausura AIFA A 2026 (live season, own new sheet tab → DATA_A)
+  if (ok(aClDet)) try {
+    const p   = parsePlayers(ok(aClDet));
+    const det = _ligaOnlyMatches(parseDetailedMatches(ok(aClDet), true));
+    if (p.length > 0)   DATA_A.jugadores = p;
+    if (det.length > 0) {
+      DATA_A.apertura  = det;
+      DATA_A.partidos  = _deriveBasicFromDetailed(det);
+    }
+  } catch(e) { console.warn('parseDetailedMatches A (Clausura 2026):', e); }
+
+  if (ok(aClGlobal)) {
+    const p = parseGlobalStats(ok(aClGlobal));
+    if (p.length > 0) DATA_A.jugadores = p;
+  }
+  if (ok(aClTabla)) {
+    const t = parseTablaSheet(ok(aClTabla));
     if (t.length >= 5) DATA_A.tabla = t;
   }
 
@@ -8873,7 +8935,7 @@ async function loadLiveData() {
   _loadDedicatedCopaSheet(bRecopa21Det, bRecopa21Plantel, DATA_B_RECOPA2021, 'Recopa B 2021');
 
   const s = r => r.status === 'fulfilled' ? '✅' : '❌';
-  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Det)}/${s(a25Global)}/${s(a25Tabla)} Copas:${s(copasSheet)}`);
+  console.log(`Sheets — A_SIM:${s(aSim)} A_Basic:${s(aBasic)} A_Det:${s(aDet)} A_ClDet:${s(aClDet)} B_SIM:${s(bSim)} B_ApBasic:${s(bApBasic)} B_ApDet:${s(bApDet)} B_ClDet:${s(bClDet)} A_Hist:${s(aHist)} B_Hist:${s(bHist)} A25:${s(a25Det)}/${s(a25Global)}/${s(a25Tabla)} Copas:${s(copasSheet)}`);
 
   _refreshing = false;
   const now = new Date();
