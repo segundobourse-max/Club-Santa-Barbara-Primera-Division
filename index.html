@@ -5331,8 +5331,17 @@ function renderResumen() {
   const h = d.historico;
   const pct = (n) => ((n / h.pj) * 100).toFixed(0) + '%';
 
-  // ── TOP 5 historical lists ──
-  const { partidos: byPartidos, goles: byGoles, asist: byAsist } = d.topHist;
+  // ── TOP 5 lists — derived from "Estadísticas Totales" (same source/merge
+  // rules as the Jugadores → Estadísticas Totales tab), not an independent
+  // computation, so both stay 100% in sync. Ensures the loader has run (seed
+  // data renders immediately, then a silent re-render once the real sheet
+  // data replaces it) and re-renders only if Resumen is still the active view.
+  const totalesRows = isA ? _jugTotalesData : _jugBData;
+  const totalesCol  = isA ? JUG_COL : JUG_COL_B;
+  const { partidos: byPartidos, goles: byGoles, asist: byAsist } = _top5FromTotales(totalesRows, totalesCol);
+  (isA ? _ensureJugTotalesA() : _ensureJugTotalesB()).then(() => {
+    if (currentData === d && document.getElementById('tab-resumen')?.classList.contains('active')) renderResumen();
+  });
 
   function top10Row(jug, i) {
     const rowClass = i === 0 ? 'rank-1-row' : i === 1 ? 'rank-2-row' : i === 2 ? 'rank-3-row' : '';
@@ -6312,6 +6321,18 @@ function renderJugadoresMenu() {
 // spellings/casing (e.g. "Tomas del Frade" vs "Tomas Del Frade") — sums every
 // numeric column and recomputes the averages instead of leaving the player split
 // across two rows with partial stats each.
+// Builds the Resumen tab's 3 Top 5 lists (Más Presencias/Goleadores/Asistidores)
+// straight from the same rows/columns "Estadísticas Totales" uses, so both
+// views always agree. Shape matches what top10Row() expects: {nombre, valor}.
+function _top5FromTotales(rows, col) {
+  const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+  const top = field => [...(rows || [])]
+    .sort((a, b) => num(b[col[field]]) - num(a[col[field]]))
+    .slice(0, 5)
+    .map(r => ({ nombre: r[col.nombre], valor: num(r[col[field]]) }));
+  return { partidos: top('pj'), goles: top('goles'), asist: top('asist') };
+}
+
 function _mergeDuplicatePlayerRows(rows, COL) {
   const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; };
   const sumFields = ['pj', 'goles', 'asist', 'gmas', 'titular', 'suplente', 'capitan', 'titulos', 'ascensos', 'rojas', 'vallas'];
@@ -6402,17 +6423,26 @@ function renderJugadoresTotales() {
       <div style="color:var(--gris-texto);padding:24px;text-align:center">Cargando...</div>
     </div>`;
 
-  if (_jugTotalesData) { _jugTotalRender(); return; }
+  const wasLoaded = !!_jugTotalesData;
+  _ensureJugTotalesA();
+  _jugTotalRender(); // seed (or already-loaded real data) renders immediately
+  if (!wasLoaded) _jugTotalesLoadPromise.then(() => _jugTotalRender()); // upgrade once the real fetch resolves
+}
 
+// Shared loader — also used by renderResumen()'s Top 5 blocks (same "Estadísticas
+// Totales" data source, so both stay in sync instead of computing independently).
+// Memoized: the real fetch only ever runs once no matter who triggers it first.
+let _jugTotalesLoadPromise = null;
+function _ensureJugTotalesA() {
+  if (_jugTotalesLoadPromise) return _jugTotalesLoadPromise;
   const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
   const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL.nombre] ?? '').toLowerCase().trim());
-
-  _jugTotalesCols = SEED_JUG_ESTADISTICAS[0];
-  _jugTotalesData = _mergeDuplicatePlayerRows(SEED_JUG_ESTADISTICAS.slice(1).filter(r => !esExcluido(r)), JUG_COL);
-  _jugTotalesSort = { col: JUG_COL.pj, asc: false };
-  _jugTotalRender();
-
-  fetchProxy('Jugadores Estadisticas')
+  if (!_jugTotalesData) {
+    _jugTotalesCols = SEED_JUG_ESTADISTICAS[0];
+    _jugTotalesData = _mergeDuplicatePlayerRows(SEED_JUG_ESTADISTICAS.slice(1).filter(r => !esExcluido(r)), JUG_COL);
+    _jugTotalesSort = { col: JUG_COL.pj, asc: false };
+  }
+  _jugTotalesLoadPromise = fetchProxy('Jugadores Estadisticas')
     .then(rows => {
       if (!rows || rows.length < 2) return;
       _jugTotalesCols = rows[0].map(c => String(c).trim());
@@ -6421,9 +6451,9 @@ function renderJugadoresTotales() {
         .map(r => _jugTotalesCols.map((_, i) => String(r[i] ?? '').trim()))
         .filter(r => !EXCLUIR.includes(r[JUG_COL.nombre].toLowerCase().trim()));
       _jugTotalesData = _mergeDuplicatePlayerRows(parsed, JUG_COL);
-      _jugTotalRender();
     })
     .catch(() => {});
+  return _jugTotalesLoadPromise;
 }
 
 function _jugTotalFilter(q) {
@@ -6655,18 +6685,24 @@ function renderJugadoresTotalesB() {
     </div>`;
 
   if (_jugBData) { _jugBRender(); return; }
+  _ensureJugTotalesB().then(() => { if (_jugBData) _jugBRender(); });
+}
 
-  const EXCLUIR = ['jugador', 'team totals', 'totales', 'total'];
-  const esExcluido = r => EXCLUIR.includes(String(r[JUG_COL_B.nombre] ?? '').toLowerCase().trim());
-
+// Shared loader — also used by renderResumen()'s Top 5 blocks (same "Estadísticas
+// Totales" data source). Memoized: the real fetch only ever runs once no matter
+// who triggers it first.
+let _jugTotalesBLoadPromise = null;
+function _ensureJugTotalesB() {
+  if (_jugTotalesBLoadPromise) return _jugTotalesBLoadPromise;
   // Sheet stores tab names without accents (same as 'Estadisticas Historicas' pattern)
-  _fetchJugB('Jugadores Estadisticas')
+  _jugTotalesBLoadPromise = _fetchJugB('Jugadores Estadisticas')
     .catch(() => _fetchJugB('Jugadores Estadísticas'))
     .catch(e => {
       console.error('[B Totales] fetch failed:', e);
       const w = document.getElementById('jug-totales-wrap-b');
       if (w) w.innerHTML = `<div style="color:var(--gris-texto);padding:24px;text-align:center">Error al cargar los datos.<br><small style="opacity:.5">${e?.message || ''}</small></div>`;
     });
+  return _jugTotalesBLoadPromise;
 }
 
 function _fetchJugB(tabName) {
