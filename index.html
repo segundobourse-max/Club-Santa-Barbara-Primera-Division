@@ -5790,8 +5790,12 @@ function _parsePartidosPorTorneos(rows) {
     // Skip LIBRE / dashes
     if (c1 === 'LIBRE' || c1 === '-') continue;
 
-    // Tournament header: cells[1] has content but cells[2] (Fecha) is empty
-    if (!cells[2]) {
+    // Tournament header: cells[1] has content but the row is otherwise blank
+    // (no Fecha AND no Local/Visita). A real match can have a blank Fecha too
+    // (pending fixture with no date set yet) but still carries Local/Visita,
+    // so require both blank to avoid mistaking a pending match for a header
+    // and silently dropping it from the count.
+    if (!cells[2] && !cells[3]) {
       torneo = c1; continue;
     }
 
@@ -5925,8 +5929,13 @@ function _buildSummaryFromCache(matches) {
     if (!m.rival) continue;
     if (!map[m.rival]) map[m.rival] = { rival: m.rival, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dif:0, dh:0 };
     const r = map[m.rival];
+    // Every loaded row counts as a played match, whether or not its result
+    // string parsed into a numeric score — a pending/malformed resultado
+    // shouldn't make the match itself disappear from the PJ total, only from
+    // the W/D/L and goals breakdown (which genuinely need a score).
+    r.pj++;
     if (m.gf !== null && m.gc !== null) {
-      r.pj++; r.gf += m.gf; r.gc += m.gc;
+      r.gf += m.gf; r.gc += m.gc;
       if (m.gf > m.gc)      { r.pg++; r.dh++; }
       else if (m.gf === m.gc) { r.pe++; }
       else                  { r.pp++; r.dh--; }
