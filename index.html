@@ -1367,6 +1367,8 @@
     .pp-year-chip:hover { color:#e2e8f0; border-color:rgba(245,158,11,.35); }
     .pp-year-chip.active { background:var(--dorado); color:#1a1206; border-color:var(--dorado); }
     .pp-year-chip-count { font-weight:600; opacity:.85; }
+    .pp-tipo-chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .pp-tipo-chip { font-size:0.7rem; padding:5px 12px; }
     .pp-data-gap-note { font-size:0.72rem; color:#fbbf24; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:8px 12px; margin-bottom:10px; }
     .pp-res-badge { display:inline-block; font-size:0.76rem; font-weight:800; padding:2px 7px; border-radius:6px; margin-left:2px; }
     .pp-res-win  { color:#4ade80; background:rgba(34,197,94,0.14); }
@@ -2444,6 +2446,21 @@ function _ppTorneoRank(torneo) {
   if (/apertura/i.test(torneo)) return 1;
   return 2;
 }
+
+// Returns a fresh Array.prototype.filter predicate (one Set per call) that
+// keeps only the first occurrence of each copa match — identified by tipo de
+// copa + año + rival — and passes every non-copa match through untouched.
+function _ppDedupeCopaMatches() {
+  const seen = new Set();
+  return p => {
+    if (!p.esCopa) return true;
+    const tipo = (p.torneo.match(/recopa|supercopa/i) || ['copa'])[0].toLowerCase();
+    const key = `${tipo}|${p.anio}|${(p.rival || '').toUpperCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  };
+}
 function slugify(s) {
   return normName(s).replace(/\(c\)/g, '').trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
 }
@@ -2483,6 +2500,11 @@ function closePlayerProfile() {
 //                                          loadLiveData() and using its own
 //                                          <pfx>SwitchTab/<pfx>SelectFecha pair
 //                                          (ap25/ap24d) instead of ghSwitchTab.
+//   'ch:<showHistoricoTorneo key>'       — a finished knockout copa viewed
+//                                          through renderCopaHistorico's
+//                                          simple fase list (chSwitchTab/
+//                                          chSelectFase(index)). Located by
+//                                          RIVAL, not fecha (see _ppCopaMatchesForKey).
 function goToMatchFecha(navKey, fecha) {
   if (!navKey) return;
   closePlayerProfile();
@@ -2516,6 +2538,29 @@ function goToMatchFecha(navKey, fecha) {
     showHistoricoTorneo(key); // marks "Torneos Antiguos" active + renders the bespoke component
     window[prefix + 'SwitchTab']('fechas');
     window[prefix + 'SelectFecha'](fecha);
+    return;
+  }
+
+  if (navKey.startsWith('ch:')) {
+    const key = navKey.slice(3);
+    const matches = _ppCopaMatchesForKey(key);
+    if (!matches.length) return;
+    const badge = document.getElementById('section-badge');
+    badge.textContent = key.endsWith('b') ? 'Primera B' : 'Primera A';
+    badge.className = 'header-section-badge ' + (key.endsWith('b') ? 'badge-blue' : 'badge-gold');
+    showHistoricoTorneo(key); // marks "Torneos Antiguos" active + renders renderCopaHistorico
+    // Same round-order sort renderCopaHistorico itself uses internally to
+    // build its "sorted" array — chSelectFase(i) indexes into that same
+    // order, so recomputing it here is the only way to find the right i
+    // from outside that closure. `fecha` carries the rival name for 'ch:'
+    // navKeys (see _ppStatRowHtml's locator logic).
+    const roundOrder = { 'octavos': 1, 'cuartos': 2, 'semi': 3, 'final': 4 };
+    const rank = m => roundOrder[Object.keys(roundOrder).find(k => String(m.posCSB || '').toLowerCase().includes(k)) || ''] || 9;
+    const sorted = [...matches].sort((a, b) => rank(a) - rank(b));
+    const idx = sorted.findIndex(m => (m.rival || '').toUpperCase() === String(fecha).toUpperCase().trim());
+    if (idx < 0) return;
+    window.chSwitchTab('fases');
+    window.chSelectFase(idx);
     return;
   }
 
@@ -2605,11 +2650,22 @@ function _allPlayerTorneoSources() {
   // Dedicated copa sheets (own Plantel/Fecha a Fecha, outside COPA_BLOCKS) —
   // no deep-link target yet (own fase-based selector, not fecha-based).
   const copasDedicadas = [
-    { d: DATA_A_RECOPA2025, cat: 'a' },
-    { d: DATA_B_RECOPA2026, cat: 'b' },
-    { d: DATA_B_SUPERCOPA2025, cat: 'b' }, { d: DATA_B_RECOPA2024, cat: 'b' },
-    { d: DATA_B_RECOPA2021, cat: 'b' },
-  ].map(({ d, cat }) => ({ d, equipo: null, navKey: null, torneo: d.nombre, cat }));
+    // DATA_A_RECOPA2025 holds stray league-labeled-as-copa fixtures moved out
+    // of Apertura/Clausura 2025 A — the SAME physical matches are also parsed
+    // independently into COPA_BLOCKS['Recopa 2025'] from the centralized "SB
+    // en Copas" sheet, which is why they used to show up twice in a player's
+    // historial. No navKey here on purpose: the dedupe step in
+    // _collectAllMatchesForPlayer keeps the COPA_BLOCKS copy (which DOES have
+    // a working link) and drops this one whenever both exist.
+    { d: DATA_A_RECOPA2025, navKey: null, cat: 'a' },
+    // Recopa 2026 (both A via COPA_BLOCKS/renderRecopa and B here) still uses
+    // the live bracket component (renderRecopa), not the simple fecha-list
+    // fase viewer — no deep link support for it yet.
+    { d: DATA_B_RECOPA2026, navKey: null, cat: 'b' },
+    { d: DATA_B_SUPERCOPA2025, navKey: 'ch:supercopa-2025b', cat: 'b' },
+    { d: DATA_B_RECOPA2024, navKey: 'ch:recopa-2024b', cat: 'b' },
+    { d: DATA_B_RECOPA2021, navKey: 'ch:recopa-2021b', cat: 'b' },
+  ].map(({ d, navKey, cat }) => ({ d, equipo: null, navKey, torneo: d.nombre, cat }));
   // Two finished LEAGUE seasons (not copas) that got their own bespoke render
   // component instead of going through HISTORICO_GENERIC — they used to be
   // lumped in with copasDedicadas above, which gave them d.nombre's plain
@@ -2623,16 +2679,46 @@ function _allPlayerTorneoSources() {
   return [...core, ...generic, ...copasDedicadas, ...bespoke];
 }
 
+// COPA_BLOCKS titles that have a finished-copa fase viewer reachable via
+// showHistoricoTorneo (renderCopaHistorico + chSwitchTab/chSelectFase) — see
+// goToMatchFecha's 'ch:' branch. 'Recopa 2026' is deliberately absent: it
+// still uses the live bracket component (renderRecopa), not this simple
+// fase-list viewer.
+const PP_COPA_BLOCKS_NAVKEY = {
+  'Recopa 2025': 'ch:copa-recopa-2025',
+  'Recopa 2024': 'ch:copa-recopa-2024',
+  'Recopa 2023': 'ch:copa-recopa-2023',
+  'Supercopa 2021': 'ch:copa-supercopa-2021',
+};
+
+// Reverse lookup used by goToMatchFecha's 'ch:' branch to recompute
+// renderCopaHistorico's fase order from outside its closure.
+function _ppCopaMatchesForKey(key) {
+  const titleMap = {
+    'copa-recopa-2025': 'Recopa 2025', 'copa-recopa-2024': 'Recopa 2024',
+    'copa-recopa-2023': 'Recopa 2023', 'copa-supercopa-2021': 'Supercopa 2021',
+  };
+  if (titleMap[key]) return COPA_BLOCKS[titleMap[key]] || [];
+  if (key === 'supercopa-2025b') return DATA_B_SUPERCOPA2025.apertura || [];
+  if (key === 'recopa-2024b') return DATA_B_RECOPA2024.apertura || [];
+  if (key === 'recopa-2021b') return DATA_B_RECOPA2021.apertura || [];
+  return [];
+}
+
 // Flat list of every match (across every source above, plus the centralized
 // Primera A copas in COPA_BLOCKS) where this player appears in .jugadores.
 function _collectAllMatchesForPlayer(target) {
   const rows = _allPlayerTorneoSources()
     .flatMap(({ d, equipo, navKey, torneo, cat }) => (d.apertura || []).map(m => ({ m, torneo, equipo, navKey, cat })));
-  // COPA_BLOCKS is Primera A's centralized copas sheet — always cat 'a', no
-  // fecha-based deep link (own instancia/fase selector).
+  // COPA_BLOCKS is Primera A's centralized copas sheet — always cat 'a'.
   const copaRows = Object.entries(COPA_BLOCKS)
-    .flatMap(([title, matches]) => (matches || []).map(m => ({ m, torneo: title, equipo: null, navKey: null, cat: 'a' })));
-  return [...rows, ...copaRows]
+    .flatMap(([title, matches]) => (matches || []).map(m =>
+      ({ m, torneo: title, equipo: null, navKey: PP_COPA_BLOCKS_NAVKEY[title] || null, cat: 'a' })));
+  // COPA_BLOCKS rows go FIRST so the dedupe step below (which keeps the
+  // first occurrence per rival/año/tipo-de-copa) prefers this — the properly
+  // linked — copy over any duplicate parked in a dedicated copasDedicadas
+  // source (e.g. DATA_A_RECOPA2025) when both represent the same match.
+  return [...copaRows, ...rows]
     .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target));
 }
 
@@ -2724,6 +2810,14 @@ function _collectPlayerStats(nombre) {
     // suplente que ingresó. Descarta tanto los no citados como los suplentes
     // que se quedaron en el banco sin ingresar — ninguno de los dos jugó.
     .filter(p => p.condCorta === 'Titular' || p.condCorta === 'Suplente')
+    // Desduplica partidos de copa que existen en dos fuentes a la vez (ej.
+    // COPA_BLOCKS['Recopa 2025'] Y DATA_A_RECOPA2025 parquean el mismo
+    // partido real). Identidad por tipo de copa + año + rival (nunca se
+    // enfrenta dos veces al mismo rival en la misma llave de un torneo de
+    // eliminación directa). COPA_BLOCKS se procesa primero (ver
+    // _collectAllMatchesForPlayer), así que si hay choque se conserva esa
+    // copia — la que trae un link real — y se descarta la otra.
+    .filter(_ppDedupeCopaMatches())
     // Orden cronológico real: año más reciente primero; dentro del mismo año,
     // Clausura (el semestre que cierra el año) antes que Apertura, y cualquier
     // otro torneo (copas) al final; dentro de cada uno, de la última fecha a
@@ -2896,9 +2990,12 @@ function _ppStatRowHtml(kind, p) {
   const statVal = kind === 'goles' ? p.goles : kind === 'asist' ? p.asist : null;
   const statIco = kind === 'goles' ? '⚽' : kind === 'asist' ? '🎯' : null;
   const label = _ppMatchLabel(p);
-  const clickable = !!p.navKey && p.fecha;
+  // 'ch:' copa sources (renderCopaHistorico's fase-by-index viewer) locate
+  // the match by rival name, not fecha — everything else keeps using fecha.
+  const locator = p.navKey && p.navKey.startsWith('ch:') ? p.rival : p.fecha;
+  const clickable = !!p.navKey && !!locator;
   const rowAttrs = clickable
-    ? `class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${p.navKey}', '${String(p.fecha).replace(/'/g, "\\'")}')" title="Ver en Fecha a Fecha"`
+    ? `class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${p.navKey}', '${String(locator).replace(/'/g, "\\'")}')" title="Ver en Fecha a Fecha"`
     : `class="pp-match-row"`;
   return `<div ${rowAttrs}>
     <div class="pp-match-main">
@@ -2928,9 +3025,33 @@ function _ppFilterByCat(list) {
   return list.filter(p => p.categoria === PP_CAT_LABEL[cat]);
 }
 
-// Builds the horizontal "Todos / año / año…" chip row (for Partidos/Goles/
-// Asistencias) plus the (already-year-filtered) match list below it. Falls
-// back to a plain list (no chips) for Rojas.
+// What a year/tipo chip's "(N)" count actually means per tab: Goles/Asist
+// sum the real tally scored/asisted across the matches in scope (a player
+// who scored 3 in one match and 1 in another shows (4), not (2) — matches
+// count only makes sense for Partidos itself.
+function _ppKindMetric(kind, p) {
+  if (kind === 'goles') return p.goles || 0;
+  if (kind === 'asist') return p.asist || 0;
+  return 1;
+}
+function _ppKindTotal(kind, list) {
+  return list.reduce((n, p) => n + _ppKindMetric(kind, p), 0);
+}
+
+// Clausura/Apertura/Copas — same 3-way split used for chronological sorting
+// (_ppTorneoRank), exposed here for the "tipo de competencia" sub-filter.
+function _ppTipoOf(p) {
+  if (p.esCopa) return 'copas';
+  if (/clausura/i.test(p.torneo)) return 'clausura';
+  if (/apertura/i.test(p.torneo)) return 'apertura';
+  return 'otros';
+}
+const PP_TIPO_OPTIONS = [['todos', 'Todos'], ['clausura', 'Clausura'], ['apertura', 'Apertura'], ['copas', 'Copas']];
+
+// Builds the horizontal "Todos / año / año…" chip row, the "Todos / Clausura
+// / Apertura / Copas" sub-filter row beneath it (for Partidos/Goles/
+// Asistencias), and the (already year+tipo-filtered) match list below both.
+// Falls back to a plain list (no chips) for Rojas.
 function _ppDetailPanelBodyHtml(kind, fullList) {
   const catList = _ppFilterByCat(fullList);
   if (!catList.length) {
@@ -2941,20 +3062,30 @@ function _ppDetailPanelBodyHtml(kind, fullList) {
   if (!PP_YEAR_CHIP_KINDS.has(kind)) {
     return catList.map(p => _ppStatRowHtml(kind, p)).join('');
   }
+
   const byYear = new Map();
   for (const p of catList) {
     const y = p.anio || 'Sin año';
-    byYear.set(y, (byYear.get(y) || 0) + 1);
+    byYear.set(y, (byYear.get(y) || 0) + _ppKindMetric(kind, p));
   }
   const years = [...byYear.keys()].sort((a, b) => (parseInt(b) || 0) - (parseInt(a) || 0));
   const yearState = window._ppYearFilter || (window._ppYearFilter = {});
-  const active = yearState[kind] || 'todos';
-  const chip = (val, label, count) => `<button class="pp-year-chip${active === val ? ' active' : ''}" onclick="ppFilterYear('${kind}', '${val}')">${label} <span class="pp-year-chip-count">(${count})</span></button>`;
-  const chips = [chip('todos', 'Todos', catList.length), ...years.map(y => chip(y, y, byYear.get(y)))].join('');
-  const filtered = active === 'todos' ? catList : catList.filter(p => p.anio === active);
+  const activeYear = yearState[kind] || 'todos';
+  const yearChip = (val, label, count) => `<button class="pp-year-chip${activeYear === val ? ' active' : ''}" onclick="ppFilterYear('${kind}', '${val}')">${label} <span class="pp-year-chip-count">(${count})</span></button>`;
+  const yearChips = [yearChip('todos', 'Todos', _ppKindTotal(kind, catList)), ...years.map(y => yearChip(y, y, byYear.get(y)))].join('');
+  const yearFiltered = activeYear === 'todos' ? catList : catList.filter(p => p.anio === activeYear);
+
+  const tipoState = window._ppTipoFilter || (window._ppTipoFilter = {});
+  const activeTipo = tipoState[kind] || 'todos';
+  const tipoCount = val => val === 'todos' ? _ppKindTotal(kind, yearFiltered) : _ppKindTotal(kind, yearFiltered.filter(p => _ppTipoOf(p) === val));
+  const tipoChip = (val, label) => `<button class="pp-year-chip pp-tipo-chip${activeTipo === val ? ' active' : ''}" onclick="ppFilterTipo('${kind}', '${val}')">${label} <span class="pp-year-chip-count">(${tipoCount(val)})</span></button>`;
+  const tipoChips = PP_TIPO_OPTIONS.map(([val, label]) => tipoChip(val, label)).join('');
+  const finalList = activeTipo === 'todos' ? yearFiltered : yearFiltered.filter(p => _ppTipoOf(p) === activeTipo);
+
   return `
-    <div class="pp-year-chips">${chips}</div>
-    ${filtered.length ? filtered.map(p => _ppStatRowHtml(kind, p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+    <div class="pp-year-chips">${yearChips}</div>
+    <div class="pp-tipo-chips">${tipoChips}</div>
+    ${finalList.length ? finalList.map(p => _ppStatRowHtml(kind, p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
 }
 
 function _ppRenderDetailPanel(kind) {
@@ -2972,7 +3103,7 @@ function _ppRenderDetailPanel(kind) {
     ? `<div class="pp-data-gap-note">⚠️ Mostrando ${list.length} de ${window._ppCareerPJ} partidos de la carrera — algunos torneos antiguos aún no tienen su Fecha a Fecha cargada.</div>`
     : '';
   panel.innerHTML = `
-    <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${_ppFilterByCat(list).length})</div>
+    <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${_ppKindTotal(kind, _ppFilterByCat(list))})</div>
     ${gapNote}
     ${_ppDetailPanelBodyHtml(kind, list)}`;
 }
@@ -2988,7 +3119,10 @@ window.ppShowDetail = function(kind) {
   if (window._ppDetailKind === kind) { window._ppDetailKind = null; panel.innerHTML = ''; return; }
   window._ppDetailKind = kind;
   document.getElementById('pp-kpi-' + kind)?.classList.add('pp-kpi-active');
-  if (PP_YEAR_CHIP_KINDS.has(kind)) (window._ppYearFilter || (window._ppYearFilter = {}))[kind] = 'todos';
+  if (PP_YEAR_CHIP_KINDS.has(kind)) {
+    (window._ppYearFilter || (window._ppYearFilter = {}))[kind] = 'todos';
+    (window._ppTipoFilter || (window._ppTipoFilter = {}))[kind] = 'todos';
+  }
   _ppRenderDetailPanel(kind);
 };
 
@@ -2996,6 +3130,13 @@ window.ppShowDetail = function(kind) {
 // filter, without collapsing/re-opening the panel.
 window.ppFilterYear = function(kind, year) {
   (window._ppYearFilter || (window._ppYearFilter = {}))[kind] = year;
+  _ppRenderDetailPanel(kind);
+};
+
+// Re-renders just the open detail panel's tipo-de-competencia sub-filter
+// (Todos/Clausura/Apertura/Copas), keeping the current year selection.
+window.ppFilterTipo = function(kind, tipo) {
+  (window._ppTipoFilter || (window._ppTipoFilter = {}))[kind] = tipo;
   _ppRenderDetailPanel(kind);
 };
 
@@ -3027,6 +3168,7 @@ function renderPlayerProfile(nombre) {
   window._ppDetailKind = null;
   window._ppActiveCat = 'total';
   window._ppYearFilter = {};
+  window._ppTipoFilter = {};
   window._ppCareerPJ = s.pj;
 
   const metricsTabs = `
@@ -5148,6 +5290,13 @@ function _moveCopaMatches(dataObj, targetObj, predicate) {
 // played, say, 2023/2024 seasons the user never opened would show up with
 // those years silently missing. Kicked off once from renderPlayerProfile and
 // cached so repeat profile opens don't refetch what's already loaded.
+//
+// Apertura AIFA D 2024 (Primera B) isn't part of HISTORICO_GENERIC at all —
+// it has its own bespoke lazy loader (_loadBApt2024d/_bApt2024dLoaded,
+// defined further down) gated the exact same way, on its own tab being
+// opened. It was missing from this preload entirely, so that season's 2024
+// matches/goles never showed up in a player's profile unless someone had
+// already opened "Apertura AIFA D 2024" earlier in the session.
 let _ppHistoricoPreloadPromise = null;
 function _ppEnsureAllHistoricoLoaded() {
   if (_ppHistoricoPreloadPromise) return _ppHistoricoPreloadPromise;
@@ -5155,7 +5304,10 @@ function _ppEnsureAllHistoricoLoaded() {
   // Settle regardless of individual failures (a network glitch on one season
   // shouldn't be retried forever every time a profile is opened) — attempted
   // once per page load, same as El Nido's own one-shot load.
-  _ppHistoricoPreloadPromise = Promise.allSettled(pending.map(([key, cfg]) => _loadHistoricoGeneric(key, cfg.d, cfg)));
+  _ppHistoricoPreloadPromise = Promise.allSettled([
+    ...pending.map(([key, cfg]) => _loadHistoricoGeneric(key, cfg.d, cfg)),
+    _loadBApt2024d(),
+  ]);
   return _ppHistoricoPreloadPromise;
 }
 
