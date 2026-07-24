@@ -2440,7 +2440,13 @@ function destroyCharts() {
 // "Cuartos de Final", o etiquetas de campeón como "Campeón y Ascenso") no
 // tienen un puesto de tabla real — quedan en gris neutro.
 function _posSemaforoColor(pos) {
-  const n = parseInt(pos);
+  const s = String(pos || '');
+  // "Campeón y Ascenso"/"Campeón" (no numeric "1°" in the label itself, e.g.
+  // Primera B 2024's Apertura AIFA D) counts as 1° puesto — dorado, not the
+  // gray fallback a non-numeric parseInt would otherwise produce. Subcampeón
+  // contains the substring "campeón" too, so it must be excluded first.
+  if (!/subcampe[oó]n/i.test(s) && /campe[oó]n/i.test(s)) return '#fbbf24';
+  const n = parseInt(s);
   if (isNaN(n)) return '#94a3b8';
   if (n === 1) return '#fbbf24';
   if (n <= 3) return '#22c55e';
@@ -6306,9 +6312,12 @@ function renderHistorial() {
     else { _histSort.col = col; _histSort.asc = col === 'rival'; }
     paint();
   };
-  window.histDrilldown = rival => currentData === DATA_B
-    ? renderHistorialDetalleB(rival)
-    : renderHistorialDetalle(rival);
+  // Both categories now share the exact same interactive drilldown
+  // (renderHistorialDetalle already branches internally on currentData to
+  // pick _loadPartidosCache vs _loadPartidosCacheB) — Primera B used to get
+  // routed to a separate KPI-only view (renderHistorialDetalleB) because it
+  // had no real match-level sheet wired up yet.
+  window.histDrilldown = rival => renderHistorialDetalle(rival);
 
   if (currentData === DATA_B) {
     // Direct mapping from "HISTORIAL PRIMERA B vs OTROS CLUBES" (A3:I61) — re-fetched
@@ -6492,11 +6501,19 @@ function _ensureHistResumenBSync() {
   });
 }
 
+// Match-by-match "Partidos Historial" sheet for Primera B (gid=345619863,
+// data in columns B-K — same shape/offsets as A_MAIN's own "Partidos
+// Historial" tab that _parsePartidosPorTorneos already parses, just a
+// different gid/spreadsheet). This used to point at gid=1711655156 by
+// mistake — the per-club AGGREGATE summary sheet (_loadHistorialResumenB's
+// TOTAL-row source), not a real match-level sheet — so every rival
+// drilldown fell back to the KPI-only view with no match list at all.
+// Fetched WITHOUT a &range= restriction (like _loadPartidosCache does for A)
+// so column A stays in place as the parser's assumed blank cells[0].
 async function _loadPartidosCacheB() {
   if (_partidosCacheB) return _partidosCacheB;
   try {
-    // Fetch by gid to avoid tab-name mismatch; same format as A_MAIN Partidos Historial
-    const url = `https://docs.google.com/spreadsheets/d/${GS.B_HIST}/gviz/tq?tqx=out:csv&gid=1711655156`;
+    const url = `https://docs.google.com/spreadsheets/d/${GS.B_HIST}/gviz/tq?tqx=out:csv&gid=345619863`;
     console.log('[Historial B] Fetching by gid:', url);
     const r = await fetch(url, { mode: 'cors' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -6535,70 +6552,6 @@ function _buildSummaryFromCache(matches) {
   }
   for (const r of Object.values(map)) r.dif = r.gf - r.gc;
   return Object.values(map).sort((a, b) => a.rival.localeCompare(b.rival));
-}
-
-// Macro-stats drilldown for Primera B — built directly from the summary row
-// (the B sheet only has per-club aggregates, no match-by-match log).
-function renderHistorialDetalleB(rivalName) {
-  const el = document.getElementById('partidos-grid');
-  document.getElementById('part-title').textContent = '';
-  const r = _histDataB.find(x => x.rival === rivalName.toUpperCase());
-  if (!r) {
-    el.innerHTML = `<button class="hd-back" onclick="renderHistorial()">← Volver al historial</button>
-      <div class="hist-empty">Sin datos para ${rivalName}.</div>`;
-    return;
-  }
-  const efectividad = r.pj > 0 ? Math.round(((r.pg * 3 + r.pe) / (r.pj * 3)) * 100) : 0;
-  const difSign = r.dif > 0 ? '+' : '';
-  const dhSign  = r.dh  > 0 ? '+' : '';
-  const initials = s => s.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-
-  el.innerHTML = `
-    <button class="hd-back" onclick="renderHistorial()">← Volver al historial</button>
-    <div class="hist-kpis" style="margin-bottom:18px">
-      <div class="hist-kpi"><div class="hist-kpi-icon">📋</div><div class="hist-kpi-val">${r.pj}</div><div class="hist-kpi-label">Partidos</div></div>
-      <div class="hist-kpi hist-kpi-win"><div class="hist-kpi-icon">✅</div><div class="hist-kpi-val">${r.pg}</div><div class="hist-kpi-label">Victorias</div></div>
-      <div class="hist-kpi hist-kpi-draw"><div class="hist-kpi-icon">🟡</div><div class="hist-kpi-val">${r.pe}</div><div class="hist-kpi-label">Empates</div></div>
-      <div class="hist-kpi hist-kpi-loss"><div class="hist-kpi-icon">❌</div><div class="hist-kpi-val">${r.pp}</div><div class="hist-kpi-label">Derrotas</div></div>
-      <div class="hist-kpi"><div class="hist-kpi-icon">⚽</div><div class="hist-kpi-val">${r.gf}</div><div class="hist-kpi-label">GF</div></div>
-      <div class="hist-kpi"><div class="hist-kpi-icon">🥅</div><div class="hist-kpi-val">${r.gc}</div><div class="hist-kpi-label">GC</div></div>
-      <div class="hist-kpi"><div class="hist-kpi-icon">📈</div><div class="hist-kpi-val" style="color:${r.dif>0?'#22c55e':r.dif<0?'#ef4444':'#f1f5f9'}">${difSign}${r.dif}</div><div class="hist-kpi-label">Diferencia</div></div>
-      <div class="hist-kpi"><div class="hist-kpi-icon">🎯</div><div class="hist-kpi-val">${efectividad}%</div><div class="hist-kpi-label">Efectividad</div></div>
-    </div>
-    <div class="hd-layout">
-      <div class="hd-sidebar">
-        <div class="hd-profile-card">
-          <div class="hd-profile-identity">
-            <div class="hd-club-avatar">${initials(r.rival)}</div>
-            <div class="hd-club-name">${r.rival}</div>
-            <div class="hd-club-sub">${r.pj} partido${r.pj !== 1 ? 's' : ''} históricos</div>
-          </div>
-          <div class="hd-profile-section">
-            <div class="hd-section-label">Efectividad de puntos</div>
-            <div class="hd-meter-track"><div class="hd-meter-fill" style="width:${efectividad}%"></div></div>
-            <div class="hd-meter-row"><span>0%</span><span class="hd-meter-pct">${efectividad}%</span><span>100%</span></div>
-          </div>
-          <div class="hd-profile-section">
-            <div class="hd-section-label">Balance del historial</div>
-            <div class="hd-goals-row"><span class="hd-goals-label">📊 Saldo (PG−PP)</span><span class="hd-goals-val" style="color:${r.dh>0?'#22c55e':r.dh<0?'#ef4444':'#64748b'}">${dhSign}${r.dh}</span></div>
-          </div>
-          <div class="hd-profile-section">
-            <div class="hd-section-label">Balance de goles</div>
-            <div class="hd-goals-row"><span class="hd-goals-label">⚽ Goles a favor</span><span class="hd-goals-val" style="color:#60a5fa">${r.gf}</span></div>
-            <div class="hd-goals-row"><span class="hd-goals-label">🥅 Goles en contra</span><span class="hd-goals-val" style="color:#ef4444">${r.gc}</span></div>
-            <div class="hd-goals-divider"></div>
-            <div class="hd-goals-row"><span class="hd-goals-label">📈 Diferencia</span><span class="hd-goals-val" style="color:${r.dif>0?'#22c55e':r.dif<0?'#ef4444':'#64748b'}">${difSign}${r.dif}</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="hd-main">
-        <div class="hd-empty-state">
-          <div class="hd-empty-icon">📊</div>
-          <div class="hd-empty-title">Resumen histórico</div>
-          <div class="hd-empty-sub">Métricas extraídas en vivo de la planilla de historial de Primera B. El detalle partido a partido no está disponible para esta categoría.</div>
-        </div>
-      </div>
-    </div>`;
 }
 
 function renderHistorialDetalle(rival) {
@@ -6661,7 +6614,7 @@ function renderHistorialDetalle(rival) {
           <div class="hd-profile-identity">
             <div class="hd-club-avatar">${initials(rival)}</div>
             <div class="hd-club-name">${rival}</div>
-            <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} desde 2016</div>
+            <div class="hd-club-sub">${matches.length} partido${matches.length !== 1 ? 's' : ''} desde ${currentData === DATA_B ? '2021' : '2016'}</div>
           </div>
           <div class="hd-profile-section">
             <div class="hd-section-label">Efectividad de puntos</div>
