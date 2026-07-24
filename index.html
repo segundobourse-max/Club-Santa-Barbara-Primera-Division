@@ -2670,9 +2670,10 @@ function _collectPlayerStats(nombre) {
       if (j.titular) condicion = 'Titular';
       else if (j.entro) condicion = 'Ingresó desde el banco';
       else if (j.citado) condicion = 'Banco (no ingresó)';
-      // Short label for the row's right-side badge — collapses "Ingresó desde
-      // el banco"/"Banco (no ingresó)" into a single "Suplente" state.
-      const condCorta = condicion === 'Titular' ? 'Titular' : condicion === 'No citado' ? 'No citado' : 'Suplente';
+      // Short label for the row's right-side badge. "Banco (no ingresó)" is
+      // NOT a partido jugado — the player never stepped on the pitch — so it
+      // gets no "Suplente" label here; the filter below drops it entirely.
+      const condCorta = condicion === 'Titular' ? 'Titular' : condicion === 'Ingresó desde el banco' ? 'Suplente' : condicion;
       const anio = (torneo.match(/\d{4}/) || [])[0] || '';
       const localNorm = String(m.local || _inferLocalFromLugar(m.lugar) || '').toUpperCase();
       return {
@@ -2684,10 +2685,10 @@ function _collectPlayerStats(nombre) {
         esCapitan: /\(c\)/i.test(j.nombre),
       };
     })
-    // Only matches the player was actually part of — titular or suplente (ya
-    // sea que haya entrado o se haya quedado en el banco); descarta los
-    // encuentros donde no fue citado / no figuró en la convocatoria.
-    .filter(p => p.condCorta !== 'No citado')
+    // "Partido jugado" = el jugador efectivamente pisó la cancha: titular, o
+    // suplente que ingresó. Descarta tanto los no citados como los suplentes
+    // que se quedaron en el banco sin ingresar — ninguno de los dos jugó.
+    .filter(p => p.condCorta === 'Titular' || p.condCorta === 'Suplente')
     .sort((a, b) => (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0) || (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
 
   // Slices of the same match list for the clickable Goles/Asistencias/Rojas
@@ -2813,6 +2814,16 @@ function _ppResultadoPillHtml(p) {
 
 const PP_COND_CLASS = { 'Titular': 'pp-cond-tit', 'Suplente': 'pp-cond-sup', 'No citado': 'pp-cond-banco' };
 
+// Goles/asistencias del jugador en ESE partido puntual — mostrado en cada
+// fila del listado de Partidos (independiente de la pestaña Goles/Asist,
+// que ya lista uno u otro por separado con su propio filtro).
+function _ppImpactIconsHtml(p) {
+  const parts = [];
+  if (p.goles > 0) parts.push(`<span class="pp-match-stat pp-stat-goles">⚽${p.goles > 1 ? ' x' + p.goles : ''}</span>`);
+  if (p.asist > 0) parts.push(`<span class="pp-match-stat pp-stat-asist">🅰️${p.asist > 1 ? ' x' + p.asist : ''}</span>`);
+  return parts.join('');
+}
+
 // Knockout-cup fase naming: torneos de eliminación directa (Recopa/Supercopa/
 // Copa) numeran sus fechas 1-4 en la sheet, pero deben mostrarse como la fase
 // real (Octavos/Cuartos/Semifinal/Final). Si el partido ya trae un posCSB con
@@ -2853,7 +2864,7 @@ function _ppStatRowHtml(kind, p) {
       <span class="pp-match-rival">${label ? label + ' - ' : ''}${p.rival} ${_ppResultadoPillHtml(p)}${localIco ? ' ' + localIco : ''}</span>
     </div>
     <div class="pp-match-side">
-      ${statVal != null ? `<span class="pp-match-stat">${statIco}${statVal > 1 ? ' ×' + statVal : ''}</span>` : ''}
+      ${kind === 'partidos' ? _ppImpactIconsHtml(p) : (statVal != null ? `<span class="pp-match-stat">${statIco}${statVal > 1 ? ' ×' + statVal : ''}</span>` : '')}
       <span class="pp-match-cat">${p.categoria}</span>
       <span class="pp-match-cond ${PP_COND_CLASS[p.condCorta] || ''}">${p.condCorta}</span>
       ${clickable ? '<span class="pp-match-arrow">›</span>' : ''}
