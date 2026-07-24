@@ -1367,6 +1367,7 @@
     .pp-year-chip:hover { color:#e2e8f0; border-color:rgba(245,158,11,.35); }
     .pp-year-chip.active { background:var(--dorado); color:#1a1206; border-color:var(--dorado); }
     .pp-year-chip-count { font-weight:600; opacity:.85; }
+    .pp-data-gap-note { font-size:0.72rem; color:#fbbf24; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:8px 12px; margin-bottom:10px; }
     .pp-res-badge { display:inline-block; font-size:0.76rem; font-weight:800; padding:2px 7px; border-radius:6px; margin-left:2px; }
     .pp-res-win  { color:#4ade80; background:rgba(34,197,94,0.14); }
     .pp-res-draw { color:#fbbf24; background:rgba(245,158,11,0.14); }
@@ -2433,7 +2434,7 @@ function destroyCharts() {
 // ──────────────────────────────────────────────
 function normName(s) {
   return String(s ?? '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/\s*\(c\)\s*/g, '').trim();
+    .replace(/\s*\(c\)\s*/g, '').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
 }
 function slugify(s) {
   return normName(s).replace(/\(c\)/g, '').trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
@@ -2464,23 +2465,44 @@ function closePlayerProfile() {
 
 // Deep link from a match row in the Player Profile straight into that tournament's
 // "Fecha a Fecha" tab, with the exact date pre-selected (formación, incidencias, etc).
-function goToMatchFecha(equipo, fecha) {
+// `navKey` is either one of the 4 live/archived team codes ('a'/'b'/'a-ap2026'/
+// 'b-ap2026') or 'hg:<HISTORICO_GENERIC key>' for a finished league season
+// reached only through "Torneos Antiguos" (own tab-switch/fecha-select functions,
+// ghSwitchTab/ghSelectFecha, since it's a separate component from apSwitchTab).
+function goToMatchFecha(navKey, fecha) {
+  if (!navKey) return;
   closePlayerProfile();
-  // 'a-ap2026'/'b-ap2026' = archived Apertura AIFA 2026 (now in Torneos
-  // Antiguos, its own data source) vs 'a'/'b' = the live Clausura AIFA 2026
-  // season in Torneos Actuales.
-  currentData = equipo.startsWith('a') ? DATA_A : DATA_B;
-
   document.getElementById('landing').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('main-nav').style.display = 'flex';
   document.getElementById('tab-nido').style.display = 'none';
+  destroyCharts();
+
+  if (navKey.startsWith('hg:')) {
+    const key = navKey.slice(3);
+    const cfg = HISTORICO_GENERIC[key];
+    if (!cfg) return;
+    const badge = document.getElementById('section-badge');
+    badge.textContent = key.endsWith('b') ? 'Primera B' : 'Primera A';
+    badge.className = 'header-section-badge ' + (key.endsWith('b') ? 'badge-blue' : 'badge-gold');
+    showHistoricoTorneo(key); // marks "Torneos Antiguos" active + renders the generic 4-tab component
+    const trySelect = () => {
+      if (_historicoGenericLoaded[key]) { window.ghSwitchTab('fechas'); window.ghSelectFecha(fecha); }
+      else setTimeout(trySelect, 200);
+    };
+    trySelect();
+    return;
+  }
+
+  // 'a-ap2026'/'b-ap2026' = archived Apertura AIFA 2026 (now in Torneos
+  // Antiguos, its own data source) vs 'a'/'b' = the live Clausura AIFA 2026
+  // season in Torneos Actuales.
+  currentData = navKey.startsWith('a') ? DATA_A : DATA_B;
   const badge = document.getElementById('section-badge');
   badge.textContent = currentData.badge;
   badge.className = 'header-section-badge ' + currentData.badgeClass;
-  destroyCharts();
 
-  if (equipo === 'a-ap2026' || equipo === 'b-ap2026') {
+  if (navKey === 'a-ap2026' || navKey === 'b-ap2026') {
     showHistoricoTorneo('apertura-2026'); // marks "Torneos Antiguos" active + renders from the archived DATA_*_APERTURA2026
   } else {
     showTorneo('apertura');       // renders the tab + auto-selects the last played date
@@ -2494,9 +2516,14 @@ function goToMatchFecha(equipo, fecha) {
 function ppFilterMetrics(cat, btn) {
   const c = window._ppMetricsData && window._ppMetricsData[cat];
   if (!c) return;
+  window._ppActiveCat = cat;
 
   document.querySelectorAll('#pp-metric-tabs .pp-metric-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  // If a detail panel (Goles/Partidos/etc.) is open, refresh it so it only
+  // shows rows from the newly-selected category — or a "sin registros"
+  // message when the player has none there.
+  if (window._ppDetailKind) _ppRenderDetailPanel(window._ppDetailKind);
 
   const fields = [
     ['pp-m-pj',       c.pj,                                          `Partidos (${c.titular} tit · ${c.sup} sup)`],
@@ -2538,25 +2565,26 @@ function ppFilterMetrics(cat, btn) {
 // object) and are combined in separately by _collectAllMatchesForPlayer.
 function _allPlayerTorneoSources() {
   const core = [
-    { d: DATA_A, equipo: 'a', torneo: 'Clausura AIFA A 2026', cat: 'a' },
-    { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', torneo: 'Apertura AIFA A 2026', cat: 'a' },
-    { d: DATA_B, equipo: 'b', torneo: 'Clausura AIFA B 2026', cat: 'b' },
-    { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', torneo: 'Apertura AIFA B 2026', cat: 'b' },
+    { d: DATA_A, equipo: 'a', navKey: 'a', torneo: 'Clausura AIFA A 2026', cat: 'a' },
+    { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', navKey: 'a-ap2026', torneo: 'Apertura AIFA A 2026', cat: 'a' },
+    { d: DATA_B, equipo: 'b', navKey: 'b', torneo: 'Clausura AIFA B 2026', cat: 'b' },
+    { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', navKey: 'b-ap2026', torneo: 'Apertura AIFA B 2026', cat: 'b' },
   ];
-  // Every historical league season (Torneos Antiguos), both categories —
-  // reached only through "Torneos Antiguos" navigation, not goToMatchFecha,
-  // so equipo stays null (no direct deep-link target for these yet). Every
-  // HISTORICO_GENERIC key ends in 'a' for Primera A entries and 'b' for
-  // Primera B ones (e.g. 'apertura-2024a' vs 'apertura-2025b'/'...-d-b').
+  // Every historical league season (Torneos Antiguos), both categories — deep-
+  // linkable via showHistoricoTorneo/ghSwitchTab/ghSelectFecha (see
+  // goToMatchFecha's 'hg:' branch). Every HISTORICO_GENERIC key ends in 'a' for
+  // Primera A entries and 'b' for Primera B ones (e.g. 'apertura-2024a' vs
+  // 'apertura-2025b'/'...-d-b').
   const generic = Object.entries(HISTORICO_GENERIC).map(([key, cfg]) =>
-    ({ d: cfg.d, equipo: null, torneo: cfg.name, cat: key.endsWith('b') ? 'b' : 'a' }));
-  // Dedicated copa sheets (own Plantel/Fecha a Fecha, outside COPA_BLOCKS).
+    ({ d: cfg.d, equipo: null, navKey: 'hg:' + key, torneo: cfg.name, cat: key.endsWith('b') ? 'b' : 'a' }));
+  // Dedicated copa sheets (own Plantel/Fecha a Fecha, outside COPA_BLOCKS) —
+  // no deep-link target yet (own fase-based selector, not fecha-based).
   const copasDedicadas = [
     { d: DATA_A_RECOPA2025, cat: 'a' }, { d: DATA_A_2025, cat: 'a' },
     { d: DATA_B_2024D, cat: 'b' }, { d: DATA_B_RECOPA2026, cat: 'b' },
     { d: DATA_B_SUPERCOPA2025, cat: 'b' }, { d: DATA_B_RECOPA2024, cat: 'b' },
     { d: DATA_B_RECOPA2021, cat: 'b' },
-  ].map(({ d, cat }) => ({ d, equipo: null, torneo: d.nombre, cat }));
+  ].map(({ d, cat }) => ({ d, equipo: null, navKey: null, torneo: d.nombre, cat }));
   return [...core, ...generic, ...copasDedicadas];
 }
 
@@ -2564,10 +2592,11 @@ function _allPlayerTorneoSources() {
 // Primera A copas in COPA_BLOCKS) where this player appears in .jugadores.
 function _collectAllMatchesForPlayer(target) {
   const rows = _allPlayerTorneoSources()
-    .flatMap(({ d, equipo, torneo, cat }) => (d.apertura || []).map(m => ({ m, torneo, equipo, cat })));
-  // COPA_BLOCKS is Primera A's centralized copas sheet — always cat 'a'.
+    .flatMap(({ d, equipo, navKey, torneo, cat }) => (d.apertura || []).map(m => ({ m, torneo, equipo, navKey, cat })));
+  // COPA_BLOCKS is Primera A's centralized copas sheet — always cat 'a', no
+  // fecha-based deep link (own instancia/fase selector).
   const copaRows = Object.entries(COPA_BLOCKS)
-    .flatMap(([title, matches]) => (matches || []).map(m => ({ m, torneo: title, equipo: null, cat: 'a' })));
+    .flatMap(([title, matches]) => (matches || []).map(m => ({ m, torneo: title, equipo: null, navKey: null, cat: 'a' })));
   return [...rows, ...copaRows]
     .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target));
 }
@@ -2635,19 +2664,22 @@ function _collectPlayerStats(nombre) {
   // date pre-selected — only the 4 core sources support that today (equipo
   // stays null for the rest, so those rows render without the deep-link).
   const partidos = _collectAllMatchesForPlayer(target)
-    .map(({ m, torneo, equipo, cat }) => {
+    .map(({ m, torneo, equipo, navKey, cat }) => {
       const j = m.jugadores.find(jj => normName(jj.nombre) === target);
       let condicion = 'No citado';
       if (j.titular) condicion = 'Titular';
       else if (j.entro) condicion = 'Ingresó desde el banco';
       else if (j.citado) condicion = 'Banco (no ingresó)';
+      // Short label for the row's right-side badge — collapses "Ingresó desde
+      // el banco"/"Banco (no ingresó)" into a single "Suplente" state.
+      const condCorta = condicion === 'Titular' ? 'Titular' : condicion === 'No citado' ? 'No citado' : 'Suplente';
       const anio = (torneo.match(/\d{4}/) || [])[0] || '';
       const localNorm = String(m.local || _inferLocalFromLugar(m.lugar) || '').toUpperCase();
       return {
-        torneo, anio, equipo, categoria: cat === 'b' ? 'Primera B' : 'Primera A',
+        torneo, anio, equipo, navKey, categoria: cat === 'b' ? 'Primera B' : 'Primera A',
         rival: m.rival, fecha: m.fecha, resultado: m.resultado,
         gf: m.gf, gc: m.gc, local: localNorm,
-        condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
+        condicion, condCorta, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
         esCapitan: /\(c\)/i.test(j.nombre),
       };
     })
@@ -2771,65 +2803,106 @@ function _ppRankGroup(rankSet, groupLabel, accent) {
 function _ppResultadoPillHtml(p) {
   if (p.gf == null || p.gc == null) return '';
   const color = p.gf > p.gc ? '#22c55e' : p.gf < p.gc ? '#ef4444' : '#94a3b8';
-  return `<span class="pp-match-resultado" style="color:${color};border-color:${color}66;background:${color}14">${p.gf}-${p.gc}</span>`;
+  return `<span class="pp-match-resultado" style="color:${color};border-color:${color}66;background:${color}14">(${p.gf}-${p.gc})</span>`;
 }
 
+const PP_COND_CLASS = { 'Titular': 'pp-cond-tit', 'Suplente': 'pp-cond-sup', 'No citado': 'pp-cond-banco' };
+
 // Row formatters for the 5 clickable stat tabs (Goles/Asistencias/Títulos/Rojas/Partidos).
+// Shared left/center layout for Partidos/Goles/Asistencias: "Fecha N° - RIVAL
+// (resultado)" with the tournament name as a subtitle above (no duplicated
+// year — p.torneo already carries it) and, when the source supports a deep
+// link (p.navKey), the whole row is clickable straight into that date's
+// Fecha a Fecha ficha.
 function _ppStatRowHtml(kind, p) {
   const localIco = p.local === 'LOCAL' ? '🏠' : p.local === 'NEUTRAL' ? '🏟️' : p.local === 'VISITANTE' ? '✈️' : '';
   if (kind === 'titulos') {
     return `<div class="pp-match-row">
-      <div class="pp-match-main"><span class="pp-match-torneo">${p.anio}</span><span class="pp-match-rival">${p.torneo}</span></div>
-      <div class="pp-match-side"><span class="pp-match-cond">${p.categoria}</span></div>
-    </div>`;
-  }
-  if (kind === 'partidos') {
-    return `<div class="pp-match-row">
-      <div class="pp-match-main">
-        <span class="pp-match-torneo">${p.anio} · ${p.torneo}${p.fecha ? ' • Fecha ' + p.fecha : ''}</span>
-        <span class="pp-match-rival">vs ${p.rival}</span>
-      </div>
-      <div class="pp-match-side">
-        ${_ppResultadoPillHtml(p)}
-        <span class="pp-match-cat">${p.categoria}</span>
-        ${localIco ? `<span class="pp-match-cond">${localIco}</span>` : ''}
-      </div>
+      <div class="pp-match-main"><span class="pp-match-rival">${p.torneo} ${p.anio}</span></div>
+      <div class="pp-match-side"><span class="pp-match-cat">${p.categoria}</span></div>
     </div>`;
   }
   const statVal = kind === 'goles' ? p.goles : kind === 'asist' ? p.asist : null;
-  const statIco = kind === 'goles' ? '⚽' : kind === 'asist' ? '🎯' : '🟥';
-  return `<div class="pp-match-row">
+  const statIco = kind === 'goles' ? '⚽' : kind === 'asist' ? '🎯' : null;
+  const clickable = !!p.navKey && p.fecha;
+  const rowAttrs = clickable
+    ? `class="pp-match-row pp-match-row-link" onclick="goToMatchFecha('${p.navKey}', '${String(p.fecha).replace(/'/g, "\\'")}')" title="Ver en Fecha a Fecha"`
+    : `class="pp-match-row"`;
+  return `<div ${rowAttrs}>
     <div class="pp-match-main">
-      <span class="pp-match-torneo">${p.anio} · ${p.torneo}${p.fecha ? ' • Fecha ' + p.fecha : ''}</span>
-      <span class="pp-match-rival">vs ${p.rival}</span>
+      <span class="pp-match-torneo">${p.torneo}</span>
+      <span class="pp-match-rival">${p.fecha ? 'Fecha ' + p.fecha + ' - ' : ''}${p.rival} ${_ppResultadoPillHtml(p)}${localIco ? ' ' + localIco : ''}</span>
     </div>
     <div class="pp-match-side">
-      ${kind === 'goles' ? _ppResultadoPillHtml(p) : ''}
-      ${kind === 'goles' ? `<span class="pp-match-cat">${p.categoria}</span>` : ''}
-      ${statVal != null ? `<span class="pp-match-stat">${statIco}${statVal > 1 ? ' ×' + statVal : ''}</span>` : `<span class="pp-match-stat">${statIco}</span>`}
-      ${localIco ? `<span class="pp-match-cond">${localIco}</span>` : ''}
+      ${statVal != null ? `<span class="pp-match-stat">${statIco}${statVal > 1 ? ' ×' + statVal : ''}</span>` : ''}
+      <span class="pp-match-cat">${p.categoria}</span>
+      <span class="pp-match-cond ${PP_COND_CLASS[p.condCorta] || ''}">${p.condCorta}</span>
+      ${clickable ? '<span class="pp-match-arrow">›</span>' : ''}
     </div>
   </div>`;
 }
 
 const PP_DETAIL_LABELS = { goles: '⚽ Goles', asist: '🎯 Asistencias', rojas: '🟥 Rojas', titulos: '🏆 Títulos', partidos: '📋 Partidos' };
+const PP_CAT_LABEL = { a: 'Primera A', b: 'Primera B' };
+// Kinds that get the horizontal year-chip filter (Partidos/Goles/Asistencias).
+const PP_YEAR_CHIP_KINDS = new Set(['partidos', 'goles', 'asist']);
 
-// Builds the horizontal "Todos / año / año…" chip row for the Partidos
-// detail panel, plus the (already-year-filtered) match list below it.
-function _ppPartidosPanelHtml(list) {
+// Filters a detail list down to the currently-selected Totales/Primera A/
+// Primera B métricas tab, so switching category also hides stats/rows that
+// don't belong to that category instead of showing an empty or misleading list.
+function _ppFilterByCat(list) {
+  const cat = window._ppActiveCat || 'total';
+  if (cat === 'total') return list;
+  return list.filter(p => p.categoria === PP_CAT_LABEL[cat]);
+}
+
+// Builds the horizontal "Todos / año / año…" chip row (for Partidos/Goles/
+// Asistencias) plus the (already-year-filtered) match list below it. Falls
+// back to a plain list (no chips) for Rojas.
+function _ppDetailPanelBodyHtml(kind, fullList) {
+  const catList = _ppFilterByCat(fullList);
+  if (!catList.length) {
+    const cat = window._ppActiveCat || 'total';
+    const msg = cat === 'total' ? 'Sin registros cargados.' : `Sin registros en ${PP_CAT_LABEL[cat]}.`;
+    return `<div class="hist-empty">${msg}</div>`;
+  }
+  if (!PP_YEAR_CHIP_KINDS.has(kind)) {
+    return catList.map(p => _ppStatRowHtml(kind, p)).join('');
+  }
   const byYear = new Map();
-  for (const p of list) {
+  for (const p of catList) {
     const y = p.anio || 'Sin año';
     byYear.set(y, (byYear.get(y) || 0) + 1);
   }
   const years = [...byYear.keys()].sort((a, b) => (parseInt(b) || 0) - (parseInt(a) || 0));
-  const active = window._ppPartidosYear || 'todos';
-  const chip = (val, label, count) => `<button class="pp-year-chip${active === val ? ' active' : ''}" onclick="ppFilterPartidosYear('${val}')">${label} <span class="pp-year-chip-count">(${count})</span></button>`;
-  const chips = [chip('todos', 'Todos', list.length), ...years.map(y => chip(y, y, byYear.get(y)))].join('');
-  const filtered = active === 'todos' ? list : list.filter(p => p.anio === active);
+  const yearState = window._ppYearFilter || (window._ppYearFilter = {});
+  const active = yearState[kind] || 'todos';
+  const chip = (val, label, count) => `<button class="pp-year-chip${active === val ? ' active' : ''}" onclick="ppFilterYear('${kind}', '${val}')">${label} <span class="pp-year-chip-count">(${count})</span></button>`;
+  const chips = [chip('todos', 'Todos', catList.length), ...years.map(y => chip(y, y, byYear.get(y)))].join('');
+  const filtered = active === 'todos' ? catList : catList.filter(p => p.anio === active);
   return `
     <div class="pp-year-chips">${chips}</div>
-    ${filtered.length ? filtered.map(p => _ppStatRowHtml('partidos', p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+    ${filtered.length ? filtered.map(p => _ppStatRowHtml(kind, p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+}
+
+function _ppRenderDetailPanel(kind) {
+  const panel = document.getElementById('pp-detail-panel');
+  if (!panel) return;
+  const list = (window._ppDetailLists && window._ppDetailLists[kind]) || [];
+  // Totales/Partidos (kind='partidos', cat='total') pulls its PJ count from El
+  // Nido's own accumulated sheet (source of truth for career totals), while
+  // this list is built by walking every tournament's Fecha a Fecha table — if
+  // some historical season's detail data isn't fully loaded/parsed yet the
+  // list can undercount vs. that total. Surface the gap instead of silently
+  // showing an incomplete list as if it were the whole story.
+  const isTotalPartidos = kind === 'partidos' && (window._ppActiveCat || 'total') === 'total';
+  const gapNote = isTotalPartidos && window._ppCareerPJ > list.length
+    ? `<div class="pp-data-gap-note">⚠️ Mostrando ${list.length} de ${window._ppCareerPJ} partidos de la carrera — algunos torneos antiguos aún no tienen su Fecha a Fecha cargada.</div>`
+    : '';
+  panel.innerHTML = `
+    <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${_ppFilterByCat(list).length})</div>
+    ${gapNote}
+    ${_ppDetailPanelBodyHtml(kind, list)}`;
 }
 
 // Toggles the detail panel below the KPI grid for one of the 5 clickable
@@ -2843,29 +2916,15 @@ window.ppShowDetail = function(kind) {
   if (window._ppDetailKind === kind) { window._ppDetailKind = null; panel.innerHTML = ''; return; }
   window._ppDetailKind = kind;
   document.getElementById('pp-kpi-' + kind)?.classList.add('pp-kpi-active');
-  const list = (window._ppDetailLists && window._ppDetailLists[kind]) || [];
-  if (kind === 'partidos') {
-    window._ppPartidosYear = 'todos';
-    panel.innerHTML = `
-      <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${list.length})</div>
-      ${_ppPartidosPanelHtml(list)}`;
-    return;
-  }
-  panel.innerHTML = `
-    <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${list.length})</div>
-    ${list.length ? list.map(p => _ppStatRowHtml(kind, p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+  if (PP_YEAR_CHIP_KINDS.has(kind)) (window._ppYearFilter || (window._ppYearFilter = {}))[kind] = 'todos';
+  _ppRenderDetailPanel(kind);
 };
 
-// Re-renders just the Partidos detail panel's chip row + list for a new year
+// Re-renders just the open detail panel's chip row + list for a new year
 // filter, without collapsing/re-opening the panel.
-window.ppFilterPartidosYear = function(year) {
-  window._ppPartidosYear = year;
-  const panel = document.getElementById('pp-detail-panel');
-  if (!panel) return;
-  const list = (window._ppDetailLists && window._ppDetailLists.partidos) || [];
-  panel.innerHTML = `
-    <div class="pp-detail-header">${PP_DETAIL_LABELS.partidos} (${list.length})</div>
-    ${_ppPartidosPanelHtml(list)}`;
+window.ppFilterYear = function(kind, year) {
+  (window._ppYearFilter || (window._ppYearFilter = {}))[kind] = year;
+  _ppRenderDetailPanel(kind);
 };
 
 function renderPlayerProfile(nombre) {
@@ -2894,7 +2953,9 @@ function renderPlayerProfile(nombre) {
   // panel below without a full re-render (same pattern as _ppMetricsData).
   window._ppDetailLists = { goles: s.golesList, asist: s.asistList, rojas: s.rojasList, titulos: s.titulosList, partidos: s.partidos };
   window._ppDetailKind = null;
-  window._ppPartidosYear = 'todos';
+  window._ppActiveCat = 'total';
+  window._ppYearFilter = {};
+  window._ppCareerPJ = s.pj;
 
   const metricsTabs = `
     <div class="pp-metric-tabs" id="pp-metric-tabs">
@@ -9234,7 +9295,7 @@ async function loadLiveData() {
              promGol, promAsist, promGmas, teams: ['b'] };
   }
 
-  function normName(s) { return s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function normName(s) { return s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim(); }
 
   function mergeAB(listA, listB) {
     const map = new Map();
