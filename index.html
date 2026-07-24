@@ -2610,6 +2610,10 @@ function ppFilterMetrics(cat, btn) {
   // message when the player has none there.
   if (window._ppDetailKind) _ppRenderDetailPanel(window._ppDetailKind);
 
+  // Arqueros ven Vallas Invictas + su promedio en lugar de Prom. Gol/Prom.
+  // Asist (esos dos KPI slots quedan como Vallas/Prom. Vallas para ellos —
+  // ver el mismo isArquero check en renderPlayerProfile).
+  const isArquero = window._ppIsArquero;
   const fields = [
     ['pp-m-pj',       c.pj,                                          `Partidos (${c.titular} tit · ${c.sup} sup)`],
     ['pp-m-goles',    c.goles],
@@ -2617,8 +2621,8 @@ function ppFilterMetrics(cat, btn) {
     ['pp-m-ga',       c.goles + c.asist],
     ['pp-m-titulos',  c.titulos],
     ['pp-m-rojas',    c.rojas],
-    ['pp-m-promgol',  c.promGol.toFixed(2).replace('.', ',')],
-    ['pp-m-promasist',c.promAsist.toFixed(2).replace('.', ',')],
+    ['pp-m-promgol',  isArquero ? c.vallas : c.promGol.toFixed(2).replace('.', ',')],
+    ['pp-m-promasist',isArquero ? c.vallasProm.toFixed(2).replace('.', ',') : c.promAsist.toFixed(2).replace('.', ',')],
   ];
   fields.forEach(([id, val, label]) => {
     const el = document.getElementById(id);
@@ -2864,10 +2868,14 @@ function _collectPlayerStats(nombre) {
   const titular = hasA || hasB ? (nidoA?.titular || 0) + (nidoB?.titular || 0) : (meA?.titular || 0) + (meB?.titular || 0);
   const sup     = hasA || hasB ? (nidoA?.suplente || 0) + (nidoB?.suplente || 0) : (meA?.entro || meA?.sup || 0) + (meB?.entro || meB?.sup || 0);
   const rojas   = hasA || hasB ? (nidoA?.rojas || 0) + (nidoB?.rojas || 0) : (meA?.rojas || 0) + (meB?.rojas || 0);
+  // Solo viene de El Nido (columnas P/Q de "Jugadores Estadísticas") — no hay
+  // fallback en el squad sheet local, así que queda en 0 mientras El Nido carga.
+  const vallas  = (nidoA?.vallas || 0) + (nidoB?.vallas || 0);
 
   const safeDiv = (a, b) => (b > 0 ? a / b : 0);
   const promGol       = safeDiv(goles, pj);
   const promAsist     = safeDiv(asist, pj);
+  const vallasProm    = safeDiv(vallas, pj);
   const efectividadGA = safeDiv(goles + asist, pj) * 100;
 
   const nombreResuelto = nidoA?.nombre || nidoB?.nombre || meA?.nombre || meB?.nombre || nombre;
@@ -2890,13 +2898,15 @@ function _collectPlayerStats(nombre) {
     const cTitular = nido?.titular || me?.titular || 0;
     const cSup     = nido?.suplente || me?.entro || me?.sup || 0;
     const cRojas   = me?.rojas || 0;
+    const cVallas  = nido?.vallas || 0;
     return {
       pj: cPj, titular: cTitular, sup: cSup, goles: cGoles, asist: cAsist, rojas: cRojas, titulos: cTitulos,
+      vallas: cVallas, vallasProm: safeDiv(cVallas, cPj),
       promGol: safeDiv(cGoles, cPj), promAsist: safeDiv(cAsist, cPj), efectividadGA: safeDiv(cGoles + cAsist, cPj) * 100,
     };
   }
   const porCategoria = {
-    total: { pj, titular, sup, goles, asist, rojas, titulos, promGol, promAsist, efectividadGA },
+    total: { pj, titular, sup, goles, asist, rojas, titulos, vallas, vallasProm, promGol, promAsist, efectividadGA },
     a: buildCategoria(nidoA, meA),
     b: buildCategoria(nidoB, meB),
   };
@@ -2904,7 +2914,7 @@ function _collectPlayerStats(nombre) {
   return {
     nombre: nombreResuelto,
     pos: posResuelta,
-    pj, titular, sup, goles, asist, rojas, titulos,
+    pj, titular, sup, goles, asist, rojas, titulos, vallas, vallasProm,
     promGol, promAsist, efectividadGA,
     hasA, hasB, rankA, rankB, rankGen,
     partidos, golesList, asistList, rojasList, titulosList, porCategoria,
@@ -3185,6 +3195,11 @@ function renderPlayerProfile(nombre) {
   window._ppYearFilter = {};
   window._ppTipoFilter = {};
   window._ppCareerPJ = s.pj;
+  // Arqueros ven Vallas Invictas + su promedio en vez de Prom. Gol/Prom.
+  // Asist — esas dos métricas no tienen sentido para un puesto que no
+  // suele convertir goles.
+  const isArquero = s.pos === 'ARQ';
+  window._ppIsArquero = isArquero;
 
   const metricsTabs = `
     <div class="pp-metric-tabs" id="pp-metric-tabs">
@@ -3201,8 +3216,12 @@ function renderPlayerProfile(nombre) {
       ${kpi('pp-m-ga',      '🔥', s.goles + s.asist, 'G+A', '#a855f7')}
       ${kpi('pp-m-titulos', '🏆', s.titulos, 'Títulos', '#fbbf24', 'titulos')}
       ${kpi('pp-m-rojas',   '🟥', s.rojas, 'Rojas', '#ef4444', 'rojas')}
-      ${kpi('pp-m-promgol', '📈', s.promGol.toFixed(2).replace('.', ','), 'Prom. Gol/Partido', '#22c55e')}
-      ${kpi('pp-m-promasist','🎯', s.promAsist.toFixed(2).replace('.', ','), 'Prom. Asist/Partido', '#3b82f6')}
+      ${isArquero
+        ? kpi('pp-m-promgol', '🧤', s.vallas, 'Vallas Invictas', '#60a5fa')
+        : kpi('pp-m-promgol', '📈', s.promGol.toFixed(2).replace('.', ','), 'Prom. Gol/Partido', '#22c55e')}
+      ${isArquero
+        ? kpi('pp-m-promasist', '📈', s.vallasProm.toFixed(2).replace('.', ','), 'Prom. Vallas/Partido', '#60a5fa')
+        : kpi('pp-m-promasist', '🎯', s.promAsist.toFixed(2).replace('.', ','), 'Prom. Asist/Partido', '#3b82f6')}
     </div>
     <div class="pp-effectiveness">
       <div class="hd-section-label">Efectividad de participación en goles (G+A)</div>
@@ -6831,6 +6850,7 @@ function _mergeDuplicatePlayerRows(rows, COL) {
     if (COL.promGol   !== undefined) merged[COL.promGol]   = pj > 0 ? (num(merged[COL.goles]) / pj).toFixed(2) : '0';
     if (COL.promAsist !== undefined) merged[COL.promAsist] = pj > 0 ? (num(merged[COL.asist]) / pj).toFixed(2) : '0';
     if (COL.promGmas  !== undefined) merged[COL.promGmas]  = pj > 0 ? (num(merged[COL.gmas])  / pj).toFixed(2) : '0';
+    if (COL.vallasProm !== undefined) merged[COL.vallasProm] = pj > 0 ? (num(merged[COL.vallas]) / pj).toFixed(2) : '0';
     return merged;
   });
 }
@@ -6843,11 +6863,13 @@ let _jugTotalesQuery = '';
 let _jugTotalesTab = 'general'; // general | liderazgo | disciplina | participacion | rendimiento
 
 // Column index constants (resolved after data loads)
+// P=Vallas Invictas (desde 2021) Q=Promedio de Vallas Invictas — mismas
+// columnas/posición que ya usaba Primera B (JUG_COL_B.vallas).
 const JUG_COL = {
   pos: 0, nombre: 1, pj: 2, goles: 3, asist: 4,
   capitan: 5, titulos: 6, ascensos: 7, rojas: 8,
   promGol: 9, promAsist: 10, titular: 11, suplente: 12,
-  gmas: 13, promGmas: 14
+  gmas: 13, promGmas: 14, vallas: 15, vallasProm: 16
 };
 
 const POS_COLOR = { ARQ:'#a855f7', LI:'#22c55e', DFC:'#3b82f6', LD:'#22c55e', MC:'#f59e0b', DEL:'#ef4444', DC:'#ef4444', ED:'#ef4444', EI:'#ef4444' };
@@ -6859,6 +6881,7 @@ const JUG_TABS = [
   { key:'disciplina',   label:'Disciplina',   cols:[JUG_COL.pj, JUG_COL.rojas] },
   { key:'participacion',label:'Participación',cols:[JUG_COL.pj, JUG_COL.titular, JUG_COL.suplente] },
   { key:'rendimiento',  label:'Rendimiento',  cols:[JUG_COL.pj, JUG_COL.promGol, JUG_COL.promAsist, JUG_COL.promGmas] },
+  { key:'vallas',       label:'Vallas',       cols:[JUG_COL.pj, JUG_COL.vallas, JUG_COL.vallasProm] },
 ];
 
 const COL_META = {
@@ -6875,6 +6898,8 @@ const COL_META = {
   [JUG_COL.promGol]:  { label:'Prom ⚽',icon:'📈',color:'#22c55e' },
   [JUG_COL.promAsist]:{ label:'Prom 🎯',icon:'📈',color:'#3b82f6' },
   [JUG_COL.promGmas]: { label:'Prom G+A',icon:'📈',color:'#a855f7' },
+  [JUG_COL.vallas]:      { label:'Vallas',     icon:'🧤', color:'#60a5fa' },
+  [JUG_COL.vallasProm]:  { label:'Prom 🧤',    icon:'📈', color:'#60a5fa' },
 };
 
 function renderJugadoresTotales() {
@@ -9557,6 +9582,8 @@ async function loadLiveData() {
     { key: 'promGol',  label: 'Prom. Goles',      isFloat: true  },
     { key: 'promAsist',label: 'Prom. Asistencias',isFloat: true  },
     { key: 'promGmas', label: 'Prom. G+A',         isFloat: true  },
+    { key: 'vallas',     label: 'Top Vallas Invictas',          isFloat: false },
+    { key: 'vallasProm', label: 'Top Promedio de Vallas Invictas', isFloat: true  },
   ];
 
   function normA(row) {
@@ -9572,9 +9599,11 @@ async function loadLiveData() {
     const promGol  = pf(row[JUG_COL.promGol]);
     const promAsist= pf(row[JUG_COL.promAsist]);
     const promGmas = pf(row[JUG_COL.promGmas]);
+    const vallas     = parseInt(row[JUG_COL.vallas]) || 0;
+    const vallasProm = pf(row[JUG_COL.vallasProm]);
     return { nombre: n, pos: String(row[JUG_COL.pos] || '').trim(),
              pj, goles, asist, gmas: goles + asist, titulos, titular, suplente, rojas,
-             promGol, promAsist, promGmas, teams: ['a'] };
+             promGol, promAsist, promGmas, vallas, vallasProm, teams: ['a'] };
   }
 
   function normB(row) {
@@ -9590,9 +9619,14 @@ async function loadLiveData() {
     const promGol  = pf(row[JUG_COL_B.promGol]);
     const promAsist= pf(row[JUG_COL_B.promAsist]);
     const promGmas = pf(row[JUG_COL_B.promGmas]);
+    // Primera B's sheet only has a raw Vallas count column (no promedio
+    // column yet) — derive the average from vallas/pj, same fallback formula
+    // used everywhere else in this file when a real average isn't available.
+    const vallas     = parseInt(row[JUG_COL_B.vallas]) || 0;
+    const vallasProm = pj > 0 ? parseFloat((vallas / pj).toFixed(2)) : 0;
     return { nombre: n, pos: String(row[JUG_COL_B.pos] || '').trim(),
              pj, goles, asist, gmas: goles + asist, titulos, titular, suplente, rojas,
-             promGol, promAsist, promGmas, teams: ['b'] };
+             promGol, promAsist, promGmas, vallas, vallasProm, teams: ['b'] };
   }
 
   function normName(s) { return s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim(); }
@@ -9611,10 +9645,12 @@ async function loadLiveData() {
         a.asist += p.asist;
         a.gmas   = a.goles + a.asist;
         a.titulos += p.titulos;
+        a.vallas  += p.vallas;
         // recalculate averages from totals
         a.promGol   = a.pj > 0 ? parseFloat((a.goles  / a.pj).toFixed(2)) : 0;
         a.promAsist = a.pj > 0 ? parseFloat((a.asist  / a.pj).toFixed(2)) : 0;
         a.promGmas  = a.pj > 0 ? parseFloat((a.gmas   / a.pj).toFixed(2)) : 0;
+        a.vallasProm= a.pj > 0 ? parseFloat((a.vallas  / a.pj).toFixed(2)) : 0;
       } else {
         map.set(k, p);
       }
@@ -9641,7 +9677,7 @@ async function loadLiveData() {
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;background:${bg};color:${cl};font-size:10px;font-weight:700;border:1px solid ${cl}40;white-space:nowrap;">${lbl}</span>`;
   }
 
-  const NUMERIC_COLS = ['pj','goles','asist','gmas','titulos','promGol','promAsist','promGmas'];
+  const NUMERIC_COLS = ['pj','goles','asist','gmas','titulos','promGol','promAsist','promGmas','vallas','vallasProm'];
 
   function sortData(data) {
     const col = _nidoRank || _nidoSort.col;
@@ -9690,6 +9726,7 @@ async function loadLiveData() {
     promGol:   { replaces: 'goles',  header: 'PROM.G',   field: 'promGol'   },
     promAsist: { replaces: 'asist',  header: 'PROM.A',   field: 'promAsist' },
     promGmas:  { replaces: 'gmas',   header: 'PROM.G+A', field: 'promGmas'  },
+    vallasProm:{ replaces: 'vallas', header: 'PROM.V',   field: 'vallasProm'},
   };
 
   function renderTable() {
@@ -9716,6 +9753,7 @@ async function loadLiveData() {
       { key: 'asist',   label: promSwap?.replaces === 'asist' ? promSwap.header : 'ASIST',  center: true },
       { key: 'gmas',    label: promSwap?.replaces === 'gmas'  ? promSwap.header : 'G+A',    center: true },
       { key: 'titulos', label: 'TÍTULOS', center: true },
+      { key: 'vallas',  label: promSwap?.replaces === 'vallas' ? promSwap.header : 'VALLAS', center: true },
     ];
 
     const thead = `<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);">${
@@ -9794,12 +9832,13 @@ async function loadLiveData() {
         ${td('asist',  fmt(p.asist,  'promAsist'))}
         ${td('gmas',   fmt(p.gmas,   'promGmas'))}
         ${td('titulos',p.titulos || 0)}
+        ${td('vallas', fmt(p.vallas, 'vallasProm'))}
       </tr>`;
     }).join('');
 
     const totalDs = activeDataset().length;
     const showing  = rows.length;
-    const colspan  = isRankMode ? 9 : 8;
+    const colspan  = isRankMode ? 10 : 9;
 
     return `<div style="border-radius:12px;border:1px solid rgba(255,255,255,0.09);overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);">
