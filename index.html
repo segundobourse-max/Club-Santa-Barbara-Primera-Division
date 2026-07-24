@@ -3045,6 +3045,19 @@ function renderPlayerProfile(nombre) {
       }
     });
   }
+  // Every finished league season (Torneos Antiguos) is normally lazy-loaded
+  // only when its own tab is opened — force-load every one of them here too,
+  // so "Historial de Partidos" is complete on the very first profile view
+  // instead of only showing years the user happened to have already browsed.
+  // Guarded by _ppHistoricoPreloadPromise (one-shot per page load), so this
+  // never turns into a re-render loop if a season's fetch keeps failing.
+  if (!_ppHistoricoPreloadPromise) {
+    _ppEnsureAllHistoricoLoaded().then(() => {
+      if (document.getElementById('player-profile-overlay')?.style.display === 'block') {
+        renderPlayerProfile(nombre);
+      }
+    });
+  }
 }
 
 window.addEventListener('popstate', () => {
@@ -5072,6 +5085,25 @@ function _moveCopaMatches(dataObj, targetObj, predicate) {
   const newOnes = moved.filter(m => !existingKeys.has(`${m.rival}|${m.fecha}`));
   targetObj.apertura = [...(targetObj.apertura || []), ...newOnes];
   targetObj.partidos = _deriveBasicFromDetailed(targetObj.apertura);
+}
+
+// Every HISTORICO_GENERIC season is lazy-loaded on-demand the first time its
+// own "Torneos Antiguos" tab is opened (see openHistoricoGenerico below) —
+// loadLiveData() never preloads them. That's invisible everywhere except the
+// player profile's "Historial de Partidos": it walks EVERY season's .apertura
+// regardless of whether the user ever visited that tab, so a player who only
+// played, say, 2023/2024 seasons the user never opened would show up with
+// those years silently missing. Kicked off once from renderPlayerProfile and
+// cached so repeat profile opens don't refetch what's already loaded.
+let _ppHistoricoPreloadPromise = null;
+function _ppEnsureAllHistoricoLoaded() {
+  if (_ppHistoricoPreloadPromise) return _ppHistoricoPreloadPromise;
+  const pending = Object.entries(HISTORICO_GENERIC).filter(([key]) => !_historicoGenericLoaded[key]);
+  // Settle regardless of individual failures (a network glitch on one season
+  // shouldn't be retried forever every time a profile is opened) — attempted
+  // once per page load, same as El Nido's own one-shot load.
+  _ppHistoricoPreloadPromise = Promise.allSettled(pending.map(([key, cfg]) => _loadHistoricoGeneric(key, cfg.d, cfg)));
+  return _ppHistoricoPreloadPromise;
 }
 
 async function _loadHistoricoGeneric(key, dataObj, cfg) {
