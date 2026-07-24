@@ -2436,6 +2436,14 @@ function normName(s) {
   return String(s ?? '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/\s*\(c\)\s*/g, '').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
 }
+// Clausura cierra el año calendario, Apertura lo abre — dentro de un mismo
+// año, Clausura va primero (más reciente) y Apertura después; cualquier otro
+// torneo (Recopa/Supercopa/Copa) queda al final del año.
+function _ppTorneoRank(torneo) {
+  if (/clausura/i.test(torneo)) return 0;
+  if (/apertura/i.test(torneo)) return 1;
+  return 2;
+}
 function slugify(s) {
   return normName(s).replace(/\(c\)/g, '').trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
 }
@@ -2465,10 +2473,16 @@ function closePlayerProfile() {
 
 // Deep link from a match row in the Player Profile straight into that tournament's
 // "Fecha a Fecha" tab, with the exact date pre-selected (formación, incidencias, etc).
-// `navKey` is either one of the 4 live/archived team codes ('a'/'b'/'a-ap2026'/
-// 'b-ap2026') or 'hg:<HISTORICO_GENERIC key>' for a finished league season
-// reached only through "Torneos Antiguos" (own tab-switch/fecha-select functions,
-// ghSwitchTab/ghSelectFecha, since it's a separate component from apSwitchTab).
+// `navKey` is one of:
+//   'a'/'b'/'a-ap2026'/'b-ap2026'        — the 4 live/archived team codes.
+//   'hg:<HISTORICO_GENERIC key>'         — a lazily-loaded finished league season
+//                                          (own ghSwitchTab/ghSelectFecha).
+//   'sh:<showHistoricoTorneo key>:<pfx>' — a finished season with its OWN bespoke
+//                                          render component (Apertura AIFA A 2025,
+//                                          Apertura AIFA D 2024), eagerly loaded by
+//                                          loadLiveData() and using its own
+//                                          <pfx>SwitchTab/<pfx>SelectFecha pair
+//                                          (ap25/ap24d) instead of ghSwitchTab.
 function goToMatchFecha(navKey, fecha) {
   if (!navKey) return;
   closePlayerProfile();
@@ -2491,6 +2505,17 @@ function goToMatchFecha(navKey, fecha) {
       else setTimeout(trySelect, 200);
     };
     trySelect();
+    return;
+  }
+
+  if (navKey.startsWith('sh:')) {
+    const [, key, prefix] = navKey.split(':');
+    const badge = document.getElementById('section-badge');
+    badge.textContent = key.endsWith('b') ? 'Primera B' : 'Primera A';
+    badge.className = 'header-section-badge ' + (key.endsWith('b') ? 'badge-blue' : 'badge-gold');
+    showHistoricoTorneo(key); // marks "Torneos Antiguos" active + renders the bespoke component
+    window[prefix + 'SwitchTab']('fechas');
+    window[prefix + 'SelectFecha'](fecha);
     return;
   }
 
@@ -2580,12 +2605,22 @@ function _allPlayerTorneoSources() {
   // Dedicated copa sheets (own Plantel/Fecha a Fecha, outside COPA_BLOCKS) —
   // no deep-link target yet (own fase-based selector, not fecha-based).
   const copasDedicadas = [
-    { d: DATA_A_RECOPA2025, cat: 'a' }, { d: DATA_A_2025, cat: 'a' },
-    { d: DATA_B_2024D, cat: 'b' }, { d: DATA_B_RECOPA2026, cat: 'b' },
+    { d: DATA_A_RECOPA2025, cat: 'a' },
+    { d: DATA_B_RECOPA2026, cat: 'b' },
     { d: DATA_B_SUPERCOPA2025, cat: 'b' }, { d: DATA_B_RECOPA2024, cat: 'b' },
     { d: DATA_B_RECOPA2021, cat: 'b' },
   ].map(({ d, cat }) => ({ d, equipo: null, navKey: null, torneo: d.nombre, cat }));
-  return [...core, ...generic, ...copasDedicadas];
+  // Two finished LEAGUE seasons (not copas) that got their own bespoke render
+  // component instead of going through HISTORICO_GENERIC — they used to be
+  // lumped in with copasDedicadas above, which gave them d.nombre's plain
+  // internal label ("Primera A — Apertura 2025") instead of a real tournament
+  // name and no deep link at all. 'sh:<key>:<pfx>' drives goToMatchFecha's
+  // dedicated branch (own <pfx>SwitchTab/<pfx>SelectFecha pair).
+  const bespoke = [
+    { d: DATA_A_2025, navKey: 'sh:apertura-2025a:ap25', torneo: 'Apertura AIFA A 2025', cat: 'a' },
+    { d: DATA_B_2024D, navKey: 'sh:apertura-2024d-b:ap24d', torneo: 'Apertura AIFA D 2024', cat: 'b' },
+  ].map(s => ({ ...s, equipo: null }));
+  return [...core, ...generic, ...copasDedicadas, ...bespoke];
 }
 
 // Flat list of every match (across every source above, plus the centralized
@@ -2689,7 +2724,14 @@ function _collectPlayerStats(nombre) {
     // suplente que ingresó. Descarta tanto los no citados como los suplentes
     // que se quedaron en el banco sin ingresar — ninguno de los dos jugó.
     .filter(p => p.condCorta === 'Titular' || p.condCorta === 'Suplente')
-    .sort((a, b) => (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0) || (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
+    // Orden cronológico real: año más reciente primero; dentro del mismo año,
+    // Clausura (el semestre que cierra el año) antes que Apertura, y cualquier
+    // otro torneo (copas) al final; dentro de cada uno, de la última fecha a
+    // la primera. Ordenar solo por número de fecha mezclaba Apertura/Clausura
+    // sin ningún criterio temporal real.
+    .sort((a, b) => (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0)
+      || _ppTorneoRank(a.torneo) - _ppTorneoRank(b.torneo)
+      || (parseInt(b.fecha) || 0) - (parseInt(a.fecha) || 0));
 
   // Slices of the same match list for the clickable Goles/Asistencias/Rojas
   // stat tabs — no separate data source, just filtered views of `partidos`.
@@ -2820,7 +2862,7 @@ const PP_COND_CLASS = { 'Titular': 'pp-cond-tit', 'Suplente': 'pp-cond-sup', 'No
 function _ppImpactIconsHtml(p) {
   const parts = [];
   if (p.goles > 0) parts.push(`<span class="pp-match-stat pp-stat-goles">⚽${p.goles > 1 ? ' x' + p.goles : ''}</span>`);
-  if (p.asist > 0) parts.push(`<span class="pp-match-stat pp-stat-asist">🅰️${p.asist > 1 ? ' x' + p.asist : ''}</span>`);
+  if (p.asist > 0) parts.push(`<span class="pp-match-stat pp-stat-asist">🎯${p.asist > 1 ? ' x' + p.asist : ''}</span>`);
   return parts.join('');
 }
 
