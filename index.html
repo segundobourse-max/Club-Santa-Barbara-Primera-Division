@@ -1360,6 +1360,13 @@
     .pp-cond-sup   { color:#3b82f6; background:rgba(59,130,246,0.12); }
     .pp-cond-banco { color:#94a3b8; background:rgba(148,163,184,0.1); }
     .pp-match-stat { font-size:0.78rem; font-weight:800; }
+    .pp-match-resultado { font-size:0.76rem; font-weight:800; padding:3px 9px; border-radius:999px; border:1px solid transparent; }
+    .pp-match-cat { font-size:0.66rem; font-weight:700; padding:3px 8px; border-radius:999px; color:var(--gris-texto); background:rgba(255,255,255,0.05); border:1px solid #1e2a3a; }
+    .pp-year-chips { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px; -webkit-overflow-scrolling:touch; }
+    .pp-year-chip { flex:0 0 auto; border:1px solid #1e2a3a; background:rgba(255,255,255,0.03); color:var(--gris-texto); font-size:0.76rem; font-weight:700; padding:7px 14px; border-radius:999px; cursor:pointer; white-space:nowrap; transition:background .15s, border-color .15s, color .15s; font-family:inherit; }
+    .pp-year-chip:hover { color:#e2e8f0; border-color:rgba(245,158,11,.35); }
+    .pp-year-chip.active { background:var(--dorado); color:#1a1206; border-color:var(--dorado); }
+    .pp-year-chip-count { font-weight:600; opacity:.85; }
     .pp-res-badge { display:inline-block; font-size:0.76rem; font-weight:800; padding:2px 7px; border-radius:6px; margin-left:2px; }
     .pp-res-win  { color:#4ade80; background:rgba(34,197,94,0.14); }
     .pp-res-draw { color:#fbbf24; background:rgba(245,158,11,0.14); }
@@ -2531,19 +2538,25 @@ function ppFilterMetrics(cat, btn) {
 // object) and are combined in separately by _collectAllMatchesForPlayer.
 function _allPlayerTorneoSources() {
   const core = [
-    { d: DATA_A, equipo: 'a', torneo: 'Clausura AIFA A 2026' },
-    { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', torneo: 'Apertura AIFA A 2026' },
-    { d: DATA_B, equipo: 'b', torneo: 'Clausura AIFA B 2026' },
-    { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', torneo: 'Apertura AIFA B 2026' },
+    { d: DATA_A, equipo: 'a', torneo: 'Clausura AIFA A 2026', cat: 'a' },
+    { d: DATA_A_APERTURA2026, equipo: 'a-ap2026', torneo: 'Apertura AIFA A 2026', cat: 'a' },
+    { d: DATA_B, equipo: 'b', torneo: 'Clausura AIFA B 2026', cat: 'b' },
+    { d: DATA_B_APERTURA2026, equipo: 'b-ap2026', torneo: 'Apertura AIFA B 2026', cat: 'b' },
   ];
   // Every historical league season (Torneos Antiguos), both categories —
   // reached only through "Torneos Antiguos" navigation, not goToMatchFecha,
-  // so equipo stays null (no direct deep-link target for these yet).
-  const generic = Object.values(HISTORICO_GENERIC).map(cfg => ({ d: cfg.d, equipo: null, torneo: cfg.name }));
+  // so equipo stays null (no direct deep-link target for these yet). Every
+  // HISTORICO_GENERIC key ends in 'a' for Primera A entries and 'b' for
+  // Primera B ones (e.g. 'apertura-2024a' vs 'apertura-2025b'/'...-d-b').
+  const generic = Object.entries(HISTORICO_GENERIC).map(([key, cfg]) =>
+    ({ d: cfg.d, equipo: null, torneo: cfg.name, cat: key.endsWith('b') ? 'b' : 'a' }));
   // Dedicated copa sheets (own Plantel/Fecha a Fecha, outside COPA_BLOCKS).
-  const copasDedicadas = [DATA_A_RECOPA2025, DATA_A_2025, DATA_B_2024D,
-    DATA_B_RECOPA2026, DATA_B_SUPERCOPA2025, DATA_B_RECOPA2024, DATA_B_RECOPA2021]
-    .map(d => ({ d, equipo: null, torneo: d.nombre }));
+  const copasDedicadas = [
+    { d: DATA_A_RECOPA2025, cat: 'a' }, { d: DATA_A_2025, cat: 'a' },
+    { d: DATA_B_2024D, cat: 'b' }, { d: DATA_B_RECOPA2026, cat: 'b' },
+    { d: DATA_B_SUPERCOPA2025, cat: 'b' }, { d: DATA_B_RECOPA2024, cat: 'b' },
+    { d: DATA_B_RECOPA2021, cat: 'b' },
+  ].map(({ d, cat }) => ({ d, equipo: null, torneo: d.nombre, cat }));
   return [...core, ...generic, ...copasDedicadas];
 }
 
@@ -2551,46 +2564,28 @@ function _allPlayerTorneoSources() {
 // Primera A copas in COPA_BLOCKS) where this player appears in .jugadores.
 function _collectAllMatchesForPlayer(target) {
   const rows = _allPlayerTorneoSources()
-    .flatMap(({ d, equipo, torneo }) => (d.apertura || []).map(m => ({ m, torneo, equipo })));
+    .flatMap(({ d, equipo, torneo, cat }) => (d.apertura || []).map(m => ({ m, torneo, equipo, cat })));
+  // COPA_BLOCKS is Primera A's centralized copas sheet — always cat 'a'.
   const copaRows = Object.entries(COPA_BLOCKS)
-    .flatMap(([title, matches]) => (matches || []).map(m => ({ m, torneo: title, equipo: null })));
+    .flatMap(([title, matches]) => (matches || []).map(m => ({ m, torneo: title, equipo: null, cat: 'a' })));
   return [...rows, ...copaRows]
     .filter(({ m }) => (m.jugadores || []).some(j => normName(j.nombre) === target));
 }
 
-// Best-effort títulos list: there's no per-player "which titles" data source
-// anywhere in the sheets (only a raw career count from El Nido) — derived
-// instead from each tournament's own standings (league: Santa Bárbara's row
-// is 1° / says Campeón) or bracket (copa: won the Final), cross-referenced
-// against whether the player actually appeared in that tournament/match.
-function _collectPlayerTitulos(target) {
-  const wasInSquad = (d) => (d.apertura || []).some(m =>
-    (m.jugadores || []).some(j => normName(j.nombre) === target && (j.citado || j.titular || j.entro)));
-  const out = [];
-  for (const { d, torneo } of _allPlayerTorneoSources()) {
-    const csbRow = (d.tabla || []).find(t => t.csb);
-    const isChampion = csbRow && (/campe[oó]n/i.test(csbRow.copas || '') || csbRow.pos === '1°');
-    if (isChampion && wasInSquad(d)) {
-      out.push({ anio: (torneo.match(/\d{4}/) || [])[0] || '', torneo, categoria: /\bB\b/.test(torneo) ? 'Primera B' : 'Primera A' });
-    }
-  }
-  const copaSources = [
-    ...Object.entries(COPA_BLOCKS).map(([title, matches]) => ({ torneo: title, matches })),
-    ...[DATA_A_RECOPA2025, DATA_B_RECOPA2026, DATA_B_SUPERCOPA2025, DATA_B_RECOPA2024, DATA_B_RECOPA2021]
-      .map(d => ({ torneo: d.nombre, matches: d.apertura })),
-  ];
-  for (const { torneo, matches } of copaSources) {
-    const final = (matches || []).find(m => /\bfinal\b/i.test(m.posCSB || ''));
-    if (!final) continue;
-    const won = final.penales
-      ? Number(String(final.penales).split('-')[0] || 0) > Number(String(final.penales).split('-')[1] || 0)
-      : final.gf != null && final.gc != null && final.gf > final.gc;
-    const playedFinal = (final.jugadores || []).some(j => normName(j.nombre) === target && (j.citado || j.titular || j.entro));
-    if (won && playedFinal) {
-      out.push({ anio: (torneo.match(/\d{4}/) || [])[0] || '', torneo, categoria: /\bB\b/.test(torneo) ? 'Primera B' : 'Primera A' });
-    }
-  }
-  return out.sort((a, b) => (parseInt(b.anio) || 0) - (parseInt(a.anio) || 0));
+// Títulos list: there's no per-player "which titles" data source anywhere in
+// the sheets — only a raw career count (cTitulosA/cTitulosB) from El Nido.
+// The club's own title lists (DATA_A.titulos / DATA_B.titulos) are ordered
+// chronologically, so the player's N most recent titles in each category are
+// exactly the LAST N entries of that category's list (e.g. a player with 1
+// título in Primera A gets just the newest one, "Copa Maradona 2020", not
+// the older "Apertura AIFA B 2019" — matches how the count is actually built
+// up season over season).
+function _collectPlayerTitulos(cTitulosA, cTitulosB) {
+  const takeLast = (arr, n) => (n > 0 ? arr.slice(Math.max(0, arr.length - n)) : []);
+  const toRow = (categoria) => (t) => ({ anio: t.anio, torneo: t.nombre.replace(/^Campeón\s+/i, ''), categoria });
+  const a = takeLast(DATA_A.titulos || [], cTitulosA).map(toRow('Primera A'));
+  const b = takeLast(DATA_B.titulos || [], cTitulosB).map(toRow('Primera B'));
+  return [...a, ...b].sort((x, y) => (parseInt(y.anio) || 0) - (parseInt(x.anio) || 0));
 }
 
 // ── Aggregate every known data source for a single player, cross-team ──────
@@ -2640,7 +2635,7 @@ function _collectPlayerStats(nombre) {
   // date pre-selected — only the 4 core sources support that today (equipo
   // stays null for the rest, so those rows render without the deep-link).
   const partidos = _collectAllMatchesForPlayer(target)
-    .map(({ m, torneo, equipo }) => {
+    .map(({ m, torneo, equipo, cat }) => {
       const j = m.jugadores.find(jj => normName(jj.nombre) === target);
       let condicion = 'No citado';
       if (j.titular) condicion = 'Titular';
@@ -2649,7 +2644,8 @@ function _collectPlayerStats(nombre) {
       const anio = (torneo.match(/\d{4}/) || [])[0] || '';
       const localNorm = String(m.local || _inferLocalFromLugar(m.lugar) || '').toUpperCase();
       return {
-        torneo, anio, equipo, rival: m.rival, fecha: m.fecha, resultado: m.resultado,
+        torneo, anio, equipo, categoria: cat === 'b' ? 'Primera B' : 'Primera A',
+        rival: m.rival, fecha: m.fecha, resultado: m.resultado,
         gf: m.gf, gc: m.gc, local: localNorm,
         condicion, goles: j.goles || 0, asist: j.asist || 0, rojas: j.rojas || 0,
         esCapitan: /\(c\)/i.test(j.nombre),
@@ -2662,7 +2658,7 @@ function _collectPlayerStats(nombre) {
   const golesList = partidos.filter(p => p.goles > 0);
   const asistList = partidos.filter(p => p.asist > 0);
   const rojasList = partidos.filter(p => p.rojas > 0);
-  const titulosList = _collectPlayerTitulos(target);
+  const titulosList = _collectPlayerTitulos(nidoA?.titulos || 0, nidoB?.titulos || 0);
 
   // Titular/suplente/rojas breakdown — career totals, same source as pj/goles/asist
   // below (El Nido's "Jugadores Estadisticas" accumulated sheet), not just the
@@ -2695,8 +2691,15 @@ function _collectPlayerStats(nombre) {
     const cGoles   = nido?.goles || 0;
     const cAsist   = nido?.asist || 0;
     const cTitulos = nido?.titulos || 0;
-    const cTitular = me?.titular || 0;
-    const cSup     = me?.entro || me?.sup || 0;
+    // Same source-preference as the outer-scope total below: prefer El Nido's
+    // own titular/suplente counts, falling back to the local squad-sheet row
+    // only when El Nido hasn't loaded yet. Previously this only ever read
+    // me.titular/me.entro, so once El Nido was ready the "Primera A"/"Primera
+    // B" tabs silently dropped to 0 whenever the local squad row didn't carry
+    // those fields, even though the Totales tab (which does prefer nido)
+    // showed the correct number right next to it.
+    const cTitular = nido?.titular || me?.titular || 0;
+    const cSup     = nido?.suplente || me?.entro || me?.sup || 0;
     const cRojas   = me?.rojas || 0;
     return {
       pj: cPj, titular: cTitular, sup: cSup, goles: cGoles, asist: cAsist, rojas: cRojas, titulos: cTitulos,
@@ -2763,36 +2766,34 @@ function _ppRankGroup(rankSet, groupLabel, accent) {
   </div>`;
 }
 
-// Groups an already-sorted (newest-first) partidos list into <details> Año →
-// Torneo accordions. Native <details>/<summary> gives free expand/collapse
-// without any extra JS/state to manage.
-function _ppGroupByYearHtml(partidos, rowFn) {
-  const byYear = new Map();
-  for (const p of partidos) {
-    const y = p.anio || 'Sin año';
-    if (!byYear.has(y)) byYear.set(y, new Map());
-    const byTorneo = byYear.get(y);
-    if (!byTorneo.has(p.torneo)) byTorneo.set(p.torneo, []);
-    byTorneo.get(p.torneo).push(p);
-  }
-  return [...byYear.entries()].map(([anio, byTorneo], i) => `
-    <details class="pp-year-group" ${i === 0 ? 'open' : ''}>
-      <summary class="pp-year-summary">📅 ${anio} <span class="pp-year-count">(${[...byTorneo.values()].reduce((n, arr) => n + arr.length, 0)})</span></summary>
-      ${[...byTorneo.entries()].map(([torneo, rows]) => `
-        <div class="pp-torneo-group">
-          <div class="pp-torneo-label">${torneo} <span class="pp-year-count">(${rows.length})</span></div>
-          ${rows.map(rowFn).join('')}
-        </div>`).join('')}
-    </details>`).join('');
+// Colored global-score pill (win/draw/loss from the club's own gf/gc), used
+// by the Goles and Partidos detail rows.
+function _ppResultadoPillHtml(p) {
+  if (p.gf == null || p.gc == null) return '';
+  const color = p.gf > p.gc ? '#22c55e' : p.gf < p.gc ? '#ef4444' : '#94a3b8';
+  return `<span class="pp-match-resultado" style="color:${color};border-color:${color}66;background:${color}14">${p.gf}-${p.gc}</span>`;
 }
 
-// Row formatters for the 4 clickable stat tabs (Goles/Asistencias/Títulos/Rojas).
+// Row formatters for the 5 clickable stat tabs (Goles/Asistencias/Títulos/Rojas/Partidos).
 function _ppStatRowHtml(kind, p) {
   const localIco = p.local === 'LOCAL' ? '🏠' : p.local === 'NEUTRAL' ? '🏟️' : p.local === 'VISITANTE' ? '✈️' : '';
   if (kind === 'titulos') {
     return `<div class="pp-match-row">
       <div class="pp-match-main"><span class="pp-match-torneo">${p.anio}</span><span class="pp-match-rival">${p.torneo}</span></div>
       <div class="pp-match-side"><span class="pp-match-cond">${p.categoria}</span></div>
+    </div>`;
+  }
+  if (kind === 'partidos') {
+    return `<div class="pp-match-row">
+      <div class="pp-match-main">
+        <span class="pp-match-torneo">${p.anio} · ${p.torneo}${p.fecha ? ' • Fecha ' + p.fecha : ''}</span>
+        <span class="pp-match-rival">vs ${p.rival}</span>
+      </div>
+      <div class="pp-match-side">
+        ${_ppResultadoPillHtml(p)}
+        <span class="pp-match-cat">${p.categoria}</span>
+        ${localIco ? `<span class="pp-match-cond">${localIco}</span>` : ''}
+      </div>
     </div>`;
   }
   const statVal = kind === 'goles' ? p.goles : kind === 'asist' ? p.asist : null;
@@ -2803,15 +2804,35 @@ function _ppStatRowHtml(kind, p) {
       <span class="pp-match-rival">vs ${p.rival}</span>
     </div>
     <div class="pp-match-side">
+      ${kind === 'goles' ? _ppResultadoPillHtml(p) : ''}
+      ${kind === 'goles' ? `<span class="pp-match-cat">${p.categoria}</span>` : ''}
       ${statVal != null ? `<span class="pp-match-stat">${statIco}${statVal > 1 ? ' ×' + statVal : ''}</span>` : `<span class="pp-match-stat">${statIco}</span>`}
       ${localIco ? `<span class="pp-match-cond">${localIco}</span>` : ''}
     </div>
   </div>`;
 }
 
-const PP_DETAIL_LABELS = { goles: '⚽ Goles', asist: '🎯 Asistencias', rojas: '🟥 Rojas', titulos: '🏆 Títulos' };
+const PP_DETAIL_LABELS = { goles: '⚽ Goles', asist: '🎯 Asistencias', rojas: '🟥 Rojas', titulos: '🏆 Títulos', partidos: '📋 Partidos' };
 
-// Toggles the detail panel below the KPI grid for one of the 4 clickable
+// Builds the horizontal "Todos / año / año…" chip row for the Partidos
+// detail panel, plus the (already-year-filtered) match list below it.
+function _ppPartidosPanelHtml(list) {
+  const byYear = new Map();
+  for (const p of list) {
+    const y = p.anio || 'Sin año';
+    byYear.set(y, (byYear.get(y) || 0) + 1);
+  }
+  const years = [...byYear.keys()].sort((a, b) => (parseInt(b) || 0) - (parseInt(a) || 0));
+  const active = window._ppPartidosYear || 'todos';
+  const chip = (val, label, count) => `<button class="pp-year-chip${active === val ? ' active' : ''}" onclick="ppFilterPartidosYear('${val}')">${label} <span class="pp-year-chip-count">(${count})</span></button>`;
+  const chips = [chip('todos', 'Todos', list.length), ...years.map(y => chip(y, y, byYear.get(y)))].join('');
+  const filtered = active === 'todos' ? list : list.filter(p => p.anio === active);
+  return `
+    <div class="pp-year-chips">${chips}</div>
+    ${filtered.length ? filtered.map(p => _ppStatRowHtml('partidos', p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+}
+
+// Toggles the detail panel below the KPI grid for one of the 5 clickable
 // stats — clicking the already-active one collapses it. Swaps only
 // #pp-detail-panel's innerHTML (no full profile re-render), same pattern as
 // ppFilterMetrics().
@@ -2823,9 +2844,28 @@ window.ppShowDetail = function(kind) {
   window._ppDetailKind = kind;
   document.getElementById('pp-kpi-' + kind)?.classList.add('pp-kpi-active');
   const list = (window._ppDetailLists && window._ppDetailLists[kind]) || [];
+  if (kind === 'partidos') {
+    window._ppPartidosYear = 'todos';
+    panel.innerHTML = `
+      <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${list.length})</div>
+      ${_ppPartidosPanelHtml(list)}`;
+    return;
+  }
   panel.innerHTML = `
     <div class="pp-detail-header">${PP_DETAIL_LABELS[kind]} (${list.length})</div>
     ${list.length ? list.map(p => _ppStatRowHtml(kind, p)).join('') : `<div class="hist-empty">Sin registros cargados.</div>`}`;
+};
+
+// Re-renders just the Partidos detail panel's chip row + list for a new year
+// filter, without collapsing/re-opening the panel.
+window.ppFilterPartidosYear = function(year) {
+  window._ppPartidosYear = year;
+  const panel = document.getElementById('pp-detail-panel');
+  if (!panel) return;
+  const list = (window._ppDetailLists && window._ppDetailLists.partidos) || [];
+  panel.innerHTML = `
+    <div class="pp-detail-header">${PP_DETAIL_LABELS.partidos} (${list.length})</div>
+    ${_ppPartidosPanelHtml(list)}`;
 };
 
 function renderPlayerProfile(nombre) {
@@ -2850,21 +2890,22 @@ function renderPlayerProfile(nombre) {
   // the on-screen values instantly without re-rendering the whole profile.
   window._ppMetricsData = s.porCategoria;
 
-  // Stash the 4 clickable-stat detail lists so ppShowDetail() can swap the
+  // Stash the 5 clickable-stat detail lists so ppShowDetail() can swap the
   // panel below without a full re-render (same pattern as _ppMetricsData).
-  window._ppDetailLists = { goles: s.golesList, asist: s.asistList, rojas: s.rojasList, titulos: s.titulosList };
+  window._ppDetailLists = { goles: s.golesList, asist: s.asistList, rojas: s.rojasList, titulos: s.titulosList, partidos: s.partidos };
   window._ppDetailKind = null;
+  window._ppPartidosYear = 'todos';
 
   const metricsTabs = `
     <div class="pp-metric-tabs" id="pp-metric-tabs">
-      <button class="pp-metric-tab active" data-cat="total" onclick="ppFilterMetrics('total', this)">📊 Totales</button>
-      <button class="pp-metric-tab" data-cat="a" onclick="ppFilterMetrics('a', this)">Ⓐ Primera A</button>
-      <button class="pp-metric-tab" data-cat="b" onclick="ppFilterMetrics('b', this)">Ⓑ Primera B</button>
+      <button class="pp-metric-tab active" data-cat="total" onclick="ppFilterMetrics('total', this)">Totales</button>
+      <button class="pp-metric-tab" data-cat="a" onclick="ppFilterMetrics('a', this)">Primera A</button>
+      <button class="pp-metric-tab" data-cat="b" onclick="ppFilterMetrics('b', this)">Primera B</button>
     </div>`;
 
   const metrics = `
     <div class="hist-kpis" style="grid-template-columns:repeat(4,1fr)">
-      ${kpi('pp-m-pj',      '📋', s.pj,   'Partidos (' + s.titular + ' tit · ' + s.sup + ' sup)')}
+      ${kpi('pp-m-pj',      '📋', s.pj,   'Partidos (' + s.titular + ' tit · ' + s.sup + ' sup)', null, 'partidos')}
       ${kpi('pp-m-goles',   '⚽', s.goles, 'Goles', '#22c55e', 'goles')}
       ${kpi('pp-m-asist',   '🎯', s.asist, 'Asistencias', '#3b82f6', 'asist')}
       ${kpi('pp-m-ga',      '🔥', s.goles + s.asist, 'G+A', '#a855f7')}
@@ -2895,34 +2936,6 @@ function renderPlayerProfile(nombre) {
       <div class="pp-rank-col-right">${rightCol}</div>
     </div>` : '';
 
-  // Every row is a deep link straight into that tournament's Fecha a Fecha tab,
-  // with the exact date pre-selected (formación, incidencias, observaciones) —
-  // only when the source tournament supports it (m.equipo set); historical
-  // Torneos Antiguos rows render the same info without the deep-link.
-  function matchRowHtml(m) {
-    const clickable = !!m.equipo;
-    return `
-        <div class="pp-match-row${clickable ? ' pp-match-row-link' : ''}" ${clickable ? `onclick="goToMatchFecha('${m.equipo}', '${String(m.fecha).replace(/'/g, "\\'")}')" title="Ver Fecha ${m.fecha} en detalle"` : ''}>
-          <div class="pp-match-main">
-            <span class="pp-match-torneo">${m.torneo}</span>
-            <span class="pp-match-rival">vs ${m.rival}${m.resultado ? ` <span class="pp-res-badge pp-res-${m.gf != null && m.gc != null ? (m.gf > m.gc ? 'win' : m.gf === m.gc ? 'draw' : 'loss') : 'na'}">${m.resultado}</span>` : ''}${m.fecha ? ' • Fecha ' + m.fecha : ''}</span>
-          </div>
-          <div class="pp-match-side">
-            ${m.esCapitan ? `<span class="pl-cap-badge" title="Capitán">C</span>` : ''}
-            <span class="pp-match-cond pp-cond-${m.condicion === 'Titular' ? 'tit' : m.condicion === 'Ingresó desde el banco' ? 'sup' : 'banco'}">${m.condicion}</span>
-            ${m.goles ? `<span class="pp-match-stat" style="color:#22c55e">⚽${m.goles > 1 ? ' ×' + m.goles : ''}</span>` : ''}
-            ${m.asist ? `<span class="pp-match-stat" style="color:#3b82f6">🎯${m.asist > 1 ? ' ×' + m.asist : ''}</span>` : ''}
-            ${m.rojas ? `<span class="pp-match-stat" style="color:#ef4444">🟥</span>` : ''}
-            ${clickable ? '<span class="pp-match-arrow">›</span>' : ''}
-          </div>
-        </div>`;
-  }
-
-  // Historial de Partidos — grouped by year, then by torneo within the year,
-  // as a native <details> accordion (no extra JS needed for expand/collapse).
-  const matchRows = s.partidos.length ? _ppGroupByYearHtml(s.partidos, matchRowHtml)
-    : `<div class="hist-empty">No se encontraron partidos registrados.</div>`;
-
   overlay.innerHTML = `
     <div class="pp-wrap">
       <button class="hd-back" onclick="closePlayerProfile()">← Cerrar perfil</button>
@@ -2940,10 +2953,6 @@ function renderPlayerProfile(nombre) {
           ${metricsTabs}
         </div>
         ${metrics}
-      </div>
-      <div class="card" style="margin-top:18px">
-        <div class="card-label" style="margin-bottom:12px">Historial de Partidos (${s.partidos.length})</div>
-        <div class="pp-match-list">${matchRows}</div>
       </div>
     </div>`;
 
